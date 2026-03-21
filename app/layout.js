@@ -1,3 +1,5 @@
+import "./globals.css"
+
 export const metadata = {
   title: "Ev.CRM — EV Dealer Sales OS",
   description: "India's first sales platform built for EV dealers",
@@ -6,13 +8,16 @@ export const metadata = {
   }
 }
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-      </head>
-      <body style={{ margin:0 }}>{children}</body>
+      <body>{children}</body>
     </html>
   )
 }

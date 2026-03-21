@@ -148,40 +148,13 @@ export default function Shell({ children, title }) {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=DM+Serif+Display&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
-        html { font-size:16px; }
-        body { font-family:'DM Sans','Segoe UI',system-ui,sans-serif; background:${C.bg}; color:${C.ink}; -webkit-font-smoothing:antialiased; }
-        ::-webkit-scrollbar { width:5px; height:5px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:${C.borderD}; border-radius:4px; }
-        button,input,textarea,select { font-family:inherit; }
-        button:focus,input:focus,textarea:focus { outline:none; }
-        a { text-decoration:none; color:inherit; }
-        @keyframes evcrm-spin  { to { transform:rotate(360deg) } }
-        @keyframes evcrm-fade  { from { opacity:0 } to { opacity:1 } }
-        @keyframes evcrm-pop   { from { opacity:0; transform:scale(0.94) } to { opacity:1; transform:scale(1) } }
-        @keyframes evcrm-up    { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes evcrm-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
-        .evcrm-fade-up { animation: evcrm-up 0.4s ease both; }
-        .evcrm-delay-1 { animation-delay:0.07s }
-        .evcrm-delay-2 { animation-delay:0.14s }
-        .evcrm-delay-3 { animation-delay:0.21s }
-        .evcrm-delay-4 { animation-delay:0.28s }
-        .row-hover:hover { background:${C.bg} !important; }
-      `}</style>
-
       <Sidebar open={open} onClose={()=>setOpen(false)} />
-
       <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column" }}>
         <TopBar sidebarOpen={open} onToggle={()=>setOpen(o=>!o)} title={title} />
         <main style={{ flex:1, padding:"24px 28px", minWidth:0 }}>
           {children}
         </main>
       </div>
-
-      {/* ── Floating Market Research Button ─────────────────────── */}
       <FloatingMR />
     </>
   )
