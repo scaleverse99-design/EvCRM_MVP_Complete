@@ -327,6 +327,11 @@ export default function LoginPage() {
                 Forgot password?
               </button>
             </p>
+
+            <p style={{ textAlign:"center", marginTop:8, fontSize:12, color:I3 }}>
+              New to Ev.CRM?{" "}
+              <button onClick={()=>router.push("/register")} style={{ background:"none", border:"none", color:activeColor, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Create account →</button>
+            </p>
           </>
         )}
 
