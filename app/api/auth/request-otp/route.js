@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { generateOTP, hashOTP, err, ok } from "../../../../lib/auth"
 import { findUserByEmail, createOTP, countRecentFailedAttempts } from "../../../../lib/db"
 import { sendOTPEmail } from "../../../../lib/email"

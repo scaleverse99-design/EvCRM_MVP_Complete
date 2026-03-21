@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { extractToken, verifyToken, hashToken, err, ok } from "../../../../lib/auth"
 import { findSession } from "../../../../lib/db"
 

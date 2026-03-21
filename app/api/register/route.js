@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { hashPassword, generateToken, hashToken, buildCookieHeader, ok, err } from "../../../lib/auth"
 import { createSession, logLoginAttempt } from "../../../lib/db"
 import { sendWelcomeEmail } from "../../../lib/email"

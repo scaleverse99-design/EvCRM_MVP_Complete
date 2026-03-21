@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { extractToken, hashToken, clearCookieHeader, ok } from "../../../../lib/auth"
 import { deleteSession } from "../../../../lib/db"
 

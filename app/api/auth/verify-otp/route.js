@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { verifyOTP, err, ok } from "../../../../lib/auth"
 import {
   findUserByEmail, findOTP,

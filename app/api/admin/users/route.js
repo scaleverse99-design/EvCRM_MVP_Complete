@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { hashPassword, extractToken, verifyToken, hashToken, ok, err } from "../../../../lib/auth"
 import { findSession, findUserById } from "../../../../lib/db"
 import { sendWelcomeEmail } from "../../../../lib/email"

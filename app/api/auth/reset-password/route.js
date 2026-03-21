@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { hashPassword, err, ok } from "../../../../lib/auth"
 import { findUserByEmail, updateUserPassword } from "../../../../lib/db"
 import { sendPasswordResetConfirmation } from "../../../../lib/email"
