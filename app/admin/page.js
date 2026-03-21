@@ -1,338 +1,311 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-
-const G   = "#059669", GD = "#065F46", GL = "#D1FAE5"
-const INK = "#111827", I2 = "#374151", I3 = "#6B7280"
-const BG  = "#F9FAFB", BD = "#E5E7EB", BDD = "#D1D5DB"
-const RED = "#EF4444", RL = "#FEE2E2"
-const ORG = "#F97316", ORL = "#FFEDD5"
-const BLU = "#3B82F6", BLL = "#DBEAFE"
+import Shell from "../../components/layout/Shell"
+import { C } from "../../lib/constants"
 
 // ── Primitives ────────────────────────────────────────────────────
-const Tag = ({ label, color=G }) => (
-  <span style={{ background:`${color}15`, color, border:`1px solid ${color}25`, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:16, whiteSpace:"nowrap" }}>{label}</span>
-)
-
-function Field({ label, type="text", placeholder, value, onChange, icon, required }) {
+function Field({ label, type="text", placeholder, value, onChange, error, icon }) {
   const [focused, setFocused] = useState(false)
   return (
-    <div style={{ marginBottom:12 }}>
-      {label && <label style={{ display:"block", fontSize:10.5, fontWeight:700, color:focused?G:I3, marginBottom:4, letterSpacing:"0.3px" }}>{label}{required&&<span style={{ color:RED }}> *</span>}</label>}
+    <div style={{ marginBottom:14 }}>
+      {label && <label style={{ display:"block", fontSize:10.5, fontWeight:700, color:focused?C.green:C.ink3, marginBottom:4, letterSpacing:"0.3px" }}>{label}</label>}
       <div style={{ position:"relative" }}>
         {icon && <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:13, opacity:0.4, pointerEvents:"none" }}>{icon}</span>}
         <input type={type} value={value} onChange={onChange} placeholder={placeholder}
           onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-          style={{ width:"100%", background:"#fff", border:`1.5px solid ${focused?G:BD}`, borderRadius:8, color:INK, fontSize:12, padding:`9px 10px 9px ${icon?"34px":"10px"}`, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}
+          style={{ width:"100%", background:C.bg, border:`1.5px solid ${error?C.red:focused?C.green:C.border}`, borderRadius:9, color:C.ink, fontSize:12, padding:`9px 10px 9px ${icon?"34px":"10px"}`, outline:"none", boxSizing:"border-box", fontFamily:"inherit" }}
         />
       </div>
+      {error && <p style={{ fontSize:10, color:C.red, marginTop:4 }}>{error}</p>}
     </div>
   )
+}
+
+function Avatar({ name, size=36 }) {
+  const initials = name?.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?"
+  return <div style={{ width:size, height:size, borderRadius:"50%", background:`${C.orange}20`, border:`1.5px solid ${C.orange}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*.32, fontWeight:800, color:C.orange, flexShrink:0 }}>{initials}</div>
 }
 
 function Modal({ title, onClose, children }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
-        <div style={{ padding:"18px 22px", borderBottom:`1px solid ${BD}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <h2 style={{ fontSize:16, fontWeight:800, color:INK, margin:0 }}>{title}</h2>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:I3, cursor:"pointer", fontSize:18 }}>✕</button>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:440, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ padding:"16px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <h2 style={{ fontSize:15, fontWeight:800, color:C.ink, margin:0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:C.ink3, cursor:"pointer", fontSize:17 }}>✕</button>
         </div>
-        <div style={{ padding:"20px 22px" }}>{children}</div>
+        <div style={{ padding:"18px 20px" }}>{children}</div>
       </div>
     </div>
   )
 }
 
-function Avatar({ name, color=G, size=32 }) {
-  const initials = name?.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2) || "?"
+function StatusBadge({ active }) {
   return (
-    <div style={{ width:size, height:size, borderRadius:"50%", background:`${color}20`, border:`1.5px solid ${color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.34, fontWeight:800, color, flexShrink:0 }}>{initials}</div>
+    <span style={{ background:active?C.greenL:"#FEE2E2", color:active?C.greenD:C.red, fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:16 }}>
+      {active?"✓ Active":"✗ Inactive"}
+    </span>
   )
 }
 
 // ════════════════════════════════════════════════════════════════
-//  ADMIN PAGE
+//  ADMIN PANEL — Dealer manages their own sales reps
 // ════════════════════════════════════════════════════════════════
 export default function AdminPage() {
   const router = useRouter()
-  const [users,    setUsers]    = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [total,    setTotal]    = useState(0)
-  const [search,   setSearch]   = useState("")
-  const [roleFilter, setRoleFilter] = useState("")
-  const [modal,    setModal]    = useState(null) // "create" | "edit" | "confirm-deactivate"
-  const [selected, setSelected] = useState(null)
-  const [toast,    setToast]    = useState("")
-  const [saving,   setSaving]   = useState(false)
+  const [reps,    setReps]    = useState([])
+  const [loading, setLoading] = useState(true)
+  const [dealer,  setDealer]  = useState(null)
+  const [modal,   setModal]   = useState(null)
+  const [selected,setSelected]= useState(null)
+  const [toast,   setToast]   = useState("")
+  const [saving,  setSaving]  = useState(false)
+  const [search,  setSearch]  = useState("")
+  const [newRep,  setNewRep]  = useState({ name:"", email:"", password:"", phone:"" })
+  const [newErr,  setNewErr]  = useState({})
 
-  const [newUser, setNewUser] = useState({ name:"", email:"", password:"", role:"rep", phone:"", dealership:"", city:"" })
-  const [newErrors, setNewErrors] = useState({})
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),3000) }
 
-  const showToast = (msg, duration=3000) => { setToast(msg); setTimeout(()=>setToast(""), duration) }
+  // ── Load dealer info + their reps ─────────────────────────────
+  useEffect(()=>{
+    fetch("/api/auth/me").then(r=>r.json()).then(d=>{
+      if (!d.success) { router.push("/login"); return }
+      if (d.user.role !== "dealer") { router.push("/dealer"); return }
+      setDealer(d.user)
+      loadReps()
+    }).catch(()=>router.push("/login"))
+  }, [])
 
-  // ── Fetch users ───────────────────────────────────────────────
-  const fetchUsers = useCallback(async () => {
+  const loadReps = useCallback(async ()=>{
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (roleFilter) params.set("role", roleFilter)
-      if (search)     params.set("search", search)
-      const res  = await fetch(`/api/admin/users?${params}`)
+      const res  = await fetch("/api/admin/users?role=rep")
       const data = await res.json()
-      if (res.status === 401) { router.push("/login"); return }
-      if (data.success) { setUsers(data.users || []); setTotal(data.total || 0) }
-    } catch { showToast("❌ Failed to load users") }
+      if (data.success) setReps(data.users||[])
+    } catch { showToast("❌ Failed to load team") }
     finally { setLoading(false) }
-  }, [roleFilter, search])
+  }, [])
 
-  useEffect(()=>{ fetchUsers() }, [fetchUsers])
-
-  // ── Create user ───────────────────────────────────────────────
+  // ── Create rep ────────────────────────────────────────────────
   const handleCreate = async () => {
     const e = {}
-    if (!newUser.name.trim())    e.name     = "Required"
-    if (!newUser.email.trim())   e.email    = "Required"
-    if (!newUser.password)       e.password = "Required (min 8 chars)"
-    if (!newUser.phone.trim())   e.phone    = "Required"
-    if (Object.keys(e).length) { setNewErrors(e); return }
+    if (!newRep.name.trim())    e.name     = "Required"
+    if (!newRep.email.trim())   e.email    = "Required"
+    else if (!/\S+@\S+\.\S+/.test(newRep.email)) e.email = "Invalid email"
+    if (!newRep.password)       e.password = "Required (min 8 chars)"
+    else if (newRep.password.length < 8) e.password = "Min 8 characters"
+    if (Object.keys(e).length) { setNewErr(e); return }
 
     setSaving(true)
     try {
       const res  = await fetch("/api/admin/users", {
         method:  "POST",
         headers: { "Content-Type":"application/json" },
-        body:    JSON.stringify(newUser),
+        body:    JSON.stringify({
+          ...newRep,
+          role:       "rep",
+          dealership: dealer?.dealership||"",
+        }),
       })
       const data = await res.json()
       if (!res.ok) { showToast(`❌ ${data.error}`); return }
-      showToast(`✅ ${data.user.role === "dealer" ? "Dealer" : "Sales Rep"} account created!`)
+      showToast(`✅ ${newRep.name.split(" ")[0]} added to your team!`)
       setModal(null)
-      setNewUser({ name:"", email:"", password:"", role:"rep", phone:"", dealership:"", city:"" })
-      setNewErrors({})
-      fetchUsers()
-    } catch { showToast("❌ Failed to create user") }
+      setNewRep({ name:"", email:"", password:"", phone:"" })
+      setNewErr({})
+      loadReps()
+    } catch { showToast("❌ Failed to add rep") }
     finally { setSaving(false) }
   }
 
-  // ── Toggle active status ──────────────────────────────────────
-  const handleToggleActive = async (user) => {
+  // ── Toggle active ─────────────────────────────────────────────
+  const handleToggle = async (rep) => {
     try {
       const res  = await fetch("/api/admin/users", {
         method:  "PATCH",
         headers: { "Content-Type":"application/json" },
-        body:    JSON.stringify({ id:user.id, is_active:!user.is_active }),
+        body:    JSON.stringify({ id:rep.id, is_active:!rep.is_active }),
       })
       const data = await res.json()
       if (!res.ok) { showToast(`❌ ${data.error}`); return }
-      showToast(`✅ ${user.name.split(" ")[0]} ${!user.is_active ? "activated" : "deactivated"}`)
-      fetchUsers()
-    } catch { showToast("❌ Failed to update user") }
-    setModal(null)
+      showToast(`✅ ${rep.name.split(" ")[0]} ${!rep.is_active?"activated":"deactivated"}`)
+      setModal(null); setSelected(null)
+      loadReps()
+    } catch { showToast("❌ Update failed") }
   }
 
+  const filtered = reps.filter(r=>
+    !search || r.name?.toLowerCase().includes(search.toLowerCase()) || r.email?.toLowerCase().includes(search.toLowerCase())
+  )
+
   const stats = {
-    total:    users.length,
-    dealers:  users.filter(u=>u.role==="dealer").length,
-    reps:     users.filter(u=>u.role==="rep").length,
-    active:   users.filter(u=>u.is_active).length,
-    pending:  users.filter(u=>!u.is_active&&u.role==="dealer").length,
+    total:    reps.length,
+    active:   reps.filter(r=>r.is_active).length,
+    inactive: reps.filter(r=>!r.is_active).length,
   }
 
   return (
-    <div style={{ minHeight:"100vh", background:BG, fontFamily:"'DM Sans','Segoe UI',system-ui,sans-serif" }}>
+    <Shell title="Team Management">
 
-      {/* Top bar */}
-      <div style={{ background:"#fff", borderBottom:`1px solid ${BD}`, padding:"0 28px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:40, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ width:34, height:34, borderRadius:9, background:`${G}18`, border:`1.5px solid ${G}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17 }}>⚡</div>
-          <div>
-            <div style={{ fontFamily:"Georgia,serif", fontSize:16, fontWeight:900, color:INK }}>Ev<span style={{ color:G }}>.CRM</span></div>
-            <div style={{ fontSize:9.5, color:I3 }}>Admin Panel</div>
-          </div>
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:24 }}>
+        <div>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.ink, marginBottom:4 }}>My Sales Team</h1>
+          <p style={{ fontSize:12, color:C.ink3 }}>
+            {dealer?.dealership || "Your dealership"} · Manage your sales reps
+          </p>
         </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <button onClick={()=>router.push("/dealer")} style={{ background:BG, border:`1px solid ${BD}`, color:I2, borderRadius:8, padding:"6px 14px", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>← Dashboard</button>
-          <button onClick={()=>{ setNewUser({ name:"", email:"", password:"", role:"rep", phone:"", dealership:"", city:"" }); setNewErrors({}); setModal("create") }} style={{ background:G, color:"#fff", border:"none", borderRadius:8, padding:"6px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 10px ${G}35` }}>
-            + Add User
-          </button>
-        </div>
+        <button onClick={()=>{ setNewRep({ name:"", email:"", password:"", phone:"" }); setNewErr({}); setModal("create") }}
+          style={{ background:C.green, color:"#fff", border:"none", borderRadius:10, padding:"10px 18px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 10px ${C.green}35`, display:"flex", alignItems:"center", gap:7 }}>
+          + Add Sales Rep
+        </button>
       </div>
 
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"28px 24px" }}>
-
-        {/* Stats */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12, marginBottom:24 }}>
-          {[
-            { v:stats.total,   l:"Total Users",    c:BLU  },
-            { v:stats.dealers, l:"Dealers",         c:G    },
-            { v:stats.reps,    l:"Sales Reps",      c:ORG  },
-            { v:stats.active,  l:"Active",          c:G    },
-            { v:stats.pending, l:"Pending Approval",c:RED  },
-          ].map((s,i)=>(
-            <div key={i} style={{ background:"#fff", border:`1px solid ${BD}`, borderRadius:12, padding:"14px 16px", textAlign:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize:26, fontWeight:900, color:s.c }}>{s.v}</div>
-              <div style={{ fontSize:10.5, color:I3, marginTop:4 }}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div style={{ background:"#fff", border:`1px solid ${BD}`, borderRadius:12, padding:"14px 18px", marginBottom:16, display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ position:"relative", flex:1, minWidth:200 }}>
-            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14, opacity:0.4 }}>🔍</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name or email..."
-              style={{ width:"100%", background:BG, border:`1px solid ${BD}`, borderRadius:8, padding:"8px 10px 8px 32px", fontSize:12, outline:"none", fontFamily:"inherit", color:INK, boxSizing:"border-box" }}
-            />
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:22 }}>
+        {[
+          { v:stats.total,    l:"Total Reps",   c:C.blue   },
+          { v:stats.active,   l:"Active",        c:C.green  },
+          { v:stats.inactive, l:"Inactive",      c:C.orange },
+        ].map((s,i)=>(
+          <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px 18px", textAlign:"center" }}>
+            <div style={{ fontSize:28, fontWeight:900, color:s.c }}>{s.v}</div>
+            <div style={{ fontSize:11, color:C.ink3, marginTop:4 }}>{s.l}</div>
           </div>
-          <div style={{ display:"flex", gap:0, background:BG, border:`1px solid ${BD}`, borderRadius:8, overflow:"hidden" }}>
-            {[{v:"",l:"All"},{v:"dealer",l:"Dealers"},{v:"rep",l:"Reps"}].map(f=>(
-              <button key={f.v} onClick={()=>setRoleFilter(f.v)} style={{ background:roleFilter===f.v?"#fff":"transparent", border:"none", color:roleFilter===f.v?G:I3, padding:"7px 16px", fontSize:11, fontWeight:roleFilter===f.v?700:400, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{f.l}</button>
-            ))}
-          </div>
-          <span style={{ fontSize:11, color:I3 }}>{total} user{total!==1?"s":""}</span>
-        </div>
-
-        {/* Table */}
-        <div style={{ background:"#fff", border:`1px solid ${BD}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          {loading ? (
-            <div style={{ textAlign:"center", padding:"48px 20px" }}>
-              <div style={{ width:32, height:32, borderRadius:"50%", border:`3px solid ${G}25`, borderTopColor:G, animation:"evcrm-spin .7s linear infinite", margin:"0 auto 12px" }}/>
-              <p style={{ fontSize:12, color:I3 }}>Loading users...</p>
-            </div>
-          ) : users.length === 0 ? (
-            <div style={{ textAlign:"center", padding:"48px 20px" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>👥</div>
-              <p style={{ fontSize:14, fontWeight:700, color:INK, marginBottom:6 }}>No users found</p>
-              <p style={{ fontSize:12, color:I3, marginBottom:20 }}>Add your first user to get started</p>
-              <button onClick={()=>setModal("create")} style={{ background:G, color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>+ Add First User</button>
-            </div>
-          ) : (
-            <table style={{ width:"100%", borderCollapse:"collapse" }}>
-              <thead>
-                <tr style={{ background:BG, borderBottom:`1px solid ${BD}` }}>
-                  {["User","Role","Contact","Dealership","Status","Joined","Actions"].map(h=>(
-                    <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10.5, fontWeight:700, color:I3 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u,i)=>(
-                  <tr key={u.id} style={{ borderBottom:i<users.length-1?`1px solid ${BD}`:"none", background:"#fff" }}
-                    onMouseEnter={e=>e.currentTarget.style.background=BG}
-                    onMouseLeave={e=>e.currentTarget.style.background="#fff"}
-                  >
-                    <td style={{ padding:"13px 16px" }}>
-                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                        <Avatar name={u.name} color={u.role==="dealer"?G:ORG} size={34} />
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:600, color:INK }}>{u.name}</div>
-                          <div style={{ fontSize:10.5, color:I3 }}>{u.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <Tag label={u.role==="dealer"?"🏪 Dealer":"⚡ Sales Rep"} color={u.role==="dealer"?G:ORG} />
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <div style={{ fontSize:11.5, color:I2 }}>{u.phone||"—"}</div>
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <div style={{ fontSize:11.5, color:I2 }}>{u.dealership||"—"}</div>
-                      {u.city && <div style={{ fontSize:10.5, color:I3, marginTop:1 }}>{u.city}</div>}
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <Tag label={u.is_active?"✓ Active":"⏳ Pending"} color={u.is_active?G:ORG} />
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <div style={{ fontSize:11, color:I3 }}>{new Date(u.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</div>
-                      {u.last_login && <div style={{ fontSize:10, color:I3, marginTop:1 }}>Last: {new Date(u.last_login).toLocaleDateString("en-IN")}</div>}
-                    </td>
-                    <td style={{ padding:"13px 16px" }}>
-                      <div style={{ display:"flex", gap:6 }}>
-                        <button onClick={()=>{ setSelected(u); setModal("confirm-toggle") }} style={{ background:u.is_active?RL:GL, border:`1px solid ${u.is_active?RED:G}25`, color:u.is_active?RED:GD, borderRadius:7, padding:"5px 11px", fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                          {u.is_active?"Deactivate":"Activate"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        ))}
       </div>
 
-      {/* ── CREATE USER MODAL ── */}
-      {modal==="create" && (
-        <Modal title="Add New User" onClose={()=>setModal(null)}>
-          {/* Role tabs */}
-          <div style={{ display:"flex", gap:8, marginBottom:18 }}>
-            {[{v:"dealer",icon:"🏪",l:"Dealer"},{v:"rep",icon:"⚡",l:"Sales Rep"}].map(r=>(
-              <button key={r.v} onClick={()=>setNewUser(u=>({...u,role:r.v}))} style={{ flex:1, background:newUser.role===r.v?`${r.v==="dealer"?G:ORG}10`:"transparent", border:`1.5px solid ${newUser.role===r.v?r.v==="dealer"?G:ORG:BD}`, borderRadius:10, padding:"9px", cursor:"pointer", fontFamily:"inherit", textAlign:"center" }}>
-                <div style={{ fontSize:16 }}>{r.icon}</div>
-                <div style={{ fontSize:11, fontWeight:700, color:newUser.role===r.v?r.v==="dealer"?G:ORG:INK, marginTop:3 }}>{r.l}</div>
+      {/* Search */}
+      <div style={{ position:"relative", marginBottom:16, maxWidth:340 }}>
+        <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:14, opacity:.4 }}>🔍</span>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name or email..."
+          style={{ width:"100%", background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 12px 9px 36px", fontSize:12, outline:"none", fontFamily:"inherit", color:C.ink, boxSizing:"border-box" }}
+        />
+      </div>
+
+      {/* Reps table */}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:"hidden" }}>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:"48px 20px" }}>
+            <div style={{ width:30, height:30, borderRadius:"50%", border:`3px solid ${C.green}25`, borderTopColor:C.green, animation:"evcrm-spin .7s linear infinite", margin:"0 auto 12px" }}/>
+            <p style={{ fontSize:12, color:C.ink3 }}>Loading your team...</p>
+          </div>
+        ) : filtered.length===0 ? (
+          <div style={{ textAlign:"center", padding:"52px 20px" }}>
+            <div style={{ fontSize:44, marginBottom:14 }}>👥</div>
+            <p style={{ fontSize:15, fontWeight:700, color:C.ink, marginBottom:6 }}>
+              {search ? "No reps found" : "No sales reps yet"}
+            </p>
+            <p style={{ fontSize:12, color:C.ink3, marginBottom:20 }}>
+              {search ? "Try a different search" : "Add your first sales rep to get started"}
+            </p>
+            {!search && (
+              <button onClick={()=>{ setNewRep({ name:"", email:"", password:"", phone:"" }); setNewErr({}); setModal("create") }}
+                style={{ background:C.green, color:"#fff", border:"none", borderRadius:9, padding:"10px 22px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                + Add First Rep
               </button>
-            ))}
+            )}
+          </div>
+        ) : (
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+                {["Sales Rep","Email","Phone","Status","Last Login","Actions"].map(h=>(
+                  <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10.5, fontWeight:700, color:C.ink3 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((rep,i)=>(
+                <tr key={rep.id} style={{ borderBottom:i<filtered.length-1?`1px solid ${C.border}`:"none" }}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                  onMouseLeave={e=>e.currentTarget.style.background="#fff"}
+                >
+                  <td style={{ padding:"14px 16px" }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                      <Avatar name={rep.name} size={36} />
+                      <span style={{ fontSize:13, fontWeight:600, color:C.ink }}>{rep.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:12, color:C.ink2 }}>{rep.email}</span></td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:12, color:C.ink2 }}>{rep.phone||"—"}</span></td>
+                  <td style={{ padding:"14px 16px" }}><StatusBadge active={rep.is_active} /></td>
+                  <td style={{ padding:"14px 16px" }}>
+                    <span style={{ fontSize:11, color:C.ink3 }}>
+                      {rep.last_login ? new Date(rep.last_login).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "Never"}
+                    </span>
+                  </td>
+                  <td style={{ padding:"14px 16px" }}>
+                    <div style={{ display:"flex", gap:7 }}>
+                      <button onClick={()=>{ setSelected(rep); setModal("toggle") }}
+                        style={{ background:rep.is_active?`${C.red}12`:`${C.green}12`, border:`1px solid ${rep.is_active?C.red:C.green}25`, color:rep.is_active?C.red:C.green, borderRadius:7, padding:"5px 12px", fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                        {rep.is_active?"Deactivate":"Activate"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ── ADD REP MODAL ── */}
+      {modal==="create" && (
+        <Modal title="Add Sales Rep" onClose={()=>setModal(null)}>
+          <div style={{ background:C.greenL, border:`1px solid ${C.green}25`, borderRadius:10, padding:"10px 14px", marginBottom:18, fontSize:11.5, color:C.greenD, lineHeight:1.6 }}>
+            📧 A welcome email with login credentials will be sent to the rep automatically.
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 12px" }}>
-            <div style={{ gridColumn:"1/-1" }}>
-              <Field label="FULL NAME" placeholder="Ravi Kumar" icon="👤" value={newUser.name}
-                onChange={e=>{ setNewUser(u=>({...u,name:e.target.value})); setNewErrors(er=>({...er,name:""})) }} required />
-              {newErrors.name && <p style={{ fontSize:10,color:RED,marginTop:-8,marginBottom:8 }}>{newErrors.name}</p>}
-            </div>
-            <div style={{ gridColumn:"1/-1" }}>
-              <Field label="EMAIL" type="email" placeholder="ravi@gmail.com" icon="✉️" value={newUser.email}
-                onChange={e=>{ setNewUser(u=>({...u,email:e.target.value})); setNewErrors(er=>({...er,email:""})) }} required />
-              {newErrors.email && <p style={{ fontSize:10,color:RED,marginTop:-8,marginBottom:8 }}>{newErrors.email}</p>}
-            </div>
-            <Field label="PASSWORD" type="password" placeholder="Min 8 chars" icon="🔒" value={newUser.password}
-              onChange={e=>{ setNewUser(u=>({...u,password:e.target.value})); setNewErrors(er=>({...er,password:""})) }} required />
-            <Field label="PHONE" placeholder="9999900000" icon="📱" value={newUser.phone}
-              onChange={e=>setNewUser(u=>({...u,phone:e.target.value.replace(/\D/g,"")}))} required />
-            {newErrors.phone && <p style={{ fontSize:10,color:RED,marginTop:-8,marginBottom:8,gridColumn:"2" }}>{newErrors.phone}</p>}
-          </div>
-
-          {newUser.role==="dealer" && (
-            <Field label="DEALERSHIP NAME" placeholder="Sharma EV Motors" icon="🏪" value={newUser.dealership}
-              onChange={e=>setNewUser(u=>({...u,dealership:e.target.value}))} />
-          )}
-          <Field label="CITY" placeholder="Hyderabad" icon="📍" value={newUser.city}
-            onChange={e=>setNewUser(u=>({...u,city:e.target.value}))} />
-
-          {newErrors.password && <p style={{ fontSize:10,color:RED,marginBottom:8 }}>{newErrors.password}</p>}
-
-          <div style={{ background:BG, border:`1px solid ${BD}`, borderRadius:9, padding:"9px 12px", marginBottom:16, fontSize:11, color:I3, lineHeight:1.6 }}>
-            📧 A welcome email with login credentials will be sent automatically.
-          </div>
+          <Field label="FULL NAME" placeholder="Ravi Kumar" icon="👤"
+            value={newRep.name} error={newErr.name}
+            onChange={e=>{ setNewRep(r=>({...r,name:e.target.value})); setNewErr(er=>({...er,name:""})) }}
+          />
+          <Field label="EMAIL ADDRESS" type="email" placeholder="ravi@gmail.com" icon="✉️"
+            value={newRep.email} error={newErr.email}
+            onChange={e=>{ setNewRep(r=>({...r,email:e.target.value})); setNewErr(er=>({...er,email:""})) }}
+          />
+          <Field label="PHONE NUMBER" placeholder="9999911111" icon="📱"
+            value={newRep.phone}
+            onChange={e=>setNewRep(r=>({...r,phone:e.target.value.replace(/\D/g,"")}))}
+          />
+          <Field label="TEMPORARY PASSWORD" type="password" placeholder="Min 8 chars" icon="🔒"
+            value={newRep.password} error={newErr.password}
+            onChange={e=>{ setNewRep(r=>({...r,password:e.target.value})); setNewErr(er=>({...er,password:""})) }}
+          />
+          <p style={{ fontSize:10.5, color:C.ink3, marginBottom:18, lineHeight:1.5 }}>
+            💡 Tip: Use a simple temporary password. The rep can change it after first login.
+          </p>
 
           <div style={{ display:"flex", gap:10 }}>
-            <button onClick={()=>setModal(null)} style={{ flex:1, background:BG, border:`1px solid ${BD}`, color:I2, borderRadius:9, padding:"11px", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
-            <button onClick={handleCreate} disabled={saving} style={{ flex:2, background:saving?"#E5E7EB":G, color:saving?I3:"#fff", border:"none", borderRadius:9, padding:"11px", fontSize:12, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-              {saving ? <div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(0,0,0,0.15)",borderTopColor:"rgba(0,0,0,0.5)",animation:"evcrm-spin .7s linear infinite" }}/> : `Create ${newUser.role==="dealer"?"Dealer":"Rep"} Account →`}
+            <button onClick={()=>setModal(null)} style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:9, padding:"11px", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={handleCreate} disabled={saving}
+              style={{ flex:2, background:saving?"#E5E7EB":C.green, color:saving?C.ink3:"#fff", border:"none", borderRadius:9, padding:"11px", fontSize:12, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+              {saving ? <div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(0,0,0,0.15)",borderTopColor:"rgba(0,0,0,0.5)",animation:"evcrm-spin .7s linear infinite" }}/> : "Add to My Team →"}
             </button>
           </div>
         </Modal>
       )}
 
-      {/* ── TOGGLE ACTIVE MODAL ── */}
-      {modal==="confirm-toggle" && selected && (
-        <Modal title={selected.is_active?"Deactivate User":"Activate User"} onClose={()=>{ setModal(null); setSelected(null) }}>
+      {/* ── TOGGLE MODAL ── */}
+      {modal==="toggle" && selected && (
+        <Modal title={selected.is_active?"Deactivate Rep":"Activate Rep"} onClose={()=>{ setModal(null); setSelected(null) }}>
           <div style={{ textAlign:"center", padding:"10px 0 20px" }}>
-            <Avatar name={selected.name} color={selected.role==="dealer"?G:ORG} size={52} />
-            <div style={{ fontSize:15, fontWeight:700, color:INK, marginTop:12 }}>{selected.name}</div>
-            <div style={{ fontSize:12, color:I3, marginTop:4 }}>{selected.email}</div>
-            <div style={{ marginTop:16, fontSize:13, color:I2, lineHeight:1.7 }}>
+            <Avatar name={selected.name} size={52} />
+            <div style={{ fontSize:15, fontWeight:700, color:C.ink, marginTop:12 }}>{selected.name}</div>
+            <div style={{ fontSize:12, color:C.ink3, marginTop:4 }}>{selected.email}</div>
+            <div style={{ marginTop:14, fontSize:12, color:C.ink2, lineHeight:1.7, background:C.bg, borderRadius:10, padding:"10px 14px" }}>
               {selected.is_active
-                ? "This will prevent the user from logging in. You can reactivate anytime."
-                : "This will allow the user to log in and access the system."}
+                ? "This will prevent the rep from logging in. Their data is kept safe."
+                : "This will allow the rep to log in and access the system again."}
             </div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
-            <button onClick={()=>{ setModal(null); setSelected(null) }} style={{ flex:1, background:BG, border:`1px solid ${BD}`, color:I2, borderRadius:9, padding:"11px", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
-            <button onClick={()=>handleToggleActive(selected)} style={{ flex:2, background:selected.is_active?RED:G, color:"#fff", border:"none", borderRadius:9, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-              {selected.is_active?"Yes, Deactivate":"Yes, Activate"} →
+            <button onClick={()=>{ setModal(null); setSelected(null) }} style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:9, padding:"11px", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+            <button onClick={()=>handleToggle(selected)}
+              style={{ flex:2, background:selected.is_active?C.red:C.green, color:"#fff", border:"none", borderRadius:9, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              {selected.is_active?"Deactivate":"Activate"} {selected.name.split(" ")[0]} →
             </button>
           </div>
         </Modal>
@@ -340,13 +313,8 @@ export default function AdminPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:INK, color:"#fff", fontSize:12, fontWeight:700, padding:"10px 22px", borderRadius:24, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.25)", whiteSpace:"nowrap" }}>{toast}</div>
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:C.ink, color:"#fff", fontSize:12, fontWeight:700, padding:"10px 22px", borderRadius:24, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.25)", whiteSpace:"nowrap" }}>{toast}</div>
       )}
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
-        @keyframes evcrm-spin { to { transform: rotate(360deg) } }
-      `}</style>
-    </div>
+    </Shell>
   )
 }
