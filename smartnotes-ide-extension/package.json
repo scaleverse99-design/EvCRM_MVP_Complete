@@ -1,0 +1,159 @@
+{
+  "name": "smartnotes-ide-extension",
+  "displayName": "SmartNotes IDE Sync",
+  "description": "Seamlessly inject prior conversation context and capture notes in VS Code, Cursor, and Windsurf.",
+  "version": "1.0.0",
+  "publisher": "scaleverse",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "SmartNotes Configurations",
+      "properties": {
+        "smartnotes.backendUrl": {
+          "type": "string",
+          "default": "https://notes.socialcom.store",
+          "description": "Base URL of the SmartNotes server (e.g. http://localhost:3001 or https://notes.socialcom.store)."
+        },
+        "smartnotes.clientId": {
+          "type": "string",
+          "default": "notes",
+          "description": "SmartNotes Workspace / Client ID."
+        },
+        "smartnotes.showAllContext": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show all context chats in the sidebar, rather than isolating to the current project."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "smartnotes-contexts",
+          "title": "SmartNotes",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "smartnotes-contexts": [
+        {
+          "id": "smartnotes-contexts-view",
+          "name": "Synced AI Contexts",
+          "type": "tree"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "smartnotes.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "smartnotes.copy",
+        "title": "Copy Handoff Prompt",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "smartnotes.inject",
+        "title": "Inject into Editor",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "smartnotes.saveSelection",
+        "title": "SmartNotes: Save Selected Text"
+      },
+      {
+        "command": "smartnotes.openDetails",
+        "title": "Open Note Details"
+      },
+      {
+        "command": "smartnotes.syncCodebase",
+        "title": "SmartNotes: Sync Codebase",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "smartnotes.toggleShowAllContext",
+        "title": "SmartNotes: Toggle Show All Context",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "smartnotes.organizeLocalFiles",
+        "title": "SmartNotes: Organize Project Files",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "smartnotes.syncWorkspaceDocs",
+        "title": "SmartNotes: Sync Reference Docs",
+        "icon": "$(file-pdf)"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "smartnotes.copy",
+          "when": "view == smartnotes-contexts-view",
+          "group": "inline"
+        },
+        {
+          "command": "smartnotes.inject",
+          "when": "view == smartnotes-contexts-view",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "smartnotes.refresh",
+          "when": "view == smartnotes-contexts-view",
+          "group": "navigation@2"
+        },
+        {
+          "command": "smartnotes.syncCodebase",
+          "when": "view == smartnotes-contexts-view",
+          "group": "navigation@1"
+        },
+        {
+          "command": "smartnotes.toggleShowAllContext",
+          "when": "view == smartnotes-contexts-view",
+          "group": "navigation@3"
+        },
+        {
+          "command": "smartnotes.organizeLocalFiles",
+          "when": "view == smartnotes-contexts-view",
+          "group": "navigation@4"
+        },
+        {
+          "command": "smartnotes.syncWorkspaceDocs",
+          "when": "view == smartnotes-contexts-view",
+          "group": "navigation@5"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "smartnotes.saveSelection",
+          "group": "1_modification"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "^18.11.18",
+    "typescript": "^4.9.4"
+  }
+}
