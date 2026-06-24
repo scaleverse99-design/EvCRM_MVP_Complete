@@ -28568,12 +28568,6 @@ function App() {
 			children: "Loading AI Workspace..."
 		})]
 	});
-	if (!firebaseUser) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoginScreen, { onLogin: handleLogin });
-	if (notesLoaded && notes.length === 0 && !skippedOnboarding) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OnboardingWizard, {
-		geminiApiKey,
-		onComplete: handleOnboardingComplete,
-		onSkip: handleSkipOnboarding
-	});
 	if (window.location.pathname.includes("/pricing") || urlParams.has("pricing")) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "pricing-standalone-layout",
 		style: {
@@ -28656,6 +28650,12 @@ function App() {
 				})]
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CreditsBilling, { clientId })]
 		})
+	});
+	if (!firebaseUser) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LoginScreen, { onLogin: handleLogin });
+	if (notesLoaded && notes.length === 0 && !skippedOnboarding) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OnboardingWizard, {
+		geminiApiKey,
+		onComplete: handleOnboardingComplete,
+		onSkip: handleSkipOnboarding
 	});
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "app-layout",

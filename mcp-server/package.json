@@ -1,0 +1,22 @@
+{
+  "name": "@scaleverse/smart-notes-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol Server for Scaleverse SmartNotes",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "scaleverse-smart-notes": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
