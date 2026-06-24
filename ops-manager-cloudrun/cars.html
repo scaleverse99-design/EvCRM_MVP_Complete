@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV.CRM Auto | Premium Certified Vehicles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"DM Sans"', 'sans-serif'] },
+                    colors: {
+                        slate: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' },
+                        emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        .glass-panel { background: #1e293b; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .emerald-glow { box-shadow: 0 0 20px rgba(16, 185, 129, 0.25); }
+        .modal { transition: opacity 0.2s ease, visibility 0.2s ease; }
+        .modal.hidden { opacity: 0; visibility: hidden; pointer-events: none; display: flex !important; }
+        .modal:not(.hidden) { opacity: 1; visibility: visible; pointer-events: auto; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/10 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0, behavior:'smooth'})">
+                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-black text-lg">E</div>
+                <span class="text-xl font-black tracking-tight text-white">EV.CRM <span class="text-emerald-500 text-[10px] uppercase tracking-widest ml-1 font-bold">Auto</span></span>
+            </div>
+            <div class="hidden md:flex space-x-8 text-sm font-bold text-slate-300">
+                <a href="#inventory" class="hover:text-emerald-400 transition">Buy Car</a>
+                <button onclick="openModal('sellModal')" class="hover:text-emerald-400 transition">Sell Car</button>
+                <button onclick="openModal('financeModal')" class="hover:text-emerald-400 transition">Financing</button>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="openModal('contactModal')" class="hidden md:block px-5 py-2 rounded-xl border border-white/10 text-sm font-bold hover:bg-white/5 transition text-slate-300">Contact</button>
+                <button onclick="openModal('loginModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold transition text-sm emerald-glow">Dealer Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-20 pb-32 px-6 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <!-- Sleek abstract background replacing the plain image for a more 'built' feel -->
+            <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/20 blur-[120px] rounded-full"></div>
+            <div class="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[100px] rounded-full"></div>
+        </div>
+        <div class="max-w-7xl mx-auto relative z-10 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs tracking-widest uppercase mb-6">
+                    160-Point Inspected & Certified
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6 tracking-tight">
+                    Drive with <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600">Absolute Certainty.</span>
+                </h1>
+                <p class="text-slate-400 text-lg mb-10 max-w-lg leading-relaxed">
+                    Premium pre-owned vehicles. Transparent pricing, zero hidden fees, and a 7-day no-questions-asked return policy.
+                </p>
+                <div class="glass-panel p-2 rounded-2xl flex flex-col sm:flex-row gap-2 max-w-xl">
+                    <div class="flex-1 flex items-center px-4">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" id="searchInput" placeholder="Search brands, models..." class="bg-transparent w-full px-3 py-3 outline-none border-none text-white placeholder-slate-500 font-medium">
+                    </div>
+                    <button onclick="filterInventory()" class="bg-emerald-500 hover:bg-emerald-600 px-8 py-3 rounded-xl font-bold transition text-white">Search</button>
+                </div>
+                
+                <div class="flex gap-8 mt-10">
+                    <div>
+                        <div class="text-2xl font-black text-white">4.9/5</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Customer Rating</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-black text-white">10k+</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Cars Sold</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-black text-white">1 Yr</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Free Warranty</div>
+                    </div>
+                </div>
+            </div>
+            <div class="relative hidden md:block">
+                <img src="car_showroom_hero_1777315549786.png" class="rounded-3xl border border-white/10 shadow-2xl relative z-10" alt="Showroom">
+                <div class="absolute inset-0 bg-gradient-to-tr from-slate-900 via-transparent to-transparent z-20 rounded-3xl"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Inventory Section -->
+    <section id="inventory" class="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-10 w-full">
+        
+        <!-- Sidebar Filters -->
+        <aside class="w-full lg:w-72 flex-shrink-0">
+            <div class="glass-panel p-6 rounded-3xl sticky top-28">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-lg">Filter Search</h3>
+                    <button onclick="resetFilters()" class="text-xs font-bold text-emerald-500 hover:text-emerald-400">Reset</button>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Price Range -->
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-3 block">Budget Range</label>
+                        <select id="priceFilter" onchange="filterInventory()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 outline-none focus:border-emerald-500 text-sm font-medium transition">
+                            <option value="all">Any Price</option>
+                            <option value="0-500000">Under ₹5 Lakhs</option>
+                            <option value="500000-1000000">₹5L - ₹10 Lakhs</option>
+                            <option value="1000000-2000000">₹10L - ₹20 Lakhs</option>
+                            <option value="2000000-plus">Above ₹20 Lakhs</option>
+                        </select>
+                    </div>
+
+                    <!-- Body Type -->
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-3 block">Body Type</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="checkbox" class="peer hidden" value="SUV" onchange="filterInventory()" name="bodyType">
+                                <div class="px-3 py-2 rounded-xl border border-slate-700 text-center text-sm font-bold peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 transition">SUV</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" class="peer hidden" value="Sedan" onchange="filterInventory()" name="bodyType">
+                                <div class="px-3 py-2 rounded-xl border border-slate-700 text-center text-sm font-bold peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 transition">Sedan</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" class="peer hidden" value="Hatchback" onchange="filterInventory()" name="bodyType">
+                                <div class="px-3 py-2 rounded-xl border border-slate-700 text-center text-sm font-bold peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 transition">Hatchback</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" class="peer hidden" value="Luxury" onchange="filterInventory()" name="bodyType">
+                                <div class="px-3 py-2 rounded-xl border border-slate-700 text-center text-sm font-bold peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500 peer-checked:text-emerald-400 transition">Luxury</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Fuel Type -->
+                    <div>
+                        <label class="text-xs text-slate-400 uppercase font-bold tracking-widest mb-3 block">Fuel Type</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3 cursor-pointer group">
+                                <div class="w-5 h-5 rounded border border-slate-600 flex items-center justify-center group-hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="peer hidden" value="Petrol" onchange="filterInventory()" name="fuelType">
+                                    <div class="w-3 h-3 bg-emerald-500 rounded-sm hidden peer-checked:block"></div>
+                                </div>
+                                <span class="text-sm font-medium text-slate-300">Petrol</span>
+                            </label>
+                            <label class="flex items-center space-x-3 cursor-pointer group">
+                                <div class="w-5 h-5 rounded border border-slate-600 flex items-center justify-center group-hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="peer hidden" value="Diesel" onchange="filterInventory()" name="fuelType">
+                                    <div class="w-3 h-3 bg-emerald-500 rounded-sm hidden peer-checked:block"></div>
+                                </div>
+                                <span class="text-sm font-medium text-slate-300">Diesel</span>
+                            </label>
+                            <label class="flex items-center space-x-3 cursor-pointer group">
+                                <div class="w-5 h-5 rounded border border-slate-600 flex items-center justify-center group-hover:border-emerald-500 transition">
+                                    <input type="checkbox" class="peer hidden" value="EV" onchange="filterInventory()" name="fuelType">
+                                    <div class="w-3 h-3 bg-emerald-500 rounded-sm hidden peer-checked:block"></div>
+                                </div>
+                                <span class="text-sm font-medium text-slate-300">Electric (EV)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Grid -->
+        <div class="flex-1">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black">Available Cars <span id="carCount" class="text-slate-500 text-lg font-medium ml-2">(0)</span></h2>
+                <select class="bg-slate-800 border border-slate-700 rounded-lg p-2 outline-none text-sm font-bold text-slate-300">
+                    <option>Sort: Recommended</option>
+                    <option>Price: Low to High</option>
+                    <option>Price: High to Low</option>
+                    <option>Year: Newest First</option>
+                </select>
+            </div>
+
+            <div id="loading" class="flex flex-col items-center justify-center py-32 glass-panel rounded-3xl">
+                <div class="w-12 h-12 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-400 font-bold tracking-wide text-sm">SYNCING WITH MASTER LEDGER...</p>
+            </div>
+
+            <div id="noResults" class="hidden flex-col items-center justify-center py-32 glass-panel rounded-3xl text-center px-6">
+                <div class="text-4xl mb-4">🔍</div>
+                <h3 class="text-xl font-bold mb-2">No cars found</h3>
+                <p class="text-slate-400 text-sm">Try adjusting your filters or search term to see more results.</p>
+                <button onclick="resetFilters()" class="mt-6 px-6 py-2 bg-slate-800 border border-slate-700 rounded-xl font-bold text-sm hover:bg-slate-700 transition">Clear All Filters</button>
+            </div>
+
+            <div id="carGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-white/10 bg-[#020617] py-12 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-6 h-6 bg-emerald-500 rounded flex items-center justify-center text-white font-black text-xs">E</div>
+                <span class="font-black tracking-tight text-white">EV.CRM Auto</span>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">© 2026 EV.CRM Sovereign Dealerships. All rights reserved.</p>
+            <div class="flex gap-4 text-sm font-bold text-slate-400">
+                <a href="#" class="hover:text-emerald-400 transition">Privacy</a>
+                <a href="#" class="hover:text-emerald-400 transition">Terms</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- MODALS (Hidden by default)                 -->
+    <!-- ========================================== -->
+
+    <!-- Book Test Drive Modal -->
+    <div id="bookingModal" class="modal fixed inset-0 bg-[#020617]/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full p-8 rounded-[2rem] relative border border-emerald-500/20">
+            <button onclick="closeModal('bookingModal')" class="absolute top-6 right-6 text-slate-400 hover:text-white transition bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+            <div class="w-12 h-12 bg-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl mb-6">🔑</div>
+            <h2 class="text-2xl font-black mb-1">Book Test Drive</h2>
+            <p id="modalCarTitle" class="text-emerald-400 text-sm font-bold mb-6 bg-emerald-500/10 inline-block px-3 py-1 rounded-lg">Select a car</p>
+            
+            <form id="bookingForm" class="space-y-4" onsubmit="handleFormSubmit(event, 'bookingModal', 'Test Drive Requested')">
+                <input type="hidden" id="carId">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Full Name</label>
+                    <input type="text" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-emerald-500 font-medium transition text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Phone Number</label>
+                    <input type="tel" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-emerald-500 font-medium transition text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Preferred Date</label>
+                    <input type="date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-emerald-500 font-medium transition text-sm text-slate-300">
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 py-4 rounded-xl font-black transition emerald-glow text-white mt-2">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sell Car Modal -->
+    <div id="sellModal" class="modal fixed inset-0 bg-[#020617]/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full p-8 rounded-[2rem] relative">
+            <button onclick="closeModal('sellModal')" class="absolute top-6 right-6 text-slate-400 hover:text-white transition bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+            <div class="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-6">💰</div>
+            <h2 class="text-2xl font-black mb-2">Sell Your Car</h2>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Get a professional valuation in minutes. Best market prices guaranteed.</p>
+            
+            <form class="space-y-4" onsubmit="handleFormSubmit(event, 'sellModal', 'Valuation Request Sent')">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Brand</label>
+                        <input type="text" placeholder="e.g. Honda" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-blue-500 font-medium transition text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Model</label>
+                        <input type="text" placeholder="e.g. City" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-blue-500 font-medium transition text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Reg Year</label>
+                        <input type="number" placeholder="2020" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-blue-500 font-medium transition text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">KM Driven</label>
+                        <input type="text" placeholder="45,000" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-blue-500 font-medium transition text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Your Phone</label>
+                    <input type="tel" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-blue-500 font-medium transition text-sm">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 py-4 rounded-xl font-black transition shadow-[0_0_20px_rgba(59,130,246,0.3)] text-white mt-2">Get Valuation</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Finance Modal -->
+    <div id="financeModal" class="modal fixed inset-0 bg-[#020617]/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full p-8 rounded-[2rem] relative">
+            <button onclick="closeModal('financeModal')" class="absolute top-6 right-6 text-slate-400 hover:text-white transition bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+            <div class="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center text-2xl mb-6">📉</div>
+            <h2 class="text-2xl font-black mb-2">Easy Financing</h2>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Check your EMI eligibility instantly. Zero impact on credit score.</p>
+            
+            <form class="space-y-4" onsubmit="handleFormSubmit(event, 'financeModal', 'Finance Inquiry Submitted')">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Loan Amount Needed (₹)</label>
+                    <input type="number" placeholder="500000" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-purple-500 font-medium transition text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Monthly Income (₹)</label>
+                    <input type="number" placeholder="60000" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-purple-500 font-medium transition text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Phone Number</label>
+                    <input type="tel" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 outline-none focus:border-purple-500 font-medium transition text-sm">
+                </div>
+                <button type="submit" class="w-full bg-purple-500 hover:bg-purple-600 py-4 rounded-xl font-black transition shadow-[0_0_20px_rgba(168,85,247,0.3)] text-white mt-2">Check Eligibility</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generic Modals (Contact & Login) -->
+    <div id="contactModal" class="modal fixed inset-0 bg-[#020617]/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full p-8 rounded-[2rem] relative text-center">
+            <button onclick="closeModal('contactModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-500/20">📞</div>
+            <h2 class="text-xl font-black mb-2">24/7 Support</h2>
+            <p class="text-slate-400 text-sm mb-6">Call us directly to speak with an EV.CRM auto expert.</p>
+            <a href="tel:18001234567" class="block w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-xl font-bold transition text-emerald-400 border border-slate-700 hover:border-emerald-500/50">1800-123-4567</a>
+        </div>
+    </div>
+
+    <div id="loginModal" class="modal fixed inset-0 bg-[#020617]/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full p-8 rounded-[2rem] relative text-center">
+            <button onclick="closeModal('loginModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+            <div class="w-12 h-12 bg-slate-800 text-white rounded-xl flex items-center justify-center text-xl mx-auto mb-4 border border-slate-700">🔒</div>
+            <h2 class="text-xl font-black mb-2">Restricted Access</h2>
+            <p class="text-slate-400 text-sm mb-6">This area is for verified dealership personnel only.</p>
+            <input type="password" placeholder="Access PIN" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 outline-none focus:border-emerald-500 text-center tracking-[0.5em] mb-4 text-lg">
+            <button onclick="handleFormSubmit(event, 'loginModal', 'Invalid PIN')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold transition text-white">Authenticate</button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- LOGIC & DATA                               -->
+    <!-- ========================================== -->
+    <script>
+        // CONFIGURATION
+        const OPS_MANAGER_URL = 'https://ops-manager-socialcom-828582778646.us-central1.run.app';
+        const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; 
+        
+        let inventory = [];
+
+        // UI Helpers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        function handleFormSubmit(e, modalId, successMessage) {
+            if(e) e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]') || e.target;
+            const originalText = btn.innerText;
+            btn.innerText = 'Processing...';
+            btn.disabled = true;
+            
+            // Simulate network request for standalone modals to feel real
+            setTimeout(() => {
+                alert(successMessage || 'Request submitted successfully!');
+                btn.innerText = originalText;
+                btn.disabled = false;
+                if(modalId) closeModal(modalId);
+                if(e.target.reset) e.target.reset();
+            }, 800);
+        }
+
+        // INITIAL LOAD
+        async function loadInventory() {
+            try {
+                // We fetch the 'Inventory' tab from your Google Sheet
+                const response = await fetch(`${OPS_MANAGER_URL}/?path=shadow_Inventory.json`);
+                if (!response.ok) throw new Error('Could not load inventory');
+                
+                inventory = await response.json();
+                renderInventory(inventory);
+            } catch (err) {
+                console.warn("Using fallback data due to:", err.message);
+                // Premium Fallback demo data to make it look "human populated"
+                inventory = [
+                    { id: 1, brand: 'Mercedes-Benz', model: 'GLC 220d', year: 2023, km: '12,400', fuel: 'Diesel', price: '64,50,000', image: 'car_suv_listing_1777315566154.png', type: 'SUV', owner: '1st', location: 'Delhi NCR' },
+                    { id: 2, brand: 'BMW', model: '3 Series 330Li', year: 2022, km: '18,200', fuel: 'Petrol', price: '48,80,000', image: 'car_sedan_listing_1777315579975.png', type: 'Sedan', owner: '1st', location: 'Mumbai' },
+                    { id: 3, brand: 'Audi', model: 'Q5 Technology', year: 2021, km: '34,000', fuel: 'Petrol', price: '42,00,000', image: 'car_suv_listing_1777315566154.png', type: 'SUV', owner: '2nd', location: 'Bangalore' },
+                    { id: 4, brand: 'Tata', model: 'Nexon EV Max', year: 2023, km: '8,500', fuel: 'EV', price: '16,20,000', image: 'car_showroom_hero_1777315549786.png', type: 'SUV', owner: '1st', location: 'Pune' }
+                ];
+                renderInventory(inventory);
+            }
+        }
+
+        function formatPrice(priceStr) {
+            // Converts string like '64,50,000' or number to formatted ₹ string
+            if(!priceStr) return 'TBA';
+            return '₹' + priceStr.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function renderInventory(data) {
+            document.getElementById('loading').classList.add('hidden');
+            const grid = document.getElementById('carGrid');
+            const noRes = document.getElementById('noResults');
+            
+            document.getElementById('carCount').innerText = `(${data.length})`;
+
+            if (data.length === 0) {
+                grid.classList.add('hidden');
+                noRes.classList.remove('hidden');
+                return;
+            }
+
+            noRes.classList.add('hidden');
+            grid.classList.remove('hidden');
+            
+            grid.innerHTML = data.map(car => `
+                <div class="glass-panel rounded-3xl overflow-hidden card-hover group flex flex-col h-full">
+                    <div class="relative h-56 overflow-hidden bg-slate-800">
+                        <img src="${car.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700 opacity-90 group-hover:opacity-100" alt="${car.brand} ${car.model}" onerror="this.src='https://via.placeholder.com/600x400/1e293b/94a3b8?text=Photo+Unavailable'">
+                        
+                        <div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur border border-white/10 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Verified
+                        </div>
+                        <div class="absolute top-4 right-4 bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-lg">
+                            ${car.year}
+                        </div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">${car.brand}</div>
+                                <h3 class="text-xl font-black text-white leading-tight">${car.model}</h3>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mt-4 mb-6">
+                            <div class="bg-slate-900/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                                <div class="text-slate-500">🛣️</div>
+                                <div>
+                                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Driven</div>
+                                    <div class="text-sm font-bold text-slate-300">${car.km} km</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                                <div class="text-slate-500">⛽</div>
+                                <div>
+                                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fuel</div>
+                                    <div class="text-sm font-bold text-slate-300">${car.fuel}</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                                <div class="text-slate-500">👤</div>
+                                <div>
+                                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Owner</div>
+                                    <div class="text-sm font-bold text-slate-300">${car.owner || '1st'}</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                                <div class="text-slate-500">📍</div>
+                                <div>
+                                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Location</div>
+                                    <div class="text-sm font-bold text-slate-300 truncate w-16" title="${car.location || 'Hub'}">${car.location || 'Hub'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-0.5">Fixed Price</div>
+                                <span class="text-2xl font-black text-white">${formatPrice(car.price)}</span>
+                            </div>
+                            <button onclick="openBooking('${car.id}', '${car.brand} ${car.model}')" class="bg-slate-800 border border-slate-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-500 hover:border-emerald-500 transition emerald-glow group">
+                                <span class="group-hover:hidden">View Details</span>
+                                <span class="hidden group-hover:inline">Book Drive</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterInventory() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const priceVal = document.getElementById('priceFilter').value;
+            
+            // Get checked body types
+            const bodyCheckboxes = document.querySelectorAll('input[name="bodyType"]:checked');
+            const selectedBodyTypes = Array.from(bodyCheckboxes).map(cb => cb.value.toLowerCase());
+
+            // Get checked fuel types
+            const fuelCheckboxes = document.querySelectorAll('input[name="fuelType"]:checked');
+            const selectedFuelTypes = Array.from(fuelCheckboxes).map(cb => cb.value.toLowerCase());
+            
+            let filtered = inventory.filter(car => {
+                const matchesSearch = car.brand.toLowerCase().includes(searchTerm) || car.model.toLowerCase().includes(searchTerm);
+                
+                // Price logic
+                let matchesPrice = true;
+                const priceNum = parseInt(car.price.toString().replace(/,/g, ''));
+                if (priceVal === '0-500000') matchesPrice = priceNum < 500000;
+                if (priceVal === '500000-1000000') matchesPrice = priceNum >= 500000 && priceNum <= 1000000;
+                if (priceVal === '1000000-2000000') matchesPrice = priceNum > 1000000 && priceNum <= 2000000;
+                if (priceVal === '2000000-plus') matchesPrice = priceNum > 2000000;
+
+                // Body logic
+                const matchesBody = selectedBodyTypes.length === 0 || selectedBodyTypes.includes(car.type?.toLowerCase());
+                
+                // Fuel logic
+                const matchesFuel = selectedFuelTypes.length === 0 || selectedFuelTypes.includes(car.fuel?.toLowerCase());
+
+                return matchesSearch && matchesPrice && matchesBody && matchesFuel;
+            });
+            
+            renderInventory(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('priceFilter').value = 'all';
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            filterInventory();
+        }
+
+        // SPECIFIC MODAL LOGIC FOR BOOKING
+        function openBooking(id, title) {
+            document.getElementById('carId').value = id;
+            document.getElementById('modalCarTitle').innerText = title;
+            openModal('bookingModal');
+        }
+
+        // Initialize with a slight delay to show loading state nicely
+        setTimeout(loadInventory, 800);
+
+        // Enter key search binding
+        document.getElementById('searchInput').addEventListener('keyup', (e) => {
+            if(e.key === 'Enter') filterInventory();
+        });
+    </script>
+</body>
+</html>

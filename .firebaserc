@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "ev-crm-realtime"
+  },
+  "targets": {
+    "ev-crm-realtime": {
+      "hosting": {
+        "main": [
+          "ev-crm-realtime"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

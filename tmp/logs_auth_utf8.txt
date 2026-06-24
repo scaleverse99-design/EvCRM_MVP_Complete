@@ -1,0 +1,20 @@
+﻿2026-04-04T18:20:11.866254Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T18:20:12.824589Z W ssrevcrmrealtime: 
+2026-04-04T18:20:12.923503Z ? ssrevcrmrealtime: [Firebase Admin] Initializing Firebase Admin... { projectId: 'ev-crm-realtime', hasKey: true }
+
+2026-04-04T18:20:15.012428Z I ssrevcrmrealtime: 
+2026-04-04T18:20:24.207230Z W ssrevcrmrealtime: 
+2026-04-04T18:20:24.562669Z W ssrevcrmrealtime: 
+2026-04-04T18:20:25.344373Z W ssrevcrmrealtime: 
+2026-04-04T18:20:25.755355Z W ssrevcrmrealtime: 
+2026-04-04T18:20:31.660209Z I ssrevcrmrealtime: 
+2026-04-04T18:20:38.249600Z W ssrevcrmrealtime: 
+2026-04-04T18:20:38.286182Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 uncaughtException listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+2026-04-04T18:20:38.603773Z W ssrevcrmrealtime: 
+2026-04-04T18:20:38.632467Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unhandledRejection listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+2026-04-04T18:20:39.142901Z W ssrevcrmrealtime: 
+2026-04-04T18:20:39.546037Z W ssrevcrmrealtime: 

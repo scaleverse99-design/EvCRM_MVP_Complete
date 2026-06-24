@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sess_1778093743984",
+    "user_id": "user_founder_001",
+    "token_hash": "74ceb4a5a25b20bc6f86a0680c87197267e7f13aae35acab4dbf6677e067e9ca",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+    "expires_at": "2026-05-13T18:55:43.984Z",
+    "created_at": "2026-05-06T18:55:43.984Z"
+  },
+  {
+    "id": "sess_1778093849998",
+    "user_id": "user_founder_001",
+    "token_hash": "3ff1a36abbd31bff1f4ad1016fd48d8894c6553806a6d8cf5d49374fef3ba70e",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+    "expires_at": "2026-05-13T18:57:29.998Z",
+    "created_at": "2026-05-06T18:57:29.998Z"
+  }
+]

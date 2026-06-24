@@ -1,0 +1,485 @@
+﻿[2026-04-03T20:58:27.564Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[2026-04-03T20:58:27.566Z] > authorizing via signed-in user (scaleverse99@gmail.com)
+[2026-04-03T20:58:27.566Z] [iam] checking project ev-crm-realtime for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[2026-04-03T20:58:27.569Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:27.570Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:27.573Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions [none]
+[2026-04-03T20:58:27.573Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions  x-goog-user-project=ev-crm-realtime
+[2026-04-03T20:58:27.573Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[2026-04-03T20:58:29.019Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions 200
+[2026-04-03T20:58:29.019Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[2026-04-03T20:58:29.021Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:29.021Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:29.022Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime [none]
+[2026-04-03T20:58:29.739Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime 200
+[2026-04-03T20:58:29.739Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime {"projectId":"ev-crm-realtime","projectNumber":"541020907374","displayName":"ev-crm-realtime","name":"projects/ev-crm-realtime","resources":{"hostingSite":"ev-crm-realtime"},"state":"ACTIVE","etag":"1_b70ab6c2-69c1-44ae-a4aa-4ef3ff32e9b7"}
+[2026-04-03T20:58:35.146Z] defaultcredentials: writing to file C:\Users\balaj\AppData\Roaming\firebase\scaleverse99_gmail_com_application_default_credentials.json
+[2026-04-03T20:58:35.154Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:35.155Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:35.155Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites pageToken=&pageSize=10
+[2026-04-03T20:58:36.388Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites 200
+[2026-04-03T20:58:36.389Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites {"sites":[{"name":"projects/ev-crm-realtime/sites/ev-crm-realtime","defaultUrl":"https://ev-crm-realtime.web.app","type":"DEFAULT_SITE"}]}
+[2026-04-03T20:58:36.390Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:36.390Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:36.390Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites 
+[2026-04-03T20:58:37.307Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites 200
+[2026-04-03T20:58:37.307Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites {"sites":[{"name":"projects/ev-crm-realtime/sites/ev-crm-realtime","defaultUrl":"https://ev-crm-realtime.web.app","type":"DEFAULT_SITE"}]}
+[2026-04-03T20:58:37.308Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:37.308Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:37.308Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime/webApps/-/config [none]
+[2026-04-03T20:58:38.432Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime/webApps/-/config 200
+[2026-04-03T20:58:38.432Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ev-crm-realtime/webApps/-/config {"projectId":"ev-crm-realtime","appId":"1:541020907374:web:af6fe378425606d8d5837f","storageBucket":"ev-crm-realtime.firebasestorage.app","apiKey":"AIzaSyCUDXTaFBSsUSYoeRZ34L83DwVqtIliHIY","authDomain":"ev-crm-realtime.firebaseapp.com","messagingSenderId":"541020907374","measurementId":"G-HT3PD7MVSD","projectNumber":"541020907374","version":"2"}
+node.exe : No Firebase 
+app associated with site 
+ev-crm-realtime, 
+injecting project default 
+config.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (N  
+  o Firebase app...defa   
+ ult config.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  You can link a Web app 
+to a Hosting site here htt
+ps://console.firebase.goog
+le.com/project/ev-crm-real
+time/settings/general/web
+
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[2026-04-03T20:58:52.092Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:52.092Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:58:52.093Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime [none]
+[2026-04-03T20:58:53.285Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime 200
+[2026-04-03T20:58:53.285Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime {"name":"projects/ev-crm-realtime/sites/ev-crm-realtime","defaultUrl":"https://ev-crm-realtime.web.app","type":"DEFAULT_SITE"}
+  Γû▓ Next.js 14.2.5
+
+  - Environments: .env.local
+
+
+   Creating an optimized production build ...
+
+ Γ£ô Compiled successfully
+
+   Linting and checking validity of types ...
+
+   Collecting page data ...
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+Firebase Admin credentials missing. Skipping initialization (likely build-time).
+
+   Generating static pages (0/24) ...
+
+   Generating static pages (6/24) 
+
+   Generating static pages (12/24) 
+
+   Generating static pages (18/24) 
+
+ Γ£ô Generating static pages (24/24)
+
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+
+
+Route (app)                              Size     First Load JS
+Γöî Γùï /                                    137 B          87.3 kB
+Γö£ Γùï /_not-found                          871 B            88 kB
+Γö£ Γùï /admin                               7.83 kB         102 kB
+Γö£ ╞Æ /api/admin/activity                  0 B                0 B
+Γö£ ╞Æ /api/admin/dealers                   0 B                0 B
+Γö£ ╞Æ /api/admin/stats                     0 B                0 B
+Γö£ ╞Æ /api/admin/users                     0 B                0 B
+Γö£ ╞Æ /api/auth/login                      0 B                0 B
+Γö£ ╞Æ /api/auth/logout                     0 B                0 B
+Γö£ ╞Æ /api/auth/me                         0 B                0 B
+Γö£ ╞Æ /api/auth/request-otp                0 B                0 B
+Γö£ ╞Æ /api/auth/reset-password             0 B                0 B
+Γö£ ╞Æ /api/auth/verify-otp                 0 B                0 B
+Γö£ ╞Æ /api/calls/log                       0 B                0 B
+Γö£ ╞Æ /api/leads/score                     0 B                0 B
+Γö£ ╞Æ /api/quotes/generate-pdf             0 B                0 B
+Γö£ ╞Æ /api/register                        0 B                0 B
+Γö£ ╞Æ /api/whatsapp/send                   0 B                0 B
+Γö£ Γùï /assign                              3.59 kB         216 kB
+Γö£ Γùï /attendance                          3.4 kB          216 kB
+Γö£ Γùï /buildprice                          2.07 kB        98.8 kB
+Γö£ Γùï /command                             2.39 kB        99.1 kB
+Γö£ Γùï /connect                             2.25 kB         215 kB
+Γö£ Γùï /dealer                              3.85 kB         217 kB
+Γö£ Γùï /dealer/attendance                   2.11 kB         215 kB
+Γö£ Γùï /leads                               4.49 kB         217 kB
+Γö£ ╞Æ /leads/[id]                          2.17 kB        98.9 kB
+Γö£ Γùï /leads/new                           2.4 kB          215 kB
+Γö£ Γùï /login                               5.08 kB        92.2 kB
+Γö£ Γùï /market-research                     8.93 kB         103 kB
+Γö£ Γùï /mygarage                            2.67 kB        95.6 kB
+Γö£ Γùï /profile                             2.07 kB         215 kB
+Γö£ Γùï /queue                               3.27 kB         216 kB
+Γö£ Γùï /quotepro                            3.1 kB          216 kB
+Γö£ Γùï /register                            4.44 kB        91.6 kB
+Γö£ Γùï /showroom                            6.67 kB         218 kB
+Γö£ Γùï /team                                1.94 kB        96.1 kB
+Γöö Γùï /vehicles                            2.84 kB         218 kB
++ First Load JS shared by all            87.1 kB
+  Γö£ chunks/23-322ea0b58ab64b00.js        31.5 kB
+  Γö£ chunks/fd9d1056-7e3ed040e4ba57fc.js  53.6 kB
+  Γöö other shared chunks (total)          1.95 kB
+
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+
+Building a Cloud Function to run this application. This is needed due to:
+ ΓÇó non-static component /leads/[id]/page
+ ΓÇó non-static component /api/auth/logout/route
+ ΓÇó non-static component /api/admin/stats/route
+ ΓÇó non-static component /api/auth/login/route
+ ΓÇó non-static component /api/admin/dealers/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/auth/verify-otp/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/auth/reset-password/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/admin/users/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/auth/request-otp/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/quotes/generate-pdf/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/auth/me/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/calls/log/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/register/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/leads/score/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/whatsapp/send/route
+[2026-04-03T20:59:43.631Z]  ΓÇó non-static component /api/admin/activity/route
+
+[2026-04-03T20:59:53.585Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:59:53.585Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T20:59:53.585Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime [none]
+[2026-04-03T20:59:54.721Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime 200
+[2026-04-03T20:59:54.721Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/ev-crm-realtime/sites/ev-crm-realtime {"name":"projects/ev-crm-realtime/sites/ev-crm-realtime","defaultUrl":"https://ev-crm-realtime.web.app","type":"DEFAULT_SITE"}
+!  This integration expects Node version 20, 22, or 24. You're running version 25, problems may be encountered. 
+npm warn EBADENGINE 
+Unsupported engine {
+npm warn EBADENGINE   
+package: 'evcrm@1.0.0',
+npm warn EBADENGINE   
+required: { node: '24' },
+npm warn EBADENGINE   
+current: { node: 
+'v25.1.0', npm: '11.6.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE 
+Unsupported engine {
+npm warn EBADENGINE   
+package: 'firebase-framewo
+rks@0.11.8',
+npm warn EBADENGINE   
+required: { node: 
+'^16.0.0 || ^18.0.0 || 
+^20.0.0 || ^22.0.0' },
+npm warn EBADENGINE   
+current: { node: 
+'v25.1.0', npm: '11.6.2' }
+npm warn EBADENGINE }
+
+up to date in 2s
+
+62 packages are looking for funding
+  run `npm fund` for details
+[2026-04-03T21:00:03.634Z] [web frameworks] effective firebase.json:  {
+  "hosting": [
+    {
+      "source": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "frameworksBackend": {
+        "region": "us-central1"
+      },
+      "site": "ev-crm-realtime",
+      "rewrites": [
+        {
+          "source": "**",
+          "function": {
+            "functionId": "ssrevcrmrealtime",
+            "region": "us-central1",
+            "pinTag": true
+          }
+        }
+      ],
+      "redirects": [],
+      "headers": [
+        {
+          "source": "/_not-found",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/_not-found/layout,_N_T_/_not-found/page,_N_T_/_not-found"
+            }
+          ]
+        },
+        {
+          "source": "/buildprice",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/buildprice/layout,_N_T_/buildprice/page,_N_T_/buildprice"
+            }
+          ]
+        },
+        {
+          "source": "/dealer/attendance",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/dealer/layout,_N_T_/dealer/attendance/layout,_N_T_/dealer/attendance/page,_N_T_/dealer/attendance"
+            }
+          ]
+        },
+        {
+          "source": "/command",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/command/layout,_N_T_/command/page,_N_T_/command"
+            }
+          ]
+        },
+        {
+          "source": "/assign",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/assign/layout,_N_T_/assign/page,_N_T_/assign"
+            }
+          ]
+        },
+        {
+          "source": "/admin",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/admin/layout,_N_T_/admin/page,_N_T_/admin"
+            }
+          ]
+        },
+        {
+          "source": "/attendance",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/attendance/layout,_N_T_/attendance/page,_N_T_/attendance"
+            }
+          ]
+        },
+        {
+          "source": "/connect",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/connect/layout,_N_T_/connect/page,_N_T_/connect"
+            }
+          ]
+        },
+        {
+          "source": "/leads",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/leads/layout,_N_T_/leads/page,_N_T_/leads"
+            }
+          ]
+        },
+        {
+          "source": "/profile",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/profile/layout,_N_T_/profile/page,_N_T_/profile"
+            }
+          ]
+        },
+        {
+          "source": "/market-research",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/market-research/layout,_N_T_/market-research/page,_N_T_/market-research"
+            }
+          ]
+        },
+        {
+          "source": "/dealer",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/dealer/layout,_N_T_/dealer/page,_N_T_/dealer"
+            }
+          ]
+        },
+        {
+          "source": "/register",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/register/layout,_N_T_/register/page,_N_T_/register"
+            }
+          ]
+        },
+        {
+          "source": "/login",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/login/layout,_N_T_/login/page,_N_T_/login"
+            }
+          ]
+        },
+        {
+          "source": "/mygarage",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/mygarage/layout,_N_T_/mygarage/page,_N_T_/mygarage"
+            }
+          ]
+        },
+        {
+          "source": "/queue",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/queue/layout,_N_T_/queue/page,_N_T_/queue"
+            }
+          ]
+        },
+        {
+          "source": "/quotepro",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/quotepro/layout,_N_T_/quotepro/page,_N_T_/quotepro"
+            }
+          ]
+        },
+        {
+          "source": "/leads/new",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/leads/layout,_N_T_/leads/new/layout,_N_T_/leads/new/page,_N_T_/leads/new"
+            }
+          ]
+        },
+        {
+          "source": "/vehicles",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/vehicles/layout,_N_T_/vehicles/page,_N_T_/vehicles"
+            }
+          ]
+        },
+        {
+          "source": "/showroom",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/showroom/layout,_N_T_/showroom/page,_N_T_/showroom"
+            }
+          ]
+        },
+        {
+          "source": "/team",
+          "headers": [
+            {
+              "key": "x-next-cache-tags",
+              "value": "_N_T_/layout,_N_T_/team/layout,_N_T_/team/page,_N_T_/team"
+            }
+          ]
+        },
+        {
+          "source": "**/*.[jt]s",
+          "headers": [
+            {
+              "key": "Set-Cookie",
+              "value": "__FIREBASE_DEFAULTS__=eyJjb25maWciOnsicHJvamVjdElkIjoiZXYtY3JtLXJlYWx0aW1lIiwiYXBwSWQiOiIxOjU0MTAyMDkwNzM3NDp3ZWI6YWY2ZmUzNzg0MjU2MDZkOGQ1ODM3ZiIsInN0b3JhZ2VCdWNrZXQiOiJldi1jcm0tcmVhbHRpbWUuZmlyZWJhc2VzdG9yYWdlLmFwcCIsImFwaUtleSI6IkFJemFTeUNVRFhUYUZCU3NVU1lvZVJaMzRMODNEd1ZxdElsaUhJWSIsImF1dGhEb21haW4iOiJldi1jcm0tcmVhbHRpbWUuZmlyZWJhc2VhcHAuY29tIiwibWVzc2FnaW5nU2VuZGVySWQiOiI1NDEwMjA5MDczNzQiLCJtZWFzdXJlbWVudElkIjoiRy1IVDNQRDdNVlNEIiwicHJvamVjdE51bWJlciI6IjU0MTAyMDkwNzM3NCIsInZlcnNpb24iOiIyIn0sIl9hdXRoVG9rZW5TeW5jVVJMIjoiL19fc2Vzc2lvbiJ9; SameSite=Strict; Expires=2028-02-27T07:40:03.633Z; Path=/;"
+            }
+          ]
+        }
+      ],
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "public": ".firebase\\ev-crm-realtime\\hosting",
+      "webFramework": "next_ssr"
+    }
+  ],
+  "functions": [
+    {
+      "source": ".firebase\\ev-crm-realtime\\functions",
+      "codebase": "firebase-frameworks-ev-crm-realtime"
+    }
+  ]
+}
+[2026-04-03T21:00:03.636Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[2026-04-03T21:00:03.637Z] > authorizing via signed-in user (scaleverse99@gmail.com)
+[2026-04-03T21:00:03.638Z] [iam] checking project ev-crm-realtime for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[2026-04-03T21:00:03.639Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T21:00:03.639Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T21:00:03.640Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions [none]
+[2026-04-03T21:00:03.640Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions  x-goog-user-project=ev-crm-realtime
+[2026-04-03T21:00:03.640Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[2026-04-03T21:00:05.080Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions 200
+[2026-04-03T21:00:05.080Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ev-crm-realtime:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[2026-04-03T21:00:05.082Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T21:00:05.082Z] Checked if tokens are valid: true, expires at: 1775252519354
+[2026-04-03T21:00:05.082Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/ev-crm-realtime/locations/-/functions [none]
+[2026-04-03T21:00:05.371Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/ev-crm-realtime/locations/-/functions 403
+[2026-04-03T21:00:05.372Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/ev-crm-realtime/locations/-/functions {"error":{"code":403,"message":"Cloud Functions API has not been used in project ev-crm-realtime before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"consumer":"projects/ev-crm-realtime","serviceTitle":"Cloud Functions API","containerInfo":"ev-crm-realtime","service":"cloudfunctions.googleapis.com","activationUrl":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Functions API has not been used in project ev-crm-realtime before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime"}]}]}}
+[2026-04-03T21:00:05.374Z] [functions] failed to list functions for ev-crm-realtime
+[2026-04-03T21:00:05.374Z] [functions] Request to https://cloudfunctions.googleapis.com/v1/projects/ev-crm-realtime/locations/-/functions had HTTP Error: 403, Cloud Functions API has not been used in project ev-crm-realtime before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[2026-04-03T21:00:05.673Z] FirebaseError: Request to https://cloudfunctions.googleapis.com/v1/projects/ev-crm-realtime/locations/-/functions had HTTP Error: 403, Cloud Functions API has not been used in project ev-crm-realtime before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudfunctions.googleapis.com/overview?project=ev-crm-realtime then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (C:\Users\balaj\Downloads\EvCRM_MVP_Complete\evcrm-mvp\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\balaj\Downloads\EvCRM_MVP_Complete\evcrm-mvp\node_modules\firebase-tools\lib\apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Error: Failed to list functions for ev-crm-realtime

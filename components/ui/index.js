@@ -299,3 +299,43 @@ export function EmptyState({ icon, title, sub, btnLabel, onBtn }) {
     </div>
   )
 }
+// ── Slider ────────────────────────────────────────────────────────────
+export function Slider({ label, min=0, max=100, step=1, value, onChange, unit="" }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: C.ink3, textTransform: "uppercase" }}>{label}</label>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.greenD }}>{value}{unit}</div>
+      </div>
+      <input 
+        type="range" min={min} max={max} step={step} value={value} 
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ width: "100%", accentColor: C.green, cursor: "pointer" }}
+      />
+    </div>
+  )
+}
+
+// ── Tool Modal Wrapper ──────────────────────────────────────────────
+export function ToolModal({ title, children, onClose }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "#fff", zIndex: 3000, 
+      display: "flex", flexDirection: "column",
+      animation: "evcrm-slide-up 0.3s ease-out"
+    }}>
+      <header style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+           <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 24, cursor: "pointer" }}>✕</button>
+           <h2 style={{ fontSize: 18, fontWeight: 900 }}>{title}</h2>
+        </div>
+        <Btn variant="secondary" onClick={onClose}>Close</Btn>
+      </header>
+      <div style={{ flex: 1, overflowY: "auto", padding: "40px 20px" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,82 @@
+﻿2026-04-04T10:06:52.751701Z ? ssrevcrmrealtime: [POST /api/register] The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T10:06:55.585072Z E ssrevcrmrealtime: 
+2026-04-04T10:06:55.626173Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 uncaughtException listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+2026-04-04T10:06:55.627197Z ? ssrevcrmrealtime: [POST /api/register] The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T10:09:10.792402Z W ssrevcrmrealtime: 
+2026-04-04T10:09:10.837821Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unhandledRejection listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+2026-04-04T10:43:44.840305Z W ssrevcrmrealtime: 
+2026-04-04T10:43:44.861796Z I ssrevcrmrealtime: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-04-04T10:43:46.296544Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T10:43:47.290307Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T10:44:18.111167Z W ssrevcrmrealtime: 
+2026-04-04T10:52:28.323876Z W ssrevcrmrealtime: 
+2026-04-04T10:52:28.962522Z W ssrevcrmrealtime: 
+2026-04-04T10:52:34.303273Z W ssrevcrmrealtime: 
+2026-04-04T10:52:41.608709Z W ssrevcrmrealtime: 
+2026-04-04T10:54:33.285001Z E ssrevcrmrealtime: 
+2026-04-04T10:54:33.612787Z ? ssrevcrmrealtime: [POST /api/register] The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:04:54.474084340Z N ssrevcrmrealtime: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"scaleverse99@gmail.com","principalSubject":"user:scaleverse99@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"183.82.106.156","callerSuppliedUserAgent":"FirebaseCLI/15.13.0 agent-name/antigravity,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-04-04T11:04:53.542985596Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","request":{"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","service_config.direct_vpc_network_interface","service_config.direct_vpc_egress","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","function":{"name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","service_config":{"available_memory":"256Mi","available_cpu":"1","max_instance_request_concurrency":80},"build_config":{"entry_point":"ssrevcrmrealtime","source":{},"runtime":"nodejs24"},"labels":{"firebase-functions-codebase":"firebase-frameworks-ev-crm-realtime","deployment-tool":"cli-firebase","firebase-functions-hash":"4985625cd6ea878ed90848b3135c81a4dcb3ec29"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-04-04T11:06:37.606193Z I ssrevcrmrealtime: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-04-04T11:06:40.280289Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T11:06:44.195838286Z N ssrevcrmrealtime: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"scaleverse99@gmail.com","principalSubject":"user:scaleverse99@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","response":{"labels":{"firebase-functions-hash":"4985625cd6ea878ed90848b3135c81a4dcb3ec29","firebase-functions-codebase":"firebase-frameworks-ev-crm-realtime","deployment-tool":"cli-firebase"},"environment":"GEN_2","state":"ACTIVE","serviceConfig":{"uri":"https://ssrevcrmrealtime-u6gvew2yxa-uc.a.run.app","maxInstanceCount":20,"timeoutSeconds":60,"availableMemory":"256Mi","serviceAccountEmail":"541020907374-compute@developer.gserviceaccount.com","revision":"ssrevcrmrealtime-00015-dam","availableCpu":"1","allTrafficOnLatestRevision":true,"ingressSettings":"ALLOW_ALL","maxInstanceRequestConcurrency":80},"buildConfig":{"source":{},"entryPoint":"ssrevcrmrealtime","runtime":"nodejs24","automaticUpdatePolicy":{},"dockerRepository":"projects/ev-crm-realtime/locations/us-central1/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/ev-crm-realtime/serviceAccounts/541020907374-compute@developer.gserviceaccount.com"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","updateTime":"2026-04-04T11:04:54.458205294Z","createTime":"2026-04-03T22:10:52.619555671Z","url":"https://us-central1-ev-crm-realtime.cloudfunctions.net/ssrevcrmrealtime","satisfiesPzi":true},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-04-04T11:30:20.501775Z W ssrevcrmrealtime: 
+2026-04-04T11:30:20.540421Z I ssrevcrmrealtime: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-04-04T11:30:22.186474Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T11:30:23.118825Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T11:33:20.783870Z W ssrevcrmrealtime: 
+2026-04-04T11:33:21.526973Z W ssrevcrmrealtime: 
+2026-04-04T11:33:50.631350Z E ssrevcrmrealtime: 
+2026-04-04T11:33:50.811318Z ? ssrevcrmrealtime: [Firebase Admin] CRITICAL FAILURE: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:33:50.890108Z ? ssrevcrmrealtime: [Firebase Admin] CRITICAL FAILURE: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:33:50.890260Z ? ssrevcrmrealtime: [POST /api/register] The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:34:06.740102Z W ssrevcrmrealtime: 
+2026-04-04T11:34:11.839643Z W ssrevcrmrealtime: 
+2026-04-04T11:34:14.525239Z W ssrevcrmrealtime: 
+2026-04-04T11:35:06.196977Z E ssrevcrmrealtime: 
+2026-04-04T11:35:06.235597Z ? ssrevcrmrealtime: [Firebase Admin] CRITICAL FAILURE: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:35:06.236280Z ? ssrevcrmrealtime: [POST /api/register] The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+
+2026-04-04T11:57:20.115059Z W ssrevcrmrealtime: 
+2026-04-04T11:57:20.128546Z I ssrevcrmrealtime: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-04-04T11:57:21.711816Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T11:57:22.778331Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T11:57:23.679033Z W ssrevcrmrealtime: 
+2026-04-04T11:58:04.721383229Z N ssrevcrmrealtime: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"scaleverse99@gmail.com","principalSubject":"user:scaleverse99@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"183.82.106.156","callerSuppliedUserAgent":"FirebaseCLI/15.13.0 agent-name/antigravity,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-04-04T11:58:03.783281110Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","request":{"function":{"service_config":{"max_instance_request_concurrency":80,"available_memory":"256Mi","available_cpu":"1"},"build_config":{"runtime":"nodejs24","source":{},"entry_point":"ssrevcrmrealtime"},"labels":{"firebase-functions-codebase":"firebase-frameworks-ev-crm-realtime","deployment-tool":"cli-firebase","firebase-functions-hash":"36c8e62202056a502ade29d8eb8f15bf42e6a3de"},"name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime"},"update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","service_config.direct_vpc_network_interface","service_config.direct_vpc_egress","labels"]},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest"},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-04-04T11:59:55.022355Z I ssrevcrmrealtime: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-04-04T11:59:57.390380Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T12:00:00.689081523Z N ssrevcrmrealtime: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"scaleverse99@gmail.com","principalSubject":"user:scaleverse99@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","response":{"satisfiesPzi":true,"state":"ACTIVE","name":"projects/ev-crm-realtime/locations/us-central1/functions/ssrevcrmrealtime","updateTime":"2026-04-04T11:58:04.708965238Z","labels":{"firebase-functions-hash":"36c8e62202056a502ade29d8eb8f15bf42e6a3de","deployment-tool":"cli-firebase","firebase-functions-codebase":"firebase-frameworks-ev-crm-realtime"},"serviceConfig":{"allTrafficOnLatestRevision":true,"serviceAccountEmail":"541020907374-compute@developer.gserviceaccount.com","revision":"ssrevcrmrealtime-00017-koj","ingressSettings":"ALLOW_ALL","maxInstanceCount":20,"maxInstanceRequestConcurrency":80,"uri":"https://ssrevcrmrealtime-u6gvew2yxa-uc.a.run.app","timeoutSeconds":60,"availableCpu":"1","availableMemory":"256Mi"},"buildConfig":{"source":{},"entryPoint":"ssrevcrmrealtime","runtime":"nodejs24","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"dockerRepository":"projects/ev-crm-realtime/locations/us-central1/repositories/gcf-artifacts","serviceAccount":"projects/ev-crm-realtime/serviceAccounts/541020907374-compute@developer.gserviceaccount.com"},"createTime":"2026-04-03T22:10:52.619555671Z","environment":"GEN_2","url":"https://us-central1-ev-crm-realtime.cloudfunctions.net/ssrevcrmrealtime","@type":"type.googleapis.com/google.cloud.functions.v2.Function"},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-04-04T12:02:21.051738Z W ssrevcrmrealtime: 
+2026-04-04T12:02:21.803314Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T12:02:56.755557Z E ssrevcrmrealtime: 
+2026-04-04T12:02:56.927590Z ? ssrevcrmrealtime:  Γ¿» FirebaseAppError: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+    at AppStore.getApp (/workspace/node_modules/firebase-admin/lib/app/lifecycle.js:79:19)
+    at FirebaseNamespaceInternals.app (/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:54:35)
+    at FirebaseNamespace.app (/workspace/node_modules/firebase-admin/lib/app/firebase-namespace.js:256:30)
+    at /workspace/.next/server/chunks/7964.js:82:178
+    at 50294 (/workspace/.next/server/chunks/7964.js:82:1026)
+    at t (/workspace/.next/server/webpack-runtime.js:1:143)
+    at 84191 (/workspace/.next/server/chunks/7964.js:1:1558)
+    at t (/workspace/.next/server/webpack-runtime.js:1:143)
+    at 14429 (/workspace/.next/server/app/api/register/route.js:1:1244)
+    at t (/workspace/.next/server/webpack-runtime.js:1:143) {
+  errorInfo: {
+    code: 'app/no-app',
+    message: 'The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.'
+  },
+  codePrefix: 'app'
+}
+

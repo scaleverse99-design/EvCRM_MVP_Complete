@@ -1,0 +1,11 @@
+# .gcloudignore
+# Prevent gcloud from uploading unnecessary files or scanning parent directories
+.git
+.gitignore
+node_modules/
+AndroidStudioProjects/
+Documents/
+Pictures/
+Downloads/
+Desktop/
+.gemini/

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "p1",
+    "dealerId": "hyd-d01",
+    "dealerName": "Deccan EV Hub Hitech",
+    "title": "₹5,000 Flat Off on Ather 450X",
+    "expiry": "2026-04-30T23:59:59Z",
+    "code": "DECCAN5K",
+    "district": "Hyderabad"
+  },
+  {
+    "id": "p2",
+    "dealerId": "hyd-d02",
+    "dealerName": "Nizam Mobility Jubilee",
+    "title": "Free Accessories Kit Worth ₹3k",
+    "expiry": "2026-04-20T23:59:59Z",
+    "code": "NIZAMFREE",
+    "district": "Hyderabad"
+  },
+  {
+    "id": "p3",
+    "dealerId": "viz-d01",
+    "dealerName": "Vizag Smart EV Garage",
+    "title": "0% Downpayment on Bajaj Chetak",
+    "expiry": "2026-04-15T23:59:59Z",
+    "code": "VIZAG0DP",
+    "district": "Visakhapatnam"
+  }
+]

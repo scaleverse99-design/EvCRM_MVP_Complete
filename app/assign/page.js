@@ -1,9 +1,10 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Shell from "../../components/layout/Shell"
 import { Card, Avatar, StatusPill, Tag, ProgressBar, Toggle, Btn, Modal, Toast } from "../../components/ui"
 import { C, SOURCES, fmt } from "../../lib/constants"
-import { getLeads, getReps, getAssignmentHistory } from "../../lib/data"
+import { db } from "../../lib/firebase-client"
+import { collection, query, onSnapshot, updateDoc, doc, serverTimestamp, where } from "firebase/firestore"
 
 const METHODS = [
   { id:"roundrobin",  icon:"🔄", label:"Round Robin",      desc:"Equal distribution across active reps"      },
@@ -15,29 +16,80 @@ const METHODS = [
 export default function AssignPage() {
   const [autoOn,     setAutoOn]     = useState(true)
   const [method,     setMethod]     = useState("roundrobin")
-  const [unassigned, setUnassigned] = useState(getLeads().filter(l => !l.repId))
+  const [leads,      setLeads]      = useState([])
+  const [reps,       setReps]       = useState([])
+  const [loading,    setLoading]    = useState(true)
   const [assignModal,setAssignModal]= useState(null)
   const [selectedRep,setSelectedRep]= useState(null)
   const [toast,      setToast]      = useState("")
   const [sourceRules,setSourceRules]= useState({ walkin:"manual", whatsapp:"auto", instagram:"auto", showroom:"auto", oem:"auto", referral:"manual", facebook:"auto" })
 
-  const reps    = getReps()
-  const history = getAssignmentHistory()
+  useEffect(() => {
+    // 1. Listen for Unassigned Leads
+    const qL = query(collection(db, "evcrm_leads"))
+    const unsubL = onSnapshot(qL, (snap) => {
+      setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+
+    // 2. Listen for Reps
+    const qR = query(collection(db, "evcrm_reps"))
+    const unsubR = onSnapshot(qR, (snap) => {
+      setReps(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+
+    return () => { unsubL(); unsubR() }
+  }, [])
+
+  const unassigned = leads.filter(l => !l.repId)
+  const history    = leads.filter(l => l.repId).sort((a,b) => (b.assigned_at||0) > (a.assigned_at||0) ? 1 : -1).slice(0, 5).map(l => ({
+    ...l,
+    rep: reps.find(r => r.id === l.repId)?.name || "Unknown",
+    time: l.assigned_at ? new Date(l.assigned_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "Recently"
+  }))
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500) }
 
-  const doAssign = (leadId, repId) => {
-    const rep  = reps.find(r => r.id === repId)
-    const lead = unassigned.find(l => l.id === leadId)
-    setUnassigned(prev => prev.filter(l => l.id !== leadId))
-    setAssignModal(null); setSelectedRep(null)
-    showToast(`✅ ${lead?.name?.split(" ")[0]} → ${rep?.name?.split(" ")[0]}`)
+  const doAssign = async (leadId, repId) => {
+    try {
+      const leadRef = doc(db, "evcrm_leads", leadId)
+      await updateDoc(leadRef, {
+        repId,
+        assigned_at: new Date().toISOString(),
+        assignment_method: "Manual"
+      })
+      
+      const rep  = reps.find(r => r.id === repId)
+      const lead = unassigned.find(l => l.id === leadId)
+      setAssignModal(null); setSelectedRep(null)
+      showToast(`✅ ${lead?.name?.split(" ")[0]} → ${rep?.name?.split(" ")[0]}`)
+    } catch (err) {
+      console.error("Assignment error:", err)
+      showToast("❌ Failed to assign")
+    }
   }
 
-  const autoAssignAll = () => {
-    const count = unassigned.length
-    setUnassigned([])
-    showToast(`⚡ ${count} leads auto-assigned!`)
+  const autoAssignAll = async () => {
+    const list = [...unassigned]
+    const availableReps = reps.filter(r => r.status === "available")
+    if (availableReps.length === 0) {
+      showToast("❌ No reps available for auto-assign")
+      return
+    }
+
+    showToast(`⚡ Auto-assigning ${list.length} leads...`)
+    
+    for (let i = 0; i < list.length; i++) {
+        const lead = list[i]
+        const rep = availableReps[i % availableReps.length]
+        const leadRef = doc(db, "evcrm_leads", lead.id)
+        await updateDoc(leadRef, {
+            repId: rep.id,
+            assigned_at: new Date().toISOString(),
+            assignment_method: "Auto"
+        })
+    }
+    showToast(`⚡ ${list.length} leads auto-assigned!`)
   }
 
   return (

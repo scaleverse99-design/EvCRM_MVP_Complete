@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import Shell from "../../../components/layout/Shell"
 import { Card, Input, Btn } from "../../../components/ui"
 import { C, SOURCES } from "../../../lib/constants"
+import { db } from "../../../lib/firebase-client"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 
 const VEHICLES = ["Tata Nexon EV Max","Ather 450X Gen 3","Ola S1 Pro","TVS iQube ST","Bajaj Chetak Premium","Okaya Faast F4","Hero Optima CX"]
 
@@ -16,15 +18,30 @@ export default function NewLeadPage() {
 
   const f = (k) => (e) => setForm(p=>({...p,[k]:e.target.value}))
 
-  const save = () => {
+   const save = async () => {
     const e = {}
     if (!form.name.trim())           e.name    = "Name is required"
     if (form.phone.length < 10)      e.phone   = "Valid 10-digit number required"
     if (!form.vehicle)               e.vehicle = "Select a vehicle"
     if (!form.source)                e.source  = "Select lead source"
     if (Object.keys(e).length) { setErrors(e); return }
+    
     setSaving(true)
-    setTimeout(()=>{ setSaving(false); setSaved(true) }, 1400)
+    try {
+      await addDoc(collection(db, "evcrm_leads"), {
+        ...form,
+        status: "NEW",
+        score: Math.floor(Math.random() * 40) + 50, // Mock AI score initially
+        created_at: new Date().toISOString(),
+        timestamp: serverTimestamp()
+      })
+      setSaved(true)
+    } catch (err) {
+      console.error("Save lead error:", err)
+      setErrors({ global: "Failed to save lead. Please try again." })
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (saved) return (

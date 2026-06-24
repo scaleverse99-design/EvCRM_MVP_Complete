@@ -1,0 +1,7 @@
+{
+  "Telangana": ["Hyderabad", "Rangareddy", "Medchal-Malkajggiri", "Warangal", "Nizamabad", "Khammam"],
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati"],
+  "Karnataka": ["Bangalore Urban", "Bangalore Rural", "Mysore", "Hubli-Dharwad"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik"],
+  "Delhi": ["New Delhi", "North Delhi", "South Delhi", "West Delhi"]
+}

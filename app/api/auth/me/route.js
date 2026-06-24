@@ -28,6 +28,8 @@ export async function GET(req) {
         role:       user.role,
         name:       user.name,
         dealership: user.dealership,
+        opsmanager_url: process.env.OPSMANAGER_URL,
+        opsmanager_token: process.env.OPSMANAGER_TOKEN,
       }
     })
 

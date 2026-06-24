@@ -88,6 +88,7 @@ export async function POST(req) {
 
     // ── 9. Set secure HttpOnly cookie ────────────────────────────
     const response = ok({
+      token,
       user: {
         id:         user.id,
         email:      user.email,

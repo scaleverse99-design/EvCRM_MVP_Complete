@@ -1,0 +1,89 @@
+[
+  {
+    "id": "476ac9f550a44c1d32d87ef21691eee2",
+    "title": "Real-World EV Battery Lifespan in India: What Owners Need to Know",
+    "summary": "As India accelerates its electric vehicle adoption, understanding the real-world longevity of EV batteries is critical for informed purchasing and fleet management. This analysis draws on current Indian market data, showcasing key vehicle models and their battery performance under real-world conditions.",
+    "body_html": "The Indian EV landscape is rapidly evolving, with a growing number of consumers turning to electric mobility for sustainability and cost savings. However, the true test lies in how long these batteries last in the diverse Indian terrain. Our comprehensive review, based on recent ownership trends and expert evaluations, highlights critical insights into battery durability across popular models.",
+    "slug": "indian-ev-battery-performance",
+    "featured_image_url": "https://images.unsplash.com/photo-1617788130012-02ba71c2a0c8?auto=format&fit=crop&q=80&w=800",
+    "source_name": "EVCRM Editorial",
+    "category": "EV Ownership & Battery Care",
+    "tags": [
+      "EV battery lifespan",
+      "Indian EV owners",
+      "EV ownership advice",
+      "battery performance India"
+    ],
+    "state": "India",
+    "publishedAt": "2026-05-07T11:35:47.178Z",
+    "type": "blog"
+  },
+  {
+    "id": "10a56075f6fcaa79e84d2b6b368d450a",
+    "title": "Tata and JSW Group Commit Nearly $1 bn to EV and Battery R&D, Targeting Reduced Dependence on China",
+    "summary": "The Tata Group’s battery arm Agratas and JSW Motors will together invest close to $1 billion in domestic electric‑vehicle and battery research centres. The move aims to build indigenous IP and manufacturing capability as China tightens technology‑transfer controls.",
+    "body_html": "<p>In a coordinated push to insulate India’s EV ecosystem from tightening Chinese export controls, the Tata Group and JSW Group have announced a joint investment of almost $1 billion in research and development.</p>\n<h2>Agratas to Lead Battery Innovation with $400 mn in Bengaluru</h2>\n<p>Through its battery subsidiary Agratas Ltd., Tata will pour more than $400 million into a state‑of‑the‑art R&amp;D campus in Bengaluru. The facility will focus on next‑generation chemistries such as lithium‑iron‑phosphate (LFP) and lithium‑manganese‑iron‑phosphate (LMFP), targeting lower‑cost, high‑stability cells for both EVs and stationary storage. While Agratas currently licences nickel‑manganese‑cobalt (NMC) technology from South Korea, the new centre is designed to create proprietary cell designs that can replace Chinese‑sourced modules.</p>\n<h2>JSW Motors Allocates $500 mn to a Maharashtra Research Hub</h2>\n<p>JSW Motors, the passenger‑vehicle arm of the JSW Group, will invest at least $500 million over the next five‑to‑six years in a dedicated research hub in Maharashtra. The centre will specialise in localisation of globally sourced vehicle platforms, development of in‑house software stacks, and connected‑car technologies adapted to Indian road conditions and cost structures.</p>\n<h2>Strategic Implications for the Indian Auto Industry</h2>\n<p>Both programmes reflect a broader reassessment within India’s automotive sector, where firms that built EV roadmaps around Chinese supply chains now face heightened regulatory scrutiny and supply‑chain volatility. By fostering home‑grown battery chemistries and vehicle software, Tata and JSW aim to secure long‑term self‑reliance, reduce import exposure, and align with the government’s “Make in India” vision for critical mobility technologies.</p>\n<p>Analysts expect the combined R&amp;D spend to accelerate domestically produced cell capacity, potentially adding several gigawatt‑hours of battery output by the early 2030s, and to catalyse a wave of indigenous EV component suppliers.</p>",
+    "slug": "tata-jsw-invest-near-1bn-ev-battery-rd-india-self-reliance",
+    "featured_image_url": "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&q=80&w=800",
+    "source_name": "Economic Times Auto",
+    "category": "Auto Technology",
+    "tags": [
+      "Tata Group",
+      "JSW Group",
+      "Electric Vehicle R&D",
+      "Battery Technology Investment",
+      "China Technology Dependence",
+      "India Battery R&D",
+      "EV Manufacturing",
+      "Make in India"
+    ],
+    "state": "India",
+    "publishedAt": "2026-05-07T11:35:25.582Z",
+    "type": "news"
+  },
+  {
+    "id": {
+      "url_hash": "476ac9f550a44c1d32d87ef21691eee2",
+      "title": "Powering India's Future: EV Battery Lifespans and Ownership Insights",
+      "source_url": "internal://daily-blog",
+      "source_name": "EVCRM Editorial"
+    },
+    "title": "Powering India's Future: EV Battery Lifespans and Ownership Insights",
+    "summary": "India's electric vehicle market is undergoing transformation, with real-world data revealing that EV batteries typically last 7-10 years under optimal conditions. Ownership challenges, regional charging variability, and climate impacts necessitate careful planning for both consumers and fleet managers.",
+    "body_html": "India's EV journey hinges on balancing technological promise with practical realities. As ownership trends evolve, understanding battery degradation rates specific to regional charging patterns becomes critical. Regional factors like monsoon seasons affecting charging efficiency and state-specific incentives shape ownership strategies. Meanwhile, India's growing infrastructure, though uneven, promises long-term viability for sustained adoption.",
+    "source_name": "EVCRM Editorial",
+    "category": "Energy",
+    "tags": [
+      "EVBattery",
+      "India",
+      "Sustainability"
+    ],
+    "publishedAt": "2026-05-07T11:25:18.163Z",
+    "type": "blog"
+  },
+  {
+    "id": {
+      "url_hash": "10a56075f6fcaa79e84d2b6b368d450a",
+      "title": "Tata, JSW Group plan nearly $1 billion EV, battery R&amp;D push to cut China dependence: Report",
+      "source_url": "https://auto.economictimes.indiatimes.com/news/auto-technology/tata-and-jsw-group-invest-nearly-1-billion-in-ev-and-battery-rd-to-reduce-china-dependence/130888084",
+      "source_name": "Economic Times Auto"
+    },
+    "title": "Tata and JSW Group Unveil $1B EV and Battery R&D Push to Bolster India's Self-Reliance",
+    "summary": "Tata and JSW Group are collectively investing nearly $1 billion in electric vehicle and battery research to reduce reliance on Chinese technology amid tightening global supply chain controls. This strategic shift underscores India's push for indigenous innovation in critical mobility sectors.",
+    "body_html": "<h2>Strategic Investment in Domestic Capabilities</h2><p>The $1 billion investment by Tata Group and JSW Group marks a pivotal move toward reducing India's dependence on Chinese battery and EV technology. This initiative aligns with the country's broader vision for self-reliance in advanced mobility solutions.</p><h3>Tata's Agratas: $400M in Next-Gen Battery R&D</h3><p>Agratas Ltd., Tata's battery division, is establishing a state-of-the-art R&D facility in Bengaluru focused on lithium iron phosphate (LFP) and lithium manganese iron phosphate chemistries. This $400 million investment aims to develop cost-effective, domestically produced battery cells, replacing current reliance on South Korean NMC technology.</p><h3>JSW Motors' $500M Research Hub</h3><p>JSW Motors plans to allocate $500 million over six years to a Maharashtra-based research center. The hub will prioritize localizing global vehicle technologies, developing proprietary software, and advancing connected vehicle systems tailored to Indian infrastructure and cost structures.</p><h3>Industry-Wide Reassessment</h3><p>These investments reflect a sector-wide shift as Indian automakers confront regulatory barriers and supply chain uncertainties in China. Companies are now prioritizing in-house IP development and local manufacturing to mitigate risks from Beijing's selective technology transfer policies.</p><p>With LFP batteries gaining global traction for their affordability and energy storage potential, India's R&D efforts could position it as a key player in sustainable mobility innovation.</p>",
+    "source_name": "Economic Times Auto",
+    "category": "Auto Technology",
+    "tags": [
+      "Tata Group",
+      "JSW Group",
+      "EV R&D",
+      "Battery Technology",
+      "China Dependence",
+      "India Self-Reliance",
+      "LFP Batteries",
+      "Automotive Innovation"
+    ],
+    "publishedAt": "2026-05-07T11:24:42.292Z",
+    "type": "news"
+  }
+]

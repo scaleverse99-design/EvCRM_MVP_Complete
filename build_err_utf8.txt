@@ -1,0 +1,72 @@
+﻿
+> evcrm@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.5
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+node.exe : Failed to 
+compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (F  
+  ailed to compile.:Str   
+ ing) [], RemoteExcept    
+ion
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+./lib/ops-proxy.js
+Module not found: Can't 
+resolve './firebase'
+
+https://nextjs.org/docs/me
+ssages/module-not-found
+
+Import trace for 
+requested module:
+./lib/data.js
+./app/best-ev/[slug]/page.
+js
+
+./app/api/ops/provision/ro
+ute.js
+Module not found: Can't 
+resolve 'googleapis'
+
+https://nextjs.org/docs/me
+ssages/module-not-found
+
+./app/api/ops/test/route.j
+s
+Module not found: Can't 
+resolve 'googleapis'
+
+https://nextjs.org/docs/me
+ssages/module-not-found
+
+./lib/ops-provisioner.js
+Module not found: Can't 
+resolve 'googleapis'
+
+https://nextjs.org/docs/me
+ssages/module-not-found
+
+Import trace for 
+requested module:
+./app/api/ops/provision/ro
+ute.js
+
+
+> Build failed because of 
+webpack errors

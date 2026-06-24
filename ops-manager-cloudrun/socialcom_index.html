@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialCom — Sovereign Website Development Agency</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #ffffff; }
+        .hero-gradient { background: radial-gradient(circle at 50% 50%, #f1f5f9 0%, #ffffff 100%); }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .btn-premium { background: #000; color: #fff; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="text-slate-950">
+
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="text-2xl font-black tracking-tighter">SocialCom<span class="text-indigo-600">.</span></div>
+            <div class="hidden md:flex gap-10 text-sm font-bold text-slate-500">
+                <a href="#services">Services</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#vision">The Vision</a>
+            </div>
+            <a href="#contact" class="px-6 py-2.5 btn-premium rounded-full text-xs font-black uppercase tracking-widest">Get a Quote</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero-gradient pt-40 pb-24 px-6 text-center">
+        <div class="max-w-4xl mx-auto">
+            <div class="inline-block px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">World's First Sovereign Web Agency</div>
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
+                Build Premium. <br/> <span class="text-indigo-600">Own Everything.</span>
+            </h1>
+            <p class="text-xl text-slate-500 max-w-2xl mx-auto mb-12">
+                We build high-performance websites that run entirely on your private Google infrastructure. **Zero monthly server costs. 100% Data Sovereignty.**
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <button class="px-10 py-5 btn-premium rounded-2xl font-bold text-lg">Start Building</button>
+                <button class="px-10 py-5 bg-white border-2 border-slate-100 rounded-2xl font-bold text-lg hover:bg-slate-50 transition">View Showcases</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="p-10 bg-slate-50 rounded-3xl">
+                    <div class="text-4xl mb-6">🚀</div>
+                    <h3 class="text-2xl font-black mb-4">Sovereign Hosting</h3>
+                    <p class="text-slate-500 leading-relaxed">Stop paying AWS/Vercel. We host your dynamic site on your Google Account with unlimited bandwidth and zero monthly fees.</p>
+                </div>
+                <div class="p-10 bg-slate-50 rounded-3xl">
+                    <div class="text-4xl mb-6">📊</div>
+                    <h3 class="text-2xl font-black mb-4">Sheet-Powered CRM</h3>
+                    <p class="text-slate-500 leading-relaxed">Manage your entire business database directly in Google Sheets. Simple, powerful, and private to you.</p>
+                </div>
+                <div class="p-10 bg-slate-50 rounded-3xl">
+                    <div class="text-4xl mb-6">⚡</div>
+                    <h3 class="text-2xl font-black mb-4">Shadow Cache Tech</h3>
+                    <p class="text-slate-500 leading-relaxed">Our proprietary tech ensures your site loads in sub-50ms by leveraging Google's global edge infrastructure.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="py-32 px-6 bg-slate-950 text-white rounded-[40px] md:rounded-[80px] mx-4">
+        <div class="max-w-7xl mx-auto text-center mb-20">
+            <h2 class="text-4xl md:text-6xl font-black tracking-tight mb-6">Ready to Go Sovereign?</h2>
+            <p class="text-slate-400">Transparent pricing. One-time setup. Forever yours.</p>
+        </div>
+
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- STARTER -->
+            <div class="p-10 border border-slate-800 rounded-3xl hover:border-indigo-500 transition">
+                <div class="text-indigo-400 font-black text-xs uppercase tracking-widest mb-4">Starter</div>
+                <div class="text-5xl font-black mb-6">₹14,999</div>
+                <ul class="text-sm text-slate-400 space-y-4 mb-10">
+                    <li>✓ High-Performance Landing Page</li>
+                    <li>✓ Google Sheet Backend</li>
+                    <li>✓ Standard Contact Sync</li>
+                    <li>✓ 100% User Ownership</li>
+                </ul>
+                <button class="w-full py-4 bg-slate-900 rounded-xl font-bold hover:bg-slate-800 transition">Choose Starter</button>
+            </div>
+
+            <!-- PRO -->
+            <div class="p-10 bg-indigo-600 rounded-3xl relative overflow-hidden">
+                <div class="absolute top-6 right-6 px-3 py-1 bg-white text-indigo-600 text-[10px] font-black rounded-full uppercase">Most Popular</div>
+                <div class="text-indigo-200 font-black text-xs uppercase tracking-widest mb-4">Pro Plan</div>
+                <div class="text-5xl font-black mb-6">₹34,999</div>
+                <ul class="text-sm text-indigo-100 space-y-4 mb-10">
+                    <li>✓ Full Sovereign E-commerce</li>
+                    <li>✓ Ops Manager v6.0 Server</li>
+                    <li>✓ Real-time Inventory Sync</li>
+                    <li>✓ Cloud Run Hosting Setup</li>
+                </ul>
+                <button class="w-full py-4 bg-white text-indigo-600 rounded-xl font-bold hover:bg-slate-100 transition">Go Pro</button>
+            </div>
+
+            <!-- ENTERPRISE -->
+            <div class="p-10 border border-slate-800 rounded-3xl hover:border-indigo-500 transition">
+                <div class="text-indigo-400 font-black text-xs uppercase tracking-widest mb-4">Enterprise</div>
+                <div class="text-5xl font-black mb-6">Custom</div>
+                <ul class="text-sm text-slate-400 space-y-4 mb-10">
+                    <li>✓ Multi-Tenant Infrastructure</li>
+                    <li>✓ Custom Domain Gateway</li>
+                    <li>✓ 24/7 Priority Ops Support</li>
+                    <li>✓ Dedicated Cloud Engineer</li>
+                </ul>
+                <button class="w-full py-4 bg-slate-900 rounded-xl font-bold hover:bg-slate-800 transition">Contact Us</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-24 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+            <div>
+                <div class="text-xl font-black mb-2">SocialCom.store</div>
+                <p class="text-slate-500 text-sm">Building the future of the Sovereign Web.</p>
+            </div>
+            <div class="flex gap-10 text-sm font-bold text-slate-400">
+                <a href="#">Terms</a>
+                <a href="#">Privacy</a>
+                <a href="#">Careers</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+name = "sovereign-gateway"
+main = "cloudflare-worker.js"
+compatibility_date = "2024-05-01"
+
+[[routes]]
+pattern = "evcrm.in/api/*"
+zone_name = "evcrm.in"
+
+[vars]
+MASTER_REGISTRY_URL = "https://script.google.com/macros/s/AKfycbz_9l-fXW8G5e-K-1fH_Z0pX9q4_R8_G-1eX8z-5/exec?action=GET_RACK_FILE&fileName=master-registry.json"
+MASTER_ADMIN_TOKEN = "0dzjy15bes6hwfz41hcdup"
+GOOGLE_CLIENT_EMAIL = "news-agen@mythic-dynamo-382203.iam.gserviceaccount.com"
+
+

@@ -1,27 +1,28 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { saveToken } from "../../lib/token-storage"
+import { C } from "../../lib/constants"
+import Link from "next/link"
 
-const G   = "#059669", GD = "#065F46", GL = "#D1FAE5"
-const INK = "#111827", I2 = "#374151", I3 = "#6B7280"
-const BG  = "#F9FAFB", BD = "#E5E7EB"
-const RED = "#EF4444", ORG = "#F97316"
+const RED = C.red;
+const ACCENT = C.accent;
 
 // ── Field ─────────────────────────────────────────────────────────
 function Field({ label, type="text", placeholder, value, onChange, error, icon, hint, autoComplete }) {
   const [focused, setFocused] = useState(false)
   return (
     <div style={{ marginBottom:16 }}>
-      {label && <label style={{ display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.4px", marginBottom:5, color:error?RED:focused?G:I3, transition:"color 0.15s" }}>{label}</label>}
+      {label && <label style={{ display:"block", fontSize:11, fontWeight:800, letterSpacing:"0.6px", marginBottom:6, color:error?RED:focused?ACCENT:C.ink3, transition:"color 0.15s", textTransform:"uppercase" }}>{label}</label>}
       <div style={{ position:"relative" }}>
-        {icon && <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, opacity:0.4, pointerEvents:"none" }}>{icon}</span>}
+        {icon && <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:15, opacity:0.4, pointerEvents:"none", color:C.ink }}>{icon}</span>}
         <input type={type} value={value} onChange={onChange} placeholder={placeholder} autoComplete={autoComplete}
           onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-          style={{ width:"100%", background:"#fff", border:`1.5px solid ${error?RED:focused?G:BD}`, borderRadius:10, color:INK, fontSize:13, padding:`11px 14px 11px ${icon?"40px":"14px"}`, outline:"none", boxSizing:"border-box", fontFamily:"inherit", transition:"border-color 0.15s, box-shadow 0.15s", boxShadow:focused?`0 0 0 3px ${error?RED:G}12`:"none" }}
+          style={{ width:"100%", background:"#fff", border:`1.5px solid ${error?RED:focused?ACCENT:C.border}`, borderRadius:12, color:C.ink, fontSize:13, padding:`12px 14px 12px ${icon?"42px":"14px"}`, outline:"none", boxSizing:"border-box", fontFamily:"inherit", transition:"all 0.15s", boxShadow:focused?`0 0 16px ${ACCENT}15`:"none" }}
         />
       </div>
       {error && <p style={{ fontSize:10.5, marginTop:5, color:RED }}>{error}</p>}
-      {hint && !error && <p style={{ fontSize:10.5, marginTop:5, color:I3 }}>{hint}</p>}
+      {hint && !error && <p style={{ fontSize:10.5, marginTop:5, color:C.ink3 }}>{hint}</p>}
     </div>
   )
 }
@@ -53,7 +54,7 @@ function OTPBoxes({ value, onChange, error, disabled }) {
         <input key={i} ref={el=>refs.current[i]=el} type="text" inputMode="numeric"
           maxLength={1} value={d||""} disabled={disabled}
           onChange={e=>set(i,e.target.value)} onKeyDown={e=>onKey(i,e)}
-          style={{ width:46, height:52, borderRadius:10, textAlign:"center", border:`2px solid ${error?RED:d?G:BD}`, background:d?GL:disabled?BG:"#fff", color:INK, fontSize:22, fontWeight:800, outline:"none", transition:"all 0.15s", fontFamily:"inherit", boxShadow:d?`0 0 0 3px ${G}12`:"none", cursor:disabled?"not-allowed":"text" }}
+          style={{ width:46, height:56, borderRadius:12, textAlign:"center", border:`1.5px solid ${error?RED:d?ACCENT:C.border}`, background:d?`${ACCENT}10`:"#fff", color:C.ink, fontSize:24, fontWeight:900, outline:"none", transition:"all 0.15s", fontFamily:"inherit", boxShadow:d?`0 0 16px ${ACCENT}15`:"none", cursor:disabled?"not-allowed":"text" }}
         />
       ))}
     </div>
@@ -61,15 +62,15 @@ function OTPBoxes({ value, onChange, error, disabled }) {
 }
 
 // ── Button ────────────────────────────────────────────────────────
-function PBtn({ children, onClick, loading, disabled, color=G }) {
+function PBtn({ children, onClick, loading, disabled, color=ACCENT }) {
   const off = disabled||loading
   return (
     <button onClick={onClick} disabled={off}
-      style={{ width:"100%", background:off?"#E5E7EB":color, border:"none", color:off?I3:"#fff", borderRadius:10, padding:"13px", fontSize:13, fontWeight:700, cursor:off?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.15s", boxShadow:off?"none":`0 3px 14px ${color}38`, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
-      onMouseEnter={e=>{ if(!off) e.currentTarget.style.opacity=".87" }}
-      onMouseLeave={e=>e.currentTarget.style.opacity="1"}
+      style={{ width:"100%", background:off?C.bg:color, border:"none", color:"#fff", borderRadius:12, padding:"14px", fontSize:13, fontWeight:900, cursor:off?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow:off?"none":`0 4px 16px ${color}33`, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
+      onMouseEnter={e=>{ if(!off) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.opacity="0.9" } }}
+      onMouseLeave={e=>{ if(!off) { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.opacity="1" } }}
     >
-      {loading ? <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(0,0,0,0.15)", borderTopColor:"rgba(0,0,0,0.5)", animation:"evcrm-spin .7s linear infinite" }}/> : children}
+      {loading ? <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"evcrm-spin .7s linear infinite" }}/> : children}
     </button>
   )
 }
@@ -78,15 +79,15 @@ function PBtn({ children, onClick, loading, disabled, color=G }) {
 function Alert({ type="error", msg, onClose }) {
   if (!msg) return null
   const cfg = {
-    error:   { bg:"#FEF2F2", bc:RED,      c:"#991B1B", icon:"⚠️" },
-    success: { bg:GL,        bc:G,         c:GD,        icon:"✓"  },
+    error:   { bg:"#FEF2F2", bc:RED,      c:"#B91C1C", icon:"⚠️" },
+    success: { bg:"#F0FDF4", bc:ACCENT,   c:"#15803D", icon:"✓"  },
     info:    { bg:"#EFF6FF", bc:"#3B82F6", c:"#1D4ED8", icon:"ℹ️" },
   }[type]||{}
   return (
-    <div style={{ background:cfg.bg, border:`1px solid ${cfg.bc}25`, borderRadius:10, padding:"10px 14px", marginBottom:16, display:"flex", gap:9, alignItems:"flex-start" }}>
+    <div style={{ background:cfg.bg, border:`1px solid ${cfg.bc}30`, borderRadius:12, padding:"12px 16px", marginBottom:18, display:"flex", gap:10, alignItems:"flex-start" }}>
       <span style={{ fontSize:14, flexShrink:0 }}>{cfg.icon}</span>
-      <p style={{ fontSize:11.5, color:cfg.c, flex:1, lineHeight:1.5, margin:0 }}>{msg}</p>
-      {onClose && <button onClick={onClose} style={{ background:"none", border:"none", color:cfg.c, cursor:"pointer", fontSize:14, opacity:.7, flexShrink:0 }}>✕</button>}
+      <p style={{ fontSize:11.5, color:cfg.c, flex:1, lineHeight:1.5, margin:0, fontWeight: 700 }}>{msg}</p>
+      {onClose && <button onClick={onClose} style={{ background:"none", border:"none", color:cfg.c, cursor:"pointer", fontSize:14, opacity:.5, flexShrink:0 }}>✕</button>}
     </div>
   )
 }
@@ -94,26 +95,39 @@ function Alert({ type="error", msg, onClose }) {
 // ── Success screen ─────────────────────────────────────────────────
 function SuccessScreen({ role, name }) {
   const router = useRouter()
-  const dest   = role==="dealer" ? "/dealer" : "/queue"
-  const color  = role==="dealer" ? G : ORG
+  const dest   = role==="superadmin" ? "/admin" : (role==="dealer" ? "/dealer" : "/queue")
   const [pct,  setPct] = useState(0)
+  const [msg,  setMsg] = useState("Accessing Expert Environment...")
 
   useEffect(()=>{
     const t = setInterval(()=>{
-      setPct(p=>{ if(p>=100){ router.push(dest); clearInterval(t); return 100 } return p+2 })
-    }, 40)
+      setPct(p=>{ 
+        if(p>=100){ 
+          router.replace(dest); 
+          clearInterval(t); 
+          return 100 
+        } 
+        return p + 2 // Accelerate progress
+      })
+    }, 20) // Snappy 20ms pulses
     return ()=>clearInterval(t)
   }, [])
 
   return (
-    <div style={{ textAlign:"center", padding:"10px 0" }}>
-      <div style={{ width:60, height:60, borderRadius:"50%", background:`${color}18`, border:`2px solid ${color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, margin:"0 auto 14px" }}>
+    <div style={{ textAlign:"center", padding:"20px 0" }}>
+      <div style={{ 
+        width:72, height:72, borderRadius: 20, 
+        background: ACCENT, 
+        display:"flex", alignItems:"center", justifyContent:"center", 
+        fontSize:32, color: "#fff", margin:"0 auto 20px",
+        boxShadow: `0 10px 30px ${ACCENT}33`
+      }}>
         {role==="dealer"?"🏪":"⚡"}
       </div>
-      <p style={{ fontSize:18, fontWeight:800, color:INK, marginBottom:4 }}>Welcome{name?`, ${name.split(" ")[0]}`:""}!</p>
-      <p style={{ fontSize:12, color:I3, marginBottom:20 }}>Loading your {role==="dealer"?"dashboard":"queue"}...</p>
-      <div style={{ background:BD, borderRadius:6, height:4, overflow:"hidden" }}>
-        <div style={{ height:"100%", background:color, borderRadius:6, width:`${pct}%`, transition:"width 0.04s linear" }}/>
+      <p style={{ fontSize:22, fontWeight:900, color:C.ink, marginBottom:6, letterSpacing:"-0.5px" }}>Welcome Back{name?`, ${name.split(" ")[0]}`:""}!</p>
+      <p style={{ fontSize:12, color:C.ink3, marginBottom:24 }}>{msg}</p>
+      <div style={{ background:C.bg, borderRadius:10, height:6, overflow:"hidden" }}>
+        <div style={{ height:"100%", background:ACCENT, borderRadius:10, width:`${pct}%`, transition:"width 0.04s linear" }}/>
       </div>
     </div>
   )
@@ -126,11 +140,19 @@ function SuccessScreen({ role, name }) {
 export default function LoginPage() {
   const router = useRouter()
 
-  // Check already logged in
+  // Check already logged in (Accelerated Pre-flight)
   useEffect(()=>{
-    fetch("/api/auth/me").then(r=>r.json()).then(d=>{
-      if (d.success) router.push(d.user.role==="dealer"?"/dealer":"/queue")
-    }).catch(()=>{})
+    import("../../lib/token-storage").then(({ getToken, authFetch }) => {
+      const token = getToken()
+      if (!token) return
+
+      authFetch("/api/auth/me").then(r=>r.json()).then(d=>{
+        if (d.success) {
+          const route = d.user.role === "superadmin" ? "/admin" : (d.user.role === "dealer" ? "/dealer" : "/queue")
+          router.replace(route) // Use replace to avoid back-button loops
+        }
+      }).catch(()=>{})
+    })
   }, [])
 
   const [screen,   setScreen]   = useState("login")
@@ -161,10 +183,11 @@ export default function LoginPage() {
   }, [cd, screen])
 
   const ROLES = [
-    { id:"dealer", icon:"🏪", label:"Dealer Owner", sub:"Admin access",  color:G   },
-    { id:"rep",    icon:"⚡", label:"Sales Rep",    sub:"Team access",   color:ORG },
+    { id:"dealer",     icon:"🏪", label:"Dealer Owner", sub:"Admin access",  color:ACCENT },
+    { id:"rep",        icon:"⚡", label:"Sales Rep",    sub:"Team access",   color:C.orange },
+    { id:"superadmin", icon:"🔱", label:"Founder",     sub:"System access", color:C.greenD  },
   ]
-  const activeColor = role==="dealer" ? G : ORG
+  const activeColor = role==="dealer" ? ACCENT : (role==="rep" ? C.orange : C.greenD)
 
   // ── Login ─────────────────────────────────────────────────────
   const handleLogin = async () => {
@@ -179,12 +202,8 @@ export default function LoginPage() {
 
       if (!res.ok) { setLoginErr(data.error||"Invalid email or password"); return }
 
-      // Role check
-      if (data.user.role !== role) {
-        setLoginErr(`This is a ${data.user.role} account. Please select the correct tab.`)
-        await fetch("/api/auth/logout", { method:"POST" })
-        return
-      }
+      // Save JWT to localStorage (Firebase Hosting strips Set-Cookie headers)
+      if (data.token) saveToken(data.token)
 
       setLoggedUser(data.user)
       setScreen("success")
@@ -204,14 +223,21 @@ export default function LoginPage() {
     }
     setFpLoad(true)
     try {
-      await fetch("/api/auth/request-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailClean }) })
-      setFpMsg({ type:"info", text:"If this email is registered, an OTP has been sent. Check your inbox and spam folder." })
+      const res = await fetch("/api/auth/request-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailClean }) })
+      const data = await res.json()
+      // If dev mode sent us the OTP back because the email provider domain is unverified, show it directly!
+      if (data._dev_otp) {
+        setFpMsg({ type:"info", text:`[MVP TEST] Since the email domain isn't fully verified yet, here is your OTP: ${data._dev_otp}` })
+      } else {
+        setFpMsg({ type:"info", text:"If this email is registered, an OTP has been sent. Check your inbox and spam folder." })
+      }
       setScreen("forgot-otp")
       setCd(60)
     } catch {
       setFpMsg({ type:"error", text:"Failed to send OTP. Please try again." })
     } finally {
-      setFpLoad(false) }
+      setFpLoad(false) 
+    }
   }
 
   // ── Forgot: Verify OTP ────────────────────────────────────────
@@ -255,26 +281,25 @@ export default function LoginPage() {
   const backToLogin = () => { setScreen("login"); setFpEmail(""); setFpOTP(""); setFpNew(""); setFpConfirm(""); setFpMsg({}); setFpErrors({}) }
 
   return (
-    <div style={{ minHeight:"100vh", background:BG, display:"flex", alignItems:"center", justifyContent:"center", padding:20, fontFamily:"'DM Sans','Segoe UI',system-ui,sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
-        @keyframes evcrm-spin { to { transform: rotate(360deg) } }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        button:focus, input:focus, select:focus { outline: none; }
-      `}</style>
-
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:20, fontFamily:"'DM Sans','Segoe UI',system-ui,sans-serif", color: C.ink }}>
       <div style={{ width:"100%", maxWidth:420 }}>
 
         {/* Logo */}
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ display:"inline-flex", alignItems:"center", gap:10, marginBottom:5 }}>
-            <div style={{ width:36, height:36, borderRadius:9, background:`${G}18`, border:`1.5px solid ${G}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>⚡</div>
-            <span style={{ fontFamily:"Georgia,serif", fontSize:21, fontWeight:900, color:INK, letterSpacing:"-0.5px" }}>Ev<span style={{ color:G }}>.CRM</span></span>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:12, marginBottom:8 }}>
+            <div style={{ 
+              width:40, height:40, borderRadius:10, 
+              background: ACCENT, 
+              display:"flex", alignItems:"center", justifyContent:"center", 
+              fontSize:20, fontWeight:900, color:"#fff",
+              boxShadow: `0 4px 12px ${ACCENT}33`
+            }}>E</div>
+            <span style={{ fontSize:28, fontWeight:900, color:C.ink, letterSpacing:"-0.8px" }}>EV<span style={{ color:ACCENT }}>.CRM</span></span>
           </div>
-          <p style={{ fontSize:11, color:I3 }}>India's EV Dealer Sales OS</p>
+          <p style={{ fontSize:12, color:C.ink3, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>India's EV Sales OS & Commerce Hub</p>
         </div>
 
-        <div style={{ background:"#fff", borderRadius:20, boxShadow:"0 4px 32px rgba(0,0,0,0.08)", border:`1px solid ${BD}`, padding:"32px 36px" }}>
+        <div style={{ background:"#fff", borderRadius:24, border:`1px solid ${C.border}`, padding:"40px", boxShadow: "0 12px 40px rgba(0,0,0,0.06)" }}>
 
           {/* ── SUCCESS ── */}
           {screen==="success" && loggedUser && <SuccessScreen role={loggedUser.role} name={loggedUser.name} />}
@@ -286,20 +311,25 @@ export default function LoginPage() {
               <div style={{ display:"flex", gap:8, marginBottom:24 }}>
                 {ROLES.map(r=>(
                   <button key={r.id} onClick={()=>{ setRole(r.id); setLoginErr("") }}
-                    style={{ flex:1, background:role===r.id?`${r.color}10`:"transparent", border:`1.5px solid ${role===r.id?r.color:BD}`, borderRadius:12, padding:"10px 8px", cursor:"pointer", transition:"all 0.15s", fontFamily:"inherit", boxShadow:role===r.id?`0 0 0 3px ${r.color}12`:"none" }}>
-                    <div style={{ fontSize:18, marginBottom:4 }}>{r.icon}</div>
-                    <div style={{ fontSize:11, fontWeight:700, color:role===r.id?r.color:INK }}>{r.label}</div>
-                    <div style={{ fontSize:9.5, color:I3, marginTop:2 }}>{r.sub}</div>
+                    style={{ 
+                      flex:1, background:role===r.id?`${r.color}10`:C.bg, 
+                      border:`1.5px solid ${role===r.id?r.color:C.border}`, 
+                      borderRadius:14, padding:"12px 8px", cursor:"pointer", transition:"all 0.2s", 
+                      fontFamily:"inherit", boxShadow:role===r.id?`0 4px 12px ${r.color}15`:"none" 
+                    }}>
+                    <div style={{ fontSize:20, marginBottom:4 }}>{r.icon}</div>
+                    <div style={{ fontSize:11, fontWeight:800, color:role===r.id?C.ink:C.ink3, textTransform:"uppercase", letterSpacing:"0.5px" }}>{r.label}</div>
+                    <div style={{ fontSize:9.5, color:role===r.id?r.color:C.ink3, marginTop:2, fontWeight: 700 }}>{r.sub}</div>
                   </button>
                 ))}
               </div>
 
-              <div style={{ marginBottom:20 }}>
-                <h1 style={{ fontSize:18, fontWeight:800, color:INK, marginBottom:4 }}>
-                  {role==="dealer" ? "Dealer Sign In" : "Sales Rep Sign In"}
+              <div style={{ marginBottom:24 }}>
+                <h1 style={{ fontSize:20, fontWeight:900, color:C.ink, marginBottom:6, letterSpacing:"-0.5px" }}>
+                  {role==="dealer" ? "Dealer Sign In" : role==="rep" ? "Sales Rep Sign In" : "Founder Sign In"}
                 </h1>
-                <p style={{ fontSize:12, color:I3 }}>
-                  {role==="dealer" ? "Access your dealer command centre" : "Access your AI sales queue"}
+                <p style={{ fontSize:13, color:C.ink3, lineHeight:1.5 }}>
+                  {role==="dealer" ? "Access your dealer command centre" : role==="rep" ? "Access your AI sales queue" : "Manage the platform and cloud oversight"}
                 </p>
               </div>
 
@@ -318,18 +348,18 @@ export default function LoginPage() {
                 Sign In →
               </PBtn>
 
-              <div style={{ textAlign:"center", marginTop:14 }}>
+              <div style={{ textAlign:"center", marginTop:18 }}>
                 <button onClick={()=>{ setScreen("forgot-email"); setFpEmail(email); setFpMsg({}) }}
-                  style={{ background:"none", border:"none", color:I3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
+                  style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit", fontWeight: 600 }}>
                   Forgot password?
                 </button>
               </div>
 
               {role==="dealer" && (
-                <div style={{ textAlign:"center", marginTop:8 }}>
-                  <span style={{ fontSize:12, color:I3 }}>New to Ev.CRM? </span>
+                <div style={{ textAlign:"center", marginTop:12 }}>
+                  <span style={{ fontSize:12, color:C.ink3 }}>New to Ev.CRM? </span>
                   <button onClick={()=>router.push("/register")}
-                    style={{ background:"none", border:"none", color:G, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
+                    style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:800, fontFamily:"inherit" }}>
                     Create dealer account →
                   </button>
                 </div>
@@ -341,8 +371,8 @@ export default function LoginPage() {
           {screen==="forgot-email" && (
             <>
               <div style={{ marginBottom:20 }}>
-                <h1 style={{ fontSize:18, fontWeight:800, color:INK, marginBottom:4 }}>Reset Password</h1>
-                <p style={{ fontSize:12, color:I3 }}>Enter your registered email — we'll send a 6-digit OTP</p>
+                <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Reset Password</h1>
+                <p style={{ fontSize:12, color:C.ink3 }}>Enter your registered email — we'll send a 6-digit OTP</p>
               </div>
 
               <Alert type={fpMsg.type} msg={fpMsg.text} onClose={()=>setFpMsg({})} />
@@ -358,7 +388,7 @@ export default function LoginPage() {
               </PBtn>
 
               <div style={{ textAlign:"center", marginTop:12 }}>
-                <button onClick={backToLogin} style={{ background:"none", border:"none", color:I3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Back to sign in</button>
+                <button onClick={backToLogin} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Back to sign in</button>
               </div>
             </>
           )}
@@ -367,13 +397,13 @@ export default function LoginPage() {
           {screen==="forgot-otp" && (
             <>
               <div style={{ marginBottom:20 }}>
-                <h1 style={{ fontSize:18, fontWeight:800, color:INK, marginBottom:4 }}>Enter OTP</h1>
-                <p style={{ fontSize:12, color:I3 }}>6-digit code sent to <strong>{fpEmail}</strong></p>
+                <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Enter OTP</h1>
+                <p style={{ fontSize:12, color:C.ink3 }}>6-digit code sent to <strong>{fpEmail}</strong></p>
               </div>
 
               <Alert type={fpMsg.type} msg={fpMsg.text} onClose={()=>setFpMsg({})} />
 
-              <p style={{ fontSize:11, fontWeight:700, color:I3, textAlign:"center", marginBottom:14, letterSpacing:"0.5px" }}>ENTER 6-DIGIT OTP</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.ink3, textAlign:"center", marginBottom:14, letterSpacing:"0.5px" }}>ENTER 6-DIGIT OTP</p>
               <OTPBoxes value={fpOTP} onChange={v=>{setFpOTP(v);setFpMsg({})}} error={fpMsg.type==="error"} disabled={fpLoad} />
               <div style={{ height:16 }}/>
 
@@ -382,15 +412,15 @@ export default function LoginPage() {
               </PBtn>
 
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:14, fontSize:12 }}>
-                <button onClick={()=>setScreen("forgot-email")} style={{ background:"none", border:"none", color:I3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Change email</button>
-                <span style={{ color:I3 }}>
-                  {cd>0 ? <>Resend in <strong style={{ color:G }}>{cd}s</strong></> :
-                    <button onClick={()=>{ setFpOTP(""); setFpMsg({}); handleSendOTP() }} style={{ background:"none", border:"none", color:G, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Resend OTP</button>}
+                <button onClick={()=>setScreen("forgot-email")} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Change email</button>
+                <span style={{ color:C.ink3 }}>
+                  {cd>0 ? <>Resend in <strong style={{ color:ACCENT }}>{cd}s</strong></> :
+                    <button onClick={()=>{ setFpOTP(""); setFpMsg({}); handleSendOTP() }} style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Resend OTP</button>}
                 </span>
               </div>
 
-              <div style={{ marginTop:14, background:BG, border:`1px solid ${BD}`, borderRadius:10, padding:"9px 14px" }}>
-                <p style={{ fontSize:11, color:I3, lineHeight:1.6, margin:0 }}>📧 Check your inbox and spam folder. OTP expires in <strong>15 minutes</strong>.</p>
+              <div style={{ marginTop:14, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 14px" }}>
+                <p style={{ fontSize:11, color:C.ink3, lineHeight:1.6, margin:0 }}>📧 Check your inbox and spam folder. OTP expires in <strong>15 minutes</strong>.</p>
               </div>
             </>
           )}
@@ -399,8 +429,8 @@ export default function LoginPage() {
           {screen==="forgot-reset" && (
             <>
               <div style={{ marginBottom:20 }}>
-                <h1 style={{ fontSize:18, fontWeight:800, color:INK, marginBottom:4 }}>Set New Password</h1>
-                <p style={{ fontSize:12, color:I3 }}>Choose a strong password for <strong>{fpEmail}</strong></p>
+                <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Set New Password</h1>
+                <p style={{ fontSize:12, color:C.ink3 }}>Choose a strong password for <strong>{fpEmail}</strong></p>
               </div>
 
               <Alert type={fpMsg.type} msg={fpMsg.text} onClose={()=>setFpMsg({})} />
@@ -424,11 +454,11 @@ export default function LoginPage() {
 
           {/* Footer */}
           {!["success"].includes(screen) && (
-            <div style={{ marginTop:28, paddingTop:18, borderTop:`1px solid ${BD}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:10, color:I3 }}>© 2026 Ev.CRM</span>
-              <div style={{ display:"flex", gap:12 }}>
+            <div style={{ marginTop:32, paddingTop:20, borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:10, color:C.ink3, fontWeight: 700 }}>© 2026 EV.CRM</span>
+              <div style={{ display:"flex", gap:14 }}>
                 {["Privacy","Terms","Support"].map(l=>(
-                  <button key={l} style={{ background:"none", border:"none", color:I3, fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+                  <button key={l} style={{ background:"none", border:"none", color:C.ink3, fontSize:10, cursor:"pointer", fontFamily:"inherit", fontWeight: 600 }}>{l}</button>
                 ))}
               </div>
             </div>

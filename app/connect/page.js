@@ -1,25 +1,67 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Shell from "../../components/layout/Shell"
 import { Card, Avatar, StatusPill } from "../../components/ui"
 import { C } from "../../lib/constants"
-import { getLeads, getMessages } from "../../lib/data"
+import { db } from "../../lib/firebase-client"
+import { collection, query, onSnapshot, addDoc, orderBy, where, serverTimestamp } from "firebase/firestore"
 
 const CONV_IDS = [1, 2, 6]
 
 export default function ConnectPage() {
-  const [activeId, setActiveId] = useState(1)
+  const [leads,    setLeads]    = useState([])
+  const [activeId, setActiveId] = useState(null)
   const [reply,    setReply]    = useState("")
-  const [msgs,     setMsgs]     = useState(getMessages())
+  const [msgs,     setMsgs]     = useState([])
+  const [loading,  setLoading]  = useState(true)
 
-  const leads   = getLeads().filter(l => CONV_IDS.includes(l.id))
-  const lead    = leads.find(l => l.id === activeId) || leads[0]
-  const thread  = msgs[lead.id] || []
+  useEffect(() => {
+    // 1. Listen for Leads (to show in sidebar)
+    const qL = query(collection(db, "evcrm_leads"))
+    const unsubL = onSnapshot(qL, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      setLeads(list)
+      if (!activeId && list.length > 0) setActiveId(list[0].id)
+      setLoading(false)
+    })
 
-  const send = () => {
-    if (!reply.trim()) return
-    setMsgs(m => ({ ...m, [lead.id]: [...(m[lead.id]||[]), { from:"rep", text:reply, time:"Now", read:true }] }))
+    return () => unsubL()
+  }, [])
+
+  useEffect(() => {
+    if (!activeId) return
+    // 2. Listen for Messages of Active Lead
+    const qM = query(
+      collection(db, "evcrm_messages"),
+      where("leadId", "==", activeId),
+      orderBy("timestamp", "asc")
+    )
+    const unsubM = onSnapshot(qM, (snap) => {
+      setMsgs(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+
+    return () => unsubM()
+  }, [activeId])
+
+  const lead   = leads.find(l => l.id === activeId) || (leads.length > 0 ? leads[0] : null)
+  const thread = msgs
+
+  const send = async () => {
+    if (!reply.trim() || !activeId) return
+    const text = reply
     setReply("")
+    
+    try {
+      await addDoc(collection(db, "evcrm_messages"), {
+        leadId: activeId,
+        from: "rep",
+        text,
+        time: "Now",
+        timestamp: serverTimestamp()
+      })
+    } catch (err) {
+      console.error("Send message error:", err)
+    }
   }
 
   return (
@@ -67,6 +109,8 @@ export default function ConnectPage() {
         {/* Chat window */}
         <Card noPad style={{ flex:1, display:"flex", flexDirection:"column" }}>
           {/* Chat header */}
+          {lead ? (
+          <>
           <div style={{ padding:"14px 18px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12 }}>
             <Avatar name={lead.name} size={38} color={C.blue} />
             <div style={{ flex:1 }}>
@@ -111,6 +155,10 @@ export default function ConnectPage() {
             />
             <button onClick={send} style={{ background:C.green, border:"none", color:"#fff", borderRadius:"50%", width:42, height:42, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, flexShrink:0 }}>→</button>
           </div>
+          </>
+          ) : (
+            <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:C.ink3, fontSize:13 }}>Select a conversation to start chatting</div>
+          )}
         </Card>
       </div>
     </Shell>

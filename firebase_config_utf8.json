@@ -1,0 +1,19 @@
+﻿{
+  "status": "success",
+  "result": {
+    "fileName": "firebase-js-config.json",
+    "fileContents": "{\n  \"projectId\": \"ev-crm-realtime\",\n  \"appId\": \"1:541020907374:web:af6fe378425606d8d5837f\",\n  \"storageBucket\": \"ev-crm-realtime.firebasestorage.app\",\n  \"apiKey\": \"AIzaSyCUDXTaFBSsUSYoeRZ34L83DwVqtIliHIY\",\n  \"authDomain\": \"ev-crm-realtime.firebaseapp.com\",\n  \"messagingSenderId\": \"541020907374\",\n  \"measurementId\": \"G-HT3PD7MVSD\",\n  \"projectNumber\": \"541020907374\",\n  \"version\": \"2\"\n}",
+    "sdkConfig": {
+      "projectId": "ev-crm-realtime",
+      "appId": "1:541020907374:web:af6fe378425606d8d5837f",
+      "storageBucket": "ev-crm-realtime.firebasestorage.app",
+      "apiKey": "AIzaSyCUDXTaFBSsUSYoeRZ34L83DwVqtIliHIY",
+      "authDomain": "ev-crm-realtime.firebaseapp.com",
+      "messagingSenderId": "541020907374",
+      "measurementId": "G-HT3PD7MVSD",
+      "projectNumber": "541020907374",
+      "version": "2"
+    }
+  }
+}
+

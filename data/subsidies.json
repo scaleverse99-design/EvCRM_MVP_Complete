@@ -1,0 +1,106 @@
+{
+  "Telangana": {
+    "default": {
+      "subsidy_2w": 10000,
+      "subsidy_3w": 15000,
+      "subsidy_4w": 0,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 5000,
+      "fame2_eligible": true
+    },
+    "Hyderabad": {
+      "local_incentive": 2000
+    }
+  },
+  "Andhra Pradesh": {
+    "default": {
+      "subsidy_2w": 0,
+      "subsidy_3w": 0,
+      "subsidy_4w": 0,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 3000,
+      "fame2_eligible": true
+    },
+    "Visakhapatnam": {}
+  },
+  "Karnataka": {
+    "default": {
+      "subsidy_2w": 0,
+      "subsidy_3w": 0,
+      "subsidy_4w": 0,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 0,
+      "fame2_eligible": true
+    },
+    "Bangalore": {}
+  },
+  "Maharashtra": {
+    "default": {
+      "subsidy_2w": 10000,
+      "subsidy_3w": 30000,
+      "subsidy_4w": 100000,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 7000,
+      "fame2_eligible": true
+    },
+    "Mumbai": {},
+    "Pune": {}
+  },
+  "Delhi": {
+    "default": {
+      "subsidy_2w": 5000,
+      "subsidy_3w": 30000,
+      "subsidy_4w": 150000,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 5000,
+      "fame2_eligible": true
+    }
+  },
+  "Gujarat": {
+    "default": {
+      "subsidy_2w": 20000,
+      "subsidy_3w": 50000,
+      "subsidy_4w": 150000,
+      "road_tax_waiver": 50,
+      "registration_fee_waiver": 50,
+      "scrappage_bonus": 0,
+      "fame2_eligible": true
+    }
+  },
+  "Tamil Nadu": {
+    "default": {
+      "subsidy_2w": 0,
+      "subsidy_3w": 0,
+      "subsidy_4w": 0,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 0,
+      "fame2_eligible": true
+    }
+  },
+  "Sikkim": {
+    "default": {
+      "subsidy_2w": 10000,
+      "road_tax_waiver": 99,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 0,
+      "fame2_eligible": true
+    }
+  },
+  "Assam": {
+    "default": {
+      "subsidy_2w": 20000,
+      "subsidy_3w": 50000,
+      "subsidy_4w": 150000,
+      "road_tax_waiver": 100,
+      "registration_fee_waiver": 100,
+      "scrappage_bonus": 0,
+      "fame2_eligible": true
+    }
+  }
+}

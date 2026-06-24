@@ -1,17 +1,44 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Shell from "../../components/layout/Shell"
 import { Card, Tag, Btn, Modal } from "../../components/ui"
 import { C, fmt, STOCK_CONFIG } from "../../lib/constants"
 import { getVehicles } from "../../lib/data"
+import { db } from "../../lib/firebase-client"
+import { collection, getDocs, query } from "firebase/firestore"
 
 export default function VehiclesPage() {
   const [orderModal,  setOrderModal]  = useState(null)
   const [captureModal,setCaptureModal]= useState(null)
   const [toast,       setToast]       = useState("")
-  const vehicles = getVehicles()
+  const [vehicles,    setVehicles]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+
+  // ── Load Inventory ─────────────────────────────────────────────
+  useEffect(() => {
+    async function load() {
+      try {
+        if (!db) throw new Error("Firestore not initialized")
+        const q = query(collection(db, "evcrm_vehicles"))
+        const snap = await getDocs(q)
+        if (snap.empty) {
+          setVehicles(getVehicles())
+        } else {
+          setVehicles(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        }
+      } catch (err) {
+        console.warn("Firestore load failed, using mock data:", err.message)
+        setVehicles(getVehicles())
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),2500) }
+
+  if (loading) return <Shell title="Vehicle Intelligence"><div style={{ textAlign:"center", padding:40 }}>Loading inventory...</div></Shell>
 
   return (
     <Shell title="Vehicle Intelligence">
@@ -56,13 +83,13 @@ export default function VehiclesPage() {
                 <tr key={v.id} style={{ borderBottom:`1px solid ${C.border}` }}>
                   <td style={{ padding:"14px 16px" }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{v.brand} {v.model}</div>
-                    <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>{v.spec}</div>
+                    <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>{v.spec || `${v.range}km range`}</div>
                   </td>
                   <td style={{ padding:"14px 16px" }}><Tag label={v.type} color={C.blue} /></td>
-                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:13, fontWeight:700, color:C.ink2 }}>{fmt.currency(v.price)}</span></td>
-                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:18, fontWeight:900, color:v.stock===0?C.red:v.stock<4?C.orange:C.green }}>{v.stock}</span></td>
-                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:18, fontWeight:900, color:C.blue }}>{v.demand}</span></td>
-                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:15, fontWeight:800, color:v.trend.startsWith("+")?C.green:C.red }}>{v.trend}</span></td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:13, fontWeight:700, color:C.ink2 }}>{fmt.currency(v.exShowroom || v.price)}</span></td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:18, fontWeight:900, color:v.stock===0?C.red:v.stock<4?C.orange:C.green }}>{v.stock || 0}</span></td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:18, fontWeight:900, color:C.blue }}>{v.demand || 0}</span></td>
+                  <td style={{ padding:"14px 16px" }}><span style={{ fontSize:15, fontWeight:800, color:v.trend?.startsWith("+")?C.green:C.red }}>{v.trend || "0%"}</span></td>
                   <td style={{ padding:"14px 16px" }}>
                     <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:20 }}>{st.label}</span>
                   </td>
@@ -92,9 +119,9 @@ export default function VehiclesPage() {
       {/* Order Modal */}
       {orderModal && (
         <Modal title="Raise Stock Request" onClose={()=>setOrderModal(null)}>
-          <div style={{ fontSize:12, color:C.ink3, marginBottom:16 }}>{orderModal.brand} {orderModal.model} · {fmt.currency(orderModal.price)}</div>
+          <div style={{ fontSize:12, color:C.ink3, marginBottom:16 }}>{orderModal.brand} {orderModal.model} · {fmt.currency(orderModal.exShowroom || orderModal.price)}</div>
           <div style={{ display:"flex", gap:16, background:C.bg, borderRadius:12, padding:16, marginBottom:16, border:`1px solid ${C.border}` }}>
-            {[{v:orderModal.stock,l:"In Stock",c:C.red},{v:orderModal.demand,l:"Demand",c:C.orange},{v:orderModal.waitlist?.length||0,l:"Waitlisted",c:C.green}].map((s,i)=>(
+            {[{v:orderModal.stock || 0,l:"In Stock",c:C.red},{v:orderModal.demand || 0,l:"Demand",c:C.orange},{v:orderModal.waitlist?.length||0,l:"Waitlisted",c:C.green}].map((s,i)=>(
               <div key={i} style={{ flex:1, textAlign:"center" }}>
                 <div style={{ fontSize:26, fontWeight:900, color:s.c }}>{s.v}</div>
                 <div style={{ fontSize:10, color:C.ink3, marginTop:3 }}>{s.l}</div>

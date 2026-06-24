@@ -1,0 +1,54 @@
+[
+  {
+    "id": "hyd-d01",
+    "name": "Deccan EV Hub Hitech",
+    "badge": "Verified ✓",
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "address": "Opp. Shilparamam, Hitech City, Hyderabad",
+    "geolocation": { "lat": 17.4474, "lng": 78.3762 },
+    "brands": ["Ola Electric", "Ather Energy", "TVS"],
+    "responseTime": "Replies in ~2 hrs",
+    "inventoryCount": 12,
+    "whatsapp": "919999988888"
+  },
+  {
+    "id": "hyd-d02",
+    "name": "Nizam Mobility Jubilee",
+    "badge": "Verified ✓",
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "address": "Road No. 36, Jubilee Hills, Hyderabad",
+    "geolocation": { "lat": 17.4325, "lng": 78.4071 },
+    "brands": ["Tata Motors", "MG", "Mahindra"],
+    "responseTime": "Replies in ~1 hr",
+    "inventoryCount": 8,
+    "whatsapp": "919999977777"
+  },
+  {
+    "id": "viz-d01",
+    "name": "Vizag Smart EV Garage",
+    "badge": "Verified ✓",
+    "state": "Andhra Pradesh",
+    "district": "Visakhapatnam",
+    "address": "MVP Colony, Sector 12, Vizag",
+    "geolocation": { "lat": 17.7408, "lng": 83.3323 },
+    "brands": ["Bajaj Chetak", "Ather Energy", "Hero Vida"],
+    "responseTime": "Replies in ~3 hrs",
+    "inventoryCount": 6,
+    "whatsapp": "919999966666"
+  },
+  {
+    "id": "viz-d02",
+    "name": "Coastal EV Solutions",
+    "badge": "Verified ✓",
+    "state": "Andhra Pradesh",
+    "district": "Visakhapatnam",
+    "address": "Gajuwaka Main Road, Vizag",
+    "geolocation": { "lat": 17.6896, "lng": 83.2093 },
+    "brands": ["Ola Electric", "Pure EV"],
+    "responseTime": "Replies in ~2 hrs",
+    "inventoryCount": 15,
+    "whatsapp": "919999955555"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "name": "ops-manager-v6",
+  "version": "6.0.0",
+  "description": "Ops Manager V6.0 — Portable Sovereign Cloud Server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "deploy:cloudrun": "gcloud run deploy ops-manager-v6 --source . --region us-central1 --allow-unauthenticated",
+    "deploy:worker": "wrangler deploy cloudflare-worker.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "googleapis": "^140.0.0"
+  },
+  "optionalDependencies": {
+    "@aws-sdk/client-s3": "^3.525.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

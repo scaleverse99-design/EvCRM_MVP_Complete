@@ -1,0 +1,44 @@
+﻿2026-04-04T18:45:55.247437Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-04T18:47:25.801253Z W ssrevcrmrealtime: 
+2026-04-04T18:47:26.475886Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-04T18:47:27.265720Z W ssrevcrmrealtime: 
+2026-04-04T18:47:27.353920Z ? ssrevcrmrealtime: [Firebase Admin] Initializing Firebase Admin... { projectId: 'ev-crm-realtime', hasKey: true }
+
+2026-04-04T18:47:27.532001Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:30.021066Z W ssrevcrmrealtime: 
+2026-04-04T18:47:30.500443Z W ssrevcrmrealtime: 
+2026-04-04T18:47:30.521494Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:31.244185Z W ssrevcrmrealtime: 
+2026-04-04T18:47:31.743975Z W ssrevcrmrealtime: 
+2026-04-04T18:47:31.773555Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:32.981672Z I ssrevcrmrealtime: 
+2026-04-04T18:47:41.357386Z W ssrevcrmrealtime: 
+2026-04-04T18:47:41.378536Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:41.682130Z W ssrevcrmrealtime: 
+2026-04-04T18:47:41.703634Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:41.705534Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 uncaughtException listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+2026-04-04T18:47:42.239066Z W ssrevcrmrealtime: 
+2026-04-04T18:47:42.259297Z ? ssrevcrmrealtime: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 unhandledRejection listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+2026-04-04T18:47:42.685403Z W ssrevcrmrealtime: 
+2026-04-04T18:47:42.706648Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:45.828954Z I ssrevcrmrealtime: 
+2026-04-04T18:47:52.418057Z W ssrevcrmrealtime: 
+2026-04-04T18:47:52.438992Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:52.787968Z W ssrevcrmrealtime: 
+2026-04-04T18:47:52.807377Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+
+2026-04-04T18:47:53.248034Z W ssrevcrmrealtime: 
+2026-04-04T18:47:53.651608Z W ssrevcrmrealtime: 
+2026-04-04T18:47:53.677436Z ? ssrevcrmrealtime: [/api/auth/me] No token found in cookies
+

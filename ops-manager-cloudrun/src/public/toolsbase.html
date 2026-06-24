@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Tools Base — Sovereign Developer Utilities</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="One platform. Your sovereign developer tools. Secure, private, and client-side utilities including SmartNotes and Capsule context handoff.">
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  
+  <!-- Premium Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Styling tokens — Clean Atlassian Light Theme */
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      
+      --color-bg-light: #f4f5f7;
+      --color-bg-card: #ffffff;
+      --color-border: #dfe1e6;
+      
+      --color-primary: #0052cc;
+      --color-primary-hover: #0747a6;
+      
+      --color-accent-green: #36b37e;
+      --color-text-main: #091e42;
+      --color-text-muted: #5e6c84;
+      
+      /* Product brand colors */
+      --color-smartnotes: #8777d9;
+      --color-capsule: #0065ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-bg-light);
+      background-image: 
+        radial-gradient(circle at 5% 15%, rgba(0, 82, 204, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 95% 85%, rgba(135, 119, 217, 0.04) 0%, transparent 40%);
+      color: var(--color-text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    ::selection {
+      background: rgba(0, 82, 204, 0.15);
+      color: var(--color-text-main);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Atlassian-Style Header Nav */
+    header {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 1px 2px rgba(9, 30, 66, 0.05);
+    }
+
+    .nav-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--color-text-main);
+    }
+
+    /* Atlassian Logo Style Mark */
+    .logo-icon {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+    }
+
+    .logo-bar {
+      width: 6px;
+      border-radius: 3px;
+      background: var(--color-primary);
+    }
+
+    .logo-bar-1 { height: 14px; }
+    .logo-bar-2 { height: 22px; }
+    .logo-bar-3 { height: 18px; }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: none;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    @media (min-width: 768px) {
+      .nav-links {
+        display: flex;
+      }
+    }
+
+    .nav-links a {
+      color: var(--color-text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--color-primary);
+    }
+
+    /* Product Dropdown */
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+    }
+
+    .dropdown:hover .dropdown-trigger {
+      color: var(--color-primary);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 220px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(9, 30, 66, 0.15);
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      display: flex;
+    }
+
+    .dropdown-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+      background: var(--color-bg-light);
+      color: var(--color-primary);
+    }
+
+    .btn-nav {
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+
+    .btn-nav:hover {
+      background: var(--color-primary-hover);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 100px 0 60px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(54, 179, 126, 0.1);
+      border: 1px solid rgba(54, 179, 126, 0.25);
+      color: #006644;
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5.5vw, 68px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.8px;
+      margin-bottom: 24px;
+      color: var(--color-text-main);
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--color-primary), #4c9aff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      color: var(--color-text-muted);
+      max-width: 780px;
+      margin: 0 auto 36px auto;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    /* Product Grid Section (Exactly 2 Products) */
+    .product-section {
+      padding: 60px 0 100px 0;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 48px;
+      letter-spacing: -0.5px;
+      color: var(--color-text-main);
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+
+    @media (min-width: 868px) {
+      .product-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* Atlassian Suite Card Styling */
+    .product-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 44px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 1px 3px rgba(9, 30, 66, 0.08), 0 0 1px rgba(9, 30, 66, 0.15);
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0, 82, 204, 0.3);
+      box-shadow: 0 16px 32px -10px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.2);
+    }
+
+    .product-card-top {
+      margin-bottom: 30px;
+    }
+
+    .product-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .smartnotes-icon {
+      background: rgba(135, 119, 217, 0.1);
+      color: var(--color-smartnotes);
+      box-shadow: 0 0 12px rgba(135, 119, 217, 0.15);
+    }
+
+    .capsule-icon {
+      background: rgba(0, 101, 255, 0.1);
+      color: var(--color-capsule);
+      box-shadow: 0 0 12px rgba(0, 101, 255, 0.15);
+    }
+
+    .product-card-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--color-text-main);
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .product-card-desc {
+      color: var(--color-text-muted);
+      font-size: 15px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .bullets-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bullets-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .bullets-list li svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-accent-green);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Actions Drawer & Expandables */
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 36px;
+    }
+
+    .btn-main {
+      width: 100%;
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(9, 30, 66, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-main:hover {
+      background: var(--color-primary-hover);
+      box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: #f4f5f7;
+      color: var(--color-text-main);
+      border: 1px solid var(--color-border);
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #ebecf0;
+      border-color: #c1c7d0;
+    }
+
+    .setup-guide {
+      margin-top: 20px;
+      border-top: 1px dashed var(--color-border);
+      padding-top: 20px;
+      display: none;
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .setup-guide.active {
+      display: block;
+    }
+
+    .setup-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-main);
+      margin-bottom: 12px;
+    }
+
+    .setup-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setup-step {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      display: flex;
+      gap: 10px;
+      background: #f4f5f7;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+    }
+
+    .step-num {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    code {
+      background: rgba(9, 30, 66, 0.06);
+      color: #d11a2a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Core Platform Benefits */
+    .benefits-section {
+      padding: 60px 0 80px 0;
+      border-top: 1px solid var(--color-border);
+      background: #ffffff;
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    @media (min-width: 768px) {
+      .benefits-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+
+    .benefit-item {
+      text-align: center;
+      padding: 24px;
+    }
+
+    .benefit-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(0, 82, 204, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+      color: var(--color-primary);
+    }
+
+    .benefit-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--color-text-main);
+    }
+
+    .benefit-desc {
+      color: var(--color-text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    footer {
+      padding: 50px 0;
+      border-top: 1px solid var(--color-border);
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 13px;
+      background: #ffffff;
+      box-shadow: 0 -1px 2px rgba(9, 30, 66, 0.02);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Atlassian-Style Header Nav -->
+  <header>
+    <div class="container nav-wrapper">
+      <div class="nav-left">
+        <a href="#" class="logo-container" id="logo-home">
+          <div class="logo-icon">
+            <span class="logo-bar logo-bar-1"></span>
+            <span class="logo-bar logo-bar-2"></span>
+            <span class="logo-bar logo-bar-3"></span>
+          </div>
+          <span class="logo-text">The Tools Base</span>
+        </a>
+        
+        <ul class="nav-links">
+          <li class="dropdown">
+            <span class="dropdown-trigger">Products <svg style="width:10px; height:10px; fill:currentColor" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
+            <div class="dropdown-menu">
+              <a href="#smartnotes-section" class="dropdown-item">🧠 SmartNotes</a>
+              <a href="#capsule-section" class="dropdown-item">💊 Capsule Context</a>
+            </div>
+          </li>
+          <li><a href="#security-info">Security Manifesto</a></li>
+          <li><a href="#installation-guide">Setup Hub</a></li>
+        </ul>
+      </div>
+      
+      <div>
+        <a href="#smartnotes-section" class="btn-nav">Explore Tools</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Atlassian-Style Hero Area -->
+  <section class="hero">
+    <div class="container">
+      <div class="security-badge" id="trust-badge">
+        <svg style="width:14px; height:14px; fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        Sovereign, Client-Side Developer Suite
+      </div>
+      <h1 class="hero-title">
+        One platform. <br>Your <span>sovereign developer tools</span>.
+      </h1>
+      <p class="hero-desc">
+        Take back control of your developer workflow. Zero telemetry, zero tracking database. Distribute data directly to your private Google Drive vault and local clipboard logs.
+      </p>
+      <div class="hero-actions">
+        <a href="#smartnotes-section" class="btn-main" style="width:auto; padding:14px 36px;" id="hero-explore-btn">Explore the Suite</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Suite Showcase -->
+  <section class="container product-section" id="smartnotes-section">
+    <h2 class="section-title">The Sovereign Cloud Suite</h2>
+    
+    <div class="product-grid">
+      
+      <!-- PRODUCT 1: SMARTNOTES -->
+      <article class="product-card" id="card-smartnotes-prod">
+        <div class="product-card-top">
+          <div class="product-icon-wrap smartnotes-icon">
+            <svg style="width:28px; height:28px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+          </div>
+          <h3 class="product-card-title">SmartNotes</h3>
+          <p class="product-card-desc">
+            An automated browser extension that captures and parses conversations with ChatGPT, Claude, and Gemini, writing notes directly into your private Google Drive storage vault.
+          </p>
+          
+          <ul class="bullets-list">
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>Private Baremetal:</strong> Stored on your own Google Drive folder index.
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>Auto-Indexing:</strong> Directory database lists, saves, and parses chat outputs.
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>Code Snippets Extraction:</strong> Converts session logs into clean markdown.
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-actions">
+          <a href="https://notes.socialcom.store" target="_blank" class="btn-main" id="btn-launch-notes-app">
+            Launch Dashboard
+            <svg style="width:16px; height:16px; fill:currentColor" viewBox="0 0 24 24">
+              <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+            </svg>
+          </a>
+        </div>
+      </article>
+
+      <!-- PRODUCT 2: CAPSULE -->
+      <article class="product-card" id="capsule-section">
+        <div class="product-card-top">
+          <div class="product-icon-wrap capsule-icon">
+            <svg style="width:28px; height:28px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+          </div>
+          <h3 class="product-card-title">Capsule</h3>
+          <p class="product-card-desc">
+            A secure context handoff utility. Extract discussion files, tech keywords, and next actions into a formatted context capsule, bridging web AI chats and your local IDE.
+          </p>
+          
+          <ul class="bullets-list">
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>100% Client-Side:</strong> Manual copy-paste handoff in both directions.
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>Smart Heuristics:</strong> Programmatic summary, task, and path parser.
+            </li>
+            <li>
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <strong>IDE SQLite Sync:</strong> SQLite reader copies logs lock-free from state tables.
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-actions" id="installation-guide">
+          <a href="capsule-extension.zip" class="btn-main" id="btn-dl-chrome-ext" download>
+            Download Chrome Extension (.zip)
+          </a>
+          <button class="btn-secondary" id="btn-toggle-chrome-setup">
+            View Chrome Setup Guide
+          </button>
+          
+          <!-- Expandable Chrome Setup Guide -->
+          <div class="setup-guide" id="guide-chrome-setup">
+            <h4 class="setup-title">Chrome Setup Steps</h4>
+            <div class="setup-steps">
+              <div class="setup-step">
+                <span class="step-num">1</span>
+                <span>Download and extract the <code>capsule-extension.zip</code> file.</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">2</span>
+                <span>Open <code>chrome://extensions</code> in your Chrome browser.</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">3</span>
+                <span>Toggle the <strong>Developer mode</strong> switch in the top-right corner.</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">4</span>
+                <span>Click <strong>Load unpacked</strong> (top-left) and select the extracted folder.</span>
+              </div>
+            </div>
+          </div>
+
+          <a href="capsule-vscode-1.0.0.vsix" class="btn-main" style="margin-top: 10px;" id="btn-dl-vscode-ext" download>
+            Download VS Code / Cursor (.vsix)
+          </a>
+          <button class="btn-secondary" id="btn-toggle-vscode-setup">
+            View IDE Setup Guide
+          </button>
+          
+          <!-- Expandable IDE Setup Guide -->
+          <div class="setup-guide" id="guide-vscode-setup">
+            <h4 class="setup-title">IDE Setup Steps</h4>
+            <div class="setup-steps">
+              <div class="setup-step">
+                <span class="step-num">1</span>
+                <span>Download the <code>capsule-vscode-1.0.0.vsix</code> package.</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">2</span>
+                <span>In Cursor/VS Code, open the Extensions view (<code>Ctrl+Shift+X</code>).</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">3</span>
+                <span>Click the <code>...</code> (More Actions) button on the side panel.</span>
+              </div>
+              <div class="setup-step">
+                <span class="step-num">4</span>
+                <span>Choose <strong>Install from VSIX...</strong> and select the downloaded file.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- Sovereign Core Values Section -->
+  <section class="benefits-section" id="security-info">
+    <div class="container">
+      <h3 class="section-title">The Sovereign Design System</h3>
+      <div class="benefits-grid">
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <h4 class="benefit-title">Zero Central Database</h4>
+          <p class="benefit-desc">We never host or sync your files to centralized databases. All operations process locally inside your client environment.</p>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11.57M12 11V3m0 8c0-3.517 1.009-6.799 2.753-9.571m-3.44 2.04l-.054-.09A13.916 13.916 0 0015 11v8m-6 0h6"></path>
+            </svg>
+          </div>
+          <h4 class="benefit-title">Google Drive Baremetal</h4>
+          <p class="benefit-desc">All directories, indices, and session summaries are written directly into your private Google Drive vault via client-authenticated API tokens.</p>
+        </div>
+        
+        <div class="benefit-item">
+          <div class="benefit-icon">
+            <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h4 class="benefit-title">Manual Security</h4>
+          <p class="benefit-desc">No auto-injections into destination pages. Clipboard data is managed, reviewed, and pasted manually by you to prevent malicious context poisoning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 The Tools Base. Powered by Opsmanager V6.0. Secure, serverless client-side computing.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Expanding drawers logic
+    const chromeTrigger = document.getElementById('btn-toggle-chrome-setup');
+    const chromeGuide = document.getElementById('guide-chrome-setup');
+    chromeTrigger.addEventListener('click', () => {
+      const active = chromeGuide.classList.toggle('active');
+      chromeTrigger.textContent = active ? 'Hide Chrome Setup Guide' : 'View Chrome Setup Guide';
+    });
+
+    const vscodeTrigger = document.getElementById('btn-toggle-vscode-setup');
+    const vscodeGuide = document.getElementById('guide-vscode-setup');
+    vscodeTrigger.addEventListener('click', () => {
+      const active = vscodeGuide.classList.toggle('active');
+      vscodeTrigger.textContent = active ? 'Hide IDE Setup Guide' : 'View IDE Setup Guide';
+    });
+  </script>
+</body>
+</html>

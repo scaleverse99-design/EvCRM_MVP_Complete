@@ -1,0 +1,7 @@
+[
+  { "id": "r1", "name": "Ravi K.", "vehicle": "Ather 450X", "district": "Hyderabad", "rating": 5, "review": "Amazing performance in hilly areas. The Warp mode is addictive. Perfect for daily Hitech city commute.", "tags": ["Performance", "Service"] },
+  { "id": "r2", "name": "Sita M.", "vehicle": "Ola S1 Pro", "district": "Visakhapatnam", "rating": 4, "review": "Range is great for MVP colony to Gajuwaka runs. Initially had software glitches but last update fixed them.", "tags": ["Range", "Safety"] },
+  { "id": "r3", "name": "Anil P.", "vehicle": "Tata Nexon EV", "district": "Hyderabad", "rating": 5, "review": "Best family car. No issues in heavy monsoon rains. Saving almost 10k monthly on petrol.", "tags": ["Safety", "Savings"] },
+  { "id": "r4", "name": "Arjun S.", "vehicle": "MG Comet EV", "district": "Delhi", "rating": 5, "review": "Perfect for tight parking in Delhi. Turning radius is a life saver. Very budget friendly.", "tags": ["Maneuverability", "Budget"] },
+  { "id": "r5", "name": "Vinod T.", "vehicle": "Bajaj Chetak", "district": "Pune", "rating": 4, "review": "Classic look and very sturdy build quality. Service at Pune hub was very professional.", "tags": ["Build Quality", "Service"] }
+]

@@ -1,0 +1,50 @@
+[
+  { 
+    "id": "ola-s1-pro-g2", "brand": "Ola Electric", "model": "S1 Pro Gen 2", "type": "2W", 
+    "year": 2024, "km": 1500, "transmission": "Automatic", "hub": "Uppal Hub",
+    "range": 195, "topSpeed": 120, "exShowroom": 147499, "emi": 4999,
+    "image": "🛵", "inStock": true, "rating": 4.5 
+  },
+  { 
+    "id": "ather-450x-gen3", "brand": "Ather Energy", "model": "450X Gen 3", "type": "2W", 
+    "year": 2023, "km": 4200, "transmission": "Automatic", "hub": "Gachibowli Hub",
+    "range": 150, "topSpeed": 90, "exShowroom": 155000, "emi": 5100,
+    "image": "🛵", "inStock": true, "rating": 4.8 
+  },
+  { 
+    "id": "tata-tiago-ev", "brand": "Tata Motors", "model": "Tiago EV", "type": "4W", 
+    "year": 2023, "km": 6500, "transmission": "Automatic", "hub": "Banjara Hills Hub",
+    "range": 315, "topSpeed": 120, "exShowroom": 869000, "emi": 15400,
+    "image": "🚗", "inStock": true, "rating": 4.6 
+  },
+  { 
+    "id": "tata-nexon-ev-max", "brand": "Tata Motors", "model": "Nexon EV Max", "type": "4W", 
+    "year": 2023, "km": 9200, "transmission": "Automatic", "hub": "Uppal Hub",
+    "range": 465, "topSpeed": 150, "exShowroom": 1929000, "emi": 32100,
+    "image": "🚙", "inStock": true, "rating": 4.7 
+  },
+  { 
+    "id": "mg-comet-ev", "brand": "MG", "model": "Comet EV", "type": "4W", 
+    "year": 2024, "km": 800, "transmission": "Automatic", "hub": "Hitech City Hub",
+    "range": 230, "topSpeed": 100, "exShowroom": 798000, "emi": 12900,
+    "image": "🚗", "inStock": true, "rating": 4.5 
+  },
+  { 
+    "id": "mahindra-xuv400", "brand": "Mahindra", "model": "XUV400", "type": "4W", 
+    "year": 2023, "km": 11000, "transmission": "Automatic", "hub": "Secunderabad Hub",
+    "range": 456, "topSpeed": 150, "exShowroom": 1599000, "emi": 24500,
+    "image": "🚙", "inStock": true, "rating": 4.4 
+  },
+  { 
+    "id": "hyundai-ioniq-5", "brand": "Hyundai", "model": "IONIQ 5", "type": "4W", 
+    "year": 2024, "km": 200, "transmission": "Automatic", "hub": "Jubilee Hills Hub",
+    "range": 631, "topSpeed": 185, "exShowroom": 4595000, "emi": 75200,
+    "image": "🏎️", "inStock": true, "rating": 4.9 
+  },
+  { 
+    "id": "kia-ev6", "brand": "Kia", "model": "EV6 GT-Line", "type": "4W", 
+    "year": 2023, "km": 3500, "transmission": "Automatic", "hub": "Banjara Hills Hub",
+    "range": 528, "topSpeed": 192, "exShowroom": 6095000, "emi": 98400,
+    "image": "🏎️", "inStock": true, "rating": 4.8 
+  }
+]

@@ -112,7 +112,7 @@ export default function BuildPricePage() {
             </div>
           </Card>
 
-          <Btn onClick={() => router.push("/quotepro")} style={{ width:"100%" }}>Build Quote with this Price →</Btn>
+          <Btn onClick={() => router.push(`/quotepro?v=${p.brand} ${p.model}&p=${net}`)} style={{ width:"100%" }}>Build Quote with this Price →</Btn>
         </div>
       </div>
     </Shell>

@@ -1,0 +1,297 @@
+﻿2026-04-28T12:24:37.175025Z I ssrevcrmrealtime: 
+2026-04-28T12:24:37.177524Z I ssrevcrmrealtime: 
+2026-04-28T12:24:58.977810Z E ssrevcrmrealtime: 
+2026-04-28T12:25:00.563553Z ? ssrevcrmrealtime: ≡ƒÜÇ Starting Automated Setup for: balajicars
+
+2026-04-28T12:25:00.727474Z ? ssrevcrmrealtime: Provisioning Error: n [Error]: Google Sheets API has not been used in project 828582778646 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=828582778646 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at m._request (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:329:96005)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async g.requestAsync (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:329:59501)
+    at async f (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:338:1923)
+    at async s.setupNewBusiness (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:298:823)
+    at async h (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:1844)
+    at async /workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36258
+    at async eR.execute (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:26874)
+    at async eR.handle (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37512)
+    at async doRender (/workspace/node_modules/next/dist/server/base-server.js:1377:42) {
+  config: {
+    url: URL {
+      href: 'https://sheets.googleapis.com/v4/spreadsheets?fields=spreadsheetId',
+      origin: 'https://sheets.googleapis.com',
+      protocol: 'https:',
+      username: '',
+      password: '',
+      host: 'sheets.googleapis.com',
+      hostname: 'sheets.googleapis.com',
+      port: '',
+      pathname: '/v4/spreadsheets',
+      search: '?fields=spreadsheetId',
+      searchParams: URLSearchParams { 'fields' => 'spreadsheetId' },
+      hash: ''
+    },
+    method: 'POST',
+    apiVersion: '',
+    userAgentDirectives: [ [Object] ],
+    paramsSerializer: [Function (anonymous)],
+    data: { properties: [Object], sheets: [Array] },
+    headers: Headers {
+      'accept-encoding': 'gzip',
+      authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'user-agent': 'google-api-nodejs-client/8.0.1 (gzip)',
+      'x-goog-api-client': 'gdcl/8.0.1 gl-node/24.13.0',
+      'content-type': 'application/json'
+    },
+    params: { fields: 'spreadsheetId' },
+    validateStatus: [Function (anonymous)],
+    retry: true,
+    body: '{"properties":{"title":"balajicars_Database"},"sheets":[{"properties":{"title":"Inventory"}},{"properties":{"title":"Leads"}}]}',
+    responseType: 'unknown',
+    errorRedactor: [Function: e],
+    duplex: 'half',
+    retryConfig: {
+      currentRetryAttempt: 0,
+      retry: 3,
+      httpMethodsToRetry: [Array],
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1777379100701,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    }
+  },
+  response: z [Response] {
+    size: 0,
+    data: { error: [Object] },
+    config: {
+      url: URL {},
+      method: 'POST',
+      apiVersion: '',
+      userAgentDirectives: [Array],
+      paramsSerializer: [Function (anonymous)],
+      data: [Object],
+      headers: Headers {
+        'accept-encoding': 'gzip',
+        authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+        'user-agent': 'google-api-nodejs-client/8.0.1 (gzip)',
+        'x-goog-api-client': 'gdcl/8.0.1 gl-node/24.13.0',
+        'content-type': 'application/json'
+      },
+      params: [Object],
+      validateStatus: [Function (anonymous)],
+      retry: true,
+      body: '{"properties":{"title":"balajicars_Database"},"sheets":[{"properties":{"title":"Inventory"}},{"properties":{"title":"Leads"}}]}',
+      responseType: 'unknown',
+      errorRedactor: [Function: e],
+      duplex: 'half'
+    },
+    Symbol(Body internals): {
+      body: [Gunzip],
+      stream: [Gunzip],
+      boundary: null,
+      disturbed: true,
+      error: null
+    },
+    Symbol(Response internals): {
+      type: 'default',
+      url: 'https://sheets.googleapis.com/v4/spreadsheets?fields=spreadsheetId',
+      status: 403,
+      statusText: 'Forbidden',
+      headers: [Object],
+      counter: 0,
+      highWaterMark: 16384
+    }
+  },
+  code: 403,
+  status: 403,
+  error: undefined,
+  Symbol(gaxios-gaxios-error): '7.1.4',
+  [cause]: {
+    message: 'Google Sheets API has not been used in project 828582778646 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=828582778646 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.',
+    code: 403,
+    status: 'PERMISSION_DENIED',
+    errors: [ [Object] ],
+    details: [ [Object], [Object], [Object] ]
+  }
+}
+
+2026-04-28T12:26:26.543062Z I ssrevcrmrealtime: 
+2026-04-28T12:26:26.590673Z ? ssrevcrmrealtime: ≡ƒÜÇ Starting Automated Setup for: balajicars
+
+2026-04-28T12:26:27.456078Z ? ssrevcrmrealtime: Γ£à Created Database: 1O7yL9E73NJMOsxuQ7rm7fV06ePj9vSzWvDVzYla0VzU
+
+2026-04-28T12:26:27.811318Z ? ssrevcrmrealtime: Γ£à Created Folder: 18LPsiqWMNR0pSBDANTtP3OhnNcep5l6R for domain: balajicars.socialcom.store
+
+2026-04-28T12:26:28.945566Z ? ssrevcrmrealtime: Γ£à Uploaded Website: index.html
+
+2026-04-28T12:26:28.946234Z ? ssrevcrmrealtime: [Provisioner] Creating Script Project...
+
+2026-04-28T12:26:28.981669Z ? ssrevcrmrealtime: [Provisioner] Error: n [Error]: Request had insufficient authentication scopes.
+    at m._request (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:329:96005)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async g.requestAsync (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:329:59501)
+    at async f (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:338:1923)
+    at async p (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:223)
+    at async h (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:1880)
+    at async /workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36258
+    at async eR.execute (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:26874)
+    at async eR.handle (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37512)
+    at async doRender (/workspace/node_modules/next/dist/server/base-server.js:1377:42) {
+  config: {
+    url: URL {
+      href: 'https://script.googleapis.com/v1/projects',
+      origin: 'https://script.googleapis.com',
+      protocol: 'https:',
+      username: '',
+      password: '',
+      host: 'script.googleapis.com',
+      hostname: 'script.googleapis.com',
+      port: '',
+      pathname: '/v1/projects',
+      search: '',
+      searchParams: URLSearchParams {},
+      hash: ''
+    },
+    method: 'POST',
+    apiVersion: '',
+    userAgentDirectives: [ [Object] ],
+    data: { title: 'EvCRM_OpsManager_v5' },
+    headers: Headers {
+      'accept-encoding': 'gzip',
+      authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'user-agent': 'google-api-nodejs-client/8.0.1 (gzip)',
+      'x-goog-api-client': 'gdcl/8.0.1 gl-node/24.13.0',
+      'content-type': 'application/json'
+    },
+    validateStatus: [Function (anonymous)],
+    retry: true,
+    body: '{"title":"EvCRM_OpsManager_v5"}',
+    responseType: 'unknown',
+    errorRedactor: [Function: e],
+    duplex: 'half',
+    retryConfig: {
+      currentRetryAttempt: 0,
+      retry: 3,
+      httpMethodsToRetry: [Array],
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1777379188979,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    }
+  },
+  response: z [Response] {
+    size: 0,
+    data: { error: [Object] },
+    config: {
+      url: URL {},
+      method: 'POST',
+      apiVersion: '',
+      userAgentDirectives: [Array],
+      data: [Object],
+      headers: Headers {
+        'accept-encoding': 'gzip',
+        authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+        'user-agent': 'google-api-nodejs-client/8.0.1 (gzip)',
+        'x-goog-api-client': 'gdcl/8.0.1 gl-node/24.13.0',
+        'content-type': 'application/json'
+      },
+      validateStatus: [Function (anonymous)],
+      retry: true,
+      body: '{"title":"EvCRM_OpsManager_v5"}',
+      responseType: 'unknown',
+      errorRedactor: [Function: e],
+      duplex: 'half'
+    },
+    Symbol(Body internals): {
+      body: [Gunzip],
+      stream: [Gunzip],
+      boundary: null,
+      disturbed: true,
+      error: null
+    },
+    Symbol(Response internals): {
+      type: 'default',
+      url: 'https://script.googleapis.com/v1/projects',
+      status: 403,
+      statusText: 'Forbidden',
+      headers: [Object],
+      counter: 0,
+      highWaterMark: 16384
+    }
+  },
+  code: 403,
+  status: 403,
+  error: undefined,
+  Symbol(gaxios-gaxios-error): '7.1.4',
+  [cause]: {
+    message: 'Request had insufficient authentication scopes.',
+    code: 403,
+    status: 'PERMISSION_DENIED',
+    errors: [ [Object] ],
+    details: [ [Object] ]
+  }
+}
+
+2026-04-28T12:29:25.984407Z I ssrevcrmrealtime: 
+2026-04-28T12:29:26.022539Z ? ssrevcrmrealtime: ≡ƒÜÇ Starting Automated Setup for: balajicars
+
+2026-04-28T12:29:26.699986Z ? ssrevcrmrealtime: Γ£à Created Database: 1F6O0w5I9-P3LsHlPDYUncCb6HiNPTXtmaK0d8qK3shY
+
+2026-04-28T12:29:27.125708Z ? ssrevcrmrealtime: Γ£à Created Folder: 1aM4OSTM5SAuxVvCAWktOSzOatfar6uEp for domain: balajicars.socialcom.store
+
+2026-04-28T12:29:28.357967Z ? ssrevcrmrealtime: Γ£à Uploaded Website: index.html
+
+2026-04-28T12:29:28.358148Z ? ssrevcrmrealtime: [Provisioner] Creating Script Project...
+
+2026-04-28T12:29:36.936137Z ? ssrevcrmrealtime: [Provisioner] Creating Version...
+
+2026-04-28T12:29:37.343343Z ? ssrevcrmrealtime: [Provisioner] Deploying Web App...
+
+2026-04-28T12:29:37.343820Z ? ssrevcrmrealtime: [Provisioner] Error: TypeError: Cannot read properties of undefined (reading 'create')
+    at p (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:880)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async h (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:1880)
+    at async /workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36258
+    at async eR.execute (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:26874)
+    at async eR.handle (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37512)
+    at async doRender (/workspace/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/workspace/node_modules/next/dist/server/base-server.js:1599:28)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/workspace/node_modules/next/dist/server/base-server.js:1507:28)
+    at async NextNodeServer.renderPageComponent (/workspace/node_modules/next/dist/server/base-server.js:1931:24)
+
+2026-04-28T12:29:37.880428Z E ssrevcrmrealtime: 'Memory limit of 256 MiB exceeded with 256 MiB used. Consider increasing the memory limit, see https://cloud.google.com/functions/docs/configuring/memory'
+2026-04-28T12:29:38.631501Z I ssrevcrmrealtime: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-04-28T12:29:39.819282Z I ssrevcrmrealtime: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-04-28T12:30:05.973398Z I ssrevcrmrealtime: 
+2026-04-28T12:30:06.640196Z ? ssrevcrmrealtime:  ΓÜá "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+
+2026-04-28T12:30:08.295059Z ? ssrevcrmrealtime: [Firebase Admin] Initializing Firebase Admin... { projectId: 'ev-crm-realtime', hasKey: true }
+
+2026-04-28T12:30:08.504865Z ? ssrevcrmrealtime: ≡ƒÜÇ Starting Automated Setup for: balajicars
+
+2026-04-28T12:30:09.568217Z ? ssrevcrmrealtime: Γ£à Created Database: 1BFTcgjx1WvrHBnl50wBli6n5SxIqgmSatHM9zLwN5gw
+
+2026-04-28T12:30:10.033208Z ? ssrevcrmrealtime: Γ£à Created Folder: 1NPWzmw_ArGMc6OW5nBFoCufTqoTpupup for domain: balajicars.socialcom.store
+
+2026-04-28T12:30:11.263050Z ? ssrevcrmrealtime: Γ£à Uploaded Website: index.html
+
+2026-04-28T12:30:11.263761Z ? ssrevcrmrealtime: [Provisioner] Creating Script Project...
+
+2026-04-28T12:30:22.232205Z ? ssrevcrmrealtime: [Provisioner] Creating Version...
+
+2026-04-28T12:30:22.729791Z ? ssrevcrmrealtime: [Provisioner] Deploying Web App...
+
+2026-04-28T12:30:22.745321Z ? ssrevcrmrealtime: [Provisioner] Error: TypeError: Cannot read properties of undefined (reading 'create')
+    at p (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:880)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async h (/workspace/.next/server/app/api/admin/ops-manager/provision/route.js:296:1880)
+    at async /workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36258
+    at async eR.execute (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:26874)
+    at async eR.handle (/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37512)
+    at async doRender (/workspace/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/workspace/node_modules/next/dist/server/base-server.js:1599:28)
+    at async NextNodeServer.renderToResponseWithComponentsImpl (/workspace/node_modules/next/dist/server/base-server.js:1507:28)
+    at async NextNodeServer.renderPageComponent (/workspace/node_modules/next/dist/server/base-server.js:1931:24)
+
