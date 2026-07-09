@@ -31,6 +31,13 @@ export async function POST(req) {
   const body = await req.json()
   const dealership = user.dealership || body.dealership
 
+  const inv = await readTable("inventory")
+
+  // 5.7 VIN Uniqueness Check
+  if (body.vin && inv.some(v => v.vin && v.vin === body.vin)) {
+    return NextResponse.json({ error: `VIN ${body.vin} already exists in inventory` }, { status: 409 })
+  }
+
   const item = {
     id:          `inv_${Date.now()}`,
     dealership,
@@ -51,6 +58,9 @@ export async function POST(req) {
     emi:         body.emi || 0,
     tokenAmount: 1000,
     status:      body.status || "IN_STOCK",
+    vin:         body.vin || "",
+    isDemo:      body.isDemo || false,
+    demoMileage: body.isDemo ? (body.demoMileage || 0) : null,
     images:      body.images || ["🚗"],
     features:    body.features || [],
     tags:        body.tags || [],
@@ -58,10 +68,10 @@ export async function POST(req) {
     district:    body.district || "",
     rating:      0,
     reviews:     0,
+    stockLog:    [{ event:"received", note:"Added to inventory", date:new Date().toISOString() }],
     createdAt:   new Date().toISOString()
   }
 
-  const inv = await readTable("inventory")
   inv.unshift(item)
   await writeTable("inventory", inv)
 
@@ -84,6 +94,17 @@ export async function PATCH(req) {
   // Dealers can only edit their own inventory
   if (user.role === "dealer" && inv[idx].dealership !== user.dealership) {
     return NextResponse.json({ error:"Forbidden" }, { status:403 })
+  }
+
+  // 5.7 VIN Uniqueness Check (on edit)
+  if (updates.vin && inv.some(v => v.id !== id && v.vin && v.vin === updates.vin)) {
+    return NextResponse.json({ error: `VIN ${updates.vin} already exists in inventory` }, { status: 409 })
+  }
+
+  // 5.3 Stock Count Update audit trail — log status transitions
+  if (updates.status && updates.status !== inv[idx].status) {
+    inv[idx].stockLog = inv[idx].stockLog || []
+    inv[idx].stockLog.unshift({ event: updates.status.toLowerCase(), note: `Status changed ${inv[idx].status} → ${updates.status}`, date: new Date().toISOString() })
   }
 
   inv[idx] = { ...inv[idx], ...updates, updatedAt: new Date().toISOString() }

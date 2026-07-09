@@ -15,7 +15,8 @@
     "next_followup": "2026-07-09T12:58:21.953Z",
     "bookingId": "book_1783594701952",
     "preferredDate": "2026-07-10",
-    "created_at": "2026-07-09T10:58:21.952Z"
+    "created_at": "2026-07-09T10:58:21.952Z",
+    "notes": []
   },
   {
     "id": "lead_001",

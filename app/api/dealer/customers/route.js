@@ -59,14 +59,15 @@ export async function POST(req) {
   return NextResponse.json({ success: true, customer })
 }
 
-// PATCH: update customer details, or add/complete a service reminder
+// PATCH: update customer details, or add/complete a service reminder, or log a communication (4.7)
 // body: { id, ...fields } OR { id, addReminder: {type, dueDate} } OR { id, completeReminderId }
+//       OR { id, addComm: {channel, note} }
 export async function PATCH(req) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { id, addReminder, completeReminderId, ...updates } = body
+  const { id, addReminder, completeReminderId, addComm, ...updates } = body
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
   const customers = await readJson(FILE)
@@ -88,6 +89,15 @@ export async function PATCH(req) {
     customers[idx].serviceReminders = (customers[idx].serviceReminders || []).map(r =>
       r.id === completeReminderId ? { ...r, done: true } : r
     )
+  } else if (addComm) {
+    customers[idx].commLog = customers[idx].commLog || []
+    customers[idx].commLog.unshift({
+      id: `comm_${Date.now()}`,
+      channel: addComm.channel || "whatsapp",
+      note: addComm.note || "",
+      author: user.email || user.sub,
+      created_at: new Date().toISOString(),
+    })
   } else {
     customers[idx] = { ...customers[idx], ...updates }
   }
