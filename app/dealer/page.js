@@ -9,6 +9,7 @@ import { C, fmt, STATUS_CONFIG } from "../../lib/constants"
 import { useAuth } from "../../lib/AuthContext"
 import { authFetch } from "../../lib/token-storage"
 import ImportModal from "../../components/ui/ImportModal"
+import TrialBanner from "../../components/TrialBanner"
 
 /* ── WhatsApp templates ─── */
 const WA_REPLY_MAP = {
@@ -810,6 +811,8 @@ function DealerDashboard() {
 
   return (
     <Shell title="Dealer Dashboard">
+      <TrialBanner dealer={user} />
+
       {/* Dealer welcome bar */}
       <div style={{ background:`${C.green}10`, border:`1px solid ${C.green}25`, borderRadius:10, padding:"10px 16px", marginBottom:20, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>

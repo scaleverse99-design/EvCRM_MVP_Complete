@@ -28,8 +28,16 @@ export async function GET(req) {
         role:       user.role,
         name:       user.name,
         dealership: user.dealership,
+        phone:      user.phone || "",
         opsmanager_url: process.env.OPSMANAGER_URL,
         opsmanager_token: process.env.OPSMANAGER_TOKEN,
+        // Billing — trialStartDate falls back to account creation date for
+        // dealer rows created before this field existed.
+        trialStartDate:         user.trialStartDate || user.created_at,
+        billingStatus:          user.billingStatus || "trial",
+        mandateStatus:          user.mandateStatus || "none",
+        razorpayCustomerId:     user.razorpayCustomerId || null,
+        razorpaySubscriptionId: user.razorpaySubscriptionId || null,
       }
     })
 

@@ -15,8 +15,14 @@
     "role": "dealer",
     "name": "Ravi Teja (Deccan EV Hub)",
     "dealership": "hyd-d01",
+    "phone": "919999988888",
     "is_active": true,
     "created_at": "2026-07-08T20:58:05.234Z",
-    "last_login": "2026-07-09T10:58:24.919Z"
+    "last_login": "2026-07-09T10:58:24.919Z",
+    "trialStartDate": "2026-07-08T20:58:05.234Z",
+    "billingStatus": "trial",
+    "mandateStatus": "none",
+    "razorpayCustomerId": null,
+    "razorpaySubscriptionId": null
   }
 ]
