@@ -7,5 +7,16 @@
     "name": "System Founder",
     "is_active": true,
     "created_at": "2026-05-06T18:52:51.535Z"
+  },
+  {
+    "id": "user_dealer_001",
+    "email": "dealer@deccanev.in",
+    "password_hash": "$2a$12$37k5dde/Mtedee0iW6S/cuzTOrFetTuh7BbT6jtsAYIXo/9h/.3vi",
+    "role": "dealer",
+    "name": "Ravi Teja (Deccan EV Hub)",
+    "dealership": "hyd-d01",
+    "is_active": true,
+    "created_at": "2026-07-08T20:58:05.234Z",
+    "last_login": "2026-07-09T10:58:24.919Z"
   }
 ]

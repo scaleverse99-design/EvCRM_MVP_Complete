@@ -1,0 +1,32 @@
+[
+  {
+    "id": "rep_001",
+    "dealership": "hyd-d01",
+    "name": "Vikram Shetty",
+    "rate": 28,
+    "leads": 12,
+    "closed": 3,
+    "status": "online",
+    "color": "#059669"
+  },
+  {
+    "id": "rep_002",
+    "dealership": "hyd-d01",
+    "name": "Ananya Rao",
+    "rate": 22,
+    "leads": 9,
+    "closed": 2,
+    "status": "busy",
+    "color": "#2563EB"
+  },
+  {
+    "id": "rep_003",
+    "dealership": "hyd-d01",
+    "name": "Karan Mehta",
+    "rate": 15,
+    "leads": 7,
+    "closed": 1,
+    "status": "offline",
+    "color": "#7C3AED"
+  }
+]

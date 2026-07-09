@@ -82,11 +82,13 @@ function Sidebar({ open, onClose, user, onLogout }) {
   const navigate = (href) => { router.push(href); onClose() }
 
   const role    = user?.role || "rep"
-  const groups  = NAV_BY_ROLE[role] || NAV_BY_ROLE.rep
+  const navRole = (role === "founder") ? "superadmin" : role
+  const groups  = NAV_BY_ROLE[navRole] || NAV_BY_ROLE.rep
 
   // Label & color by role
   const roleCfg = {
     superadmin: { label:"Founder", color:"#065F46", badge:"🔱" },
+    founder:    { label:"Founder", color:"#065F46", badge:"🔱" },
     dealer:     { label:"Dealer",  color:C.green,   badge:"🏪" },
     rep:        { label:"Rep",     color:C.orange,  badge:"⚡" },
   }[role] || { label:"User", color:C.blue, badge:"👤" }
@@ -196,7 +198,7 @@ function TopBar({ sidebarOpen, onToggle, title, user, onLogout }) {
     return () => document.removeEventListener("mousedown", fn)
   }, [])
 
-  const roleColor = { superadmin:C.accent, dealer:C.greenMid, rep:C.greenMid }[user?.role] || C.blue
+  const roleColor = { superadmin:C.accent, founder:C.accent, dealer:C.greenMid, rep:C.greenMid }[user?.role] || C.blue
 
   return (
     <header style={{

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "book_1783594701952",
+    "vehicleId": "tata-nexon-ev-max-d01",
+    "vehicleName": "Tata Motors Nexon EV Max LR Dark Edition",
+    "dealership": "hyd-d01",
+    "dealerName": "Deccan EV Hub Hitech",
+    "name": "Suresh Raju",
+    "phone": "9876543210",
+    "email": "",
+    "preferredDate": "2026-07-10",
+    "message": "",
+    "tokenAmount": 1000,
+    "status": "PENDING_PAYMENT",
+    "createdAt": "2026-07-09T10:58:21.952Z"
+  }
+]

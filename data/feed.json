@@ -1,0 +1,74 @@
+[
+  {
+    "id": "feed_1783594701953",
+    "dealership": "hyd-d01",
+    "type": "TEST_DRIVE_BOOKED",
+    "label": "🔥 TEST DRIVE BOOKED",
+    "msg": "Suresh Raju booked test drive — Nexon EV Max",
+    "sub": "₹1,000 token · 10 Jul · via Marketplace",
+    "icon": "🚗",
+    "color": "#059669",
+    "actionLabel": "Call",
+    "created_at": "2026-07-09T10:58:21.952Z"
+  },
+  {
+    "id": "feed_001",
+    "dealership": "hyd-d01",
+    "type": "LEAD_CLOSED",
+    "label": "DEAL CLOSED",
+    "msg": "Anil Reddy — Ather 450X sold",
+    "sub": "₹1,45,000 · Referral",
+    "icon": "🏆",
+    "color": "#059669",
+    "actionLabel": "View",
+    "created_at": "2026-07-07T14:30:00.000Z"
+  },
+  {
+    "id": "feed_002",
+    "dealership": "hyd-d01",
+    "type": "LEAD_CREATED",
+    "label": "NEW LEAD",
+    "msg": "Suresh Babu added via Walk-in",
+    "sub": "Tata Nexon EV",
+    "icon": "✦",
+    "color": "#2563EB",
+    "actionLabel": "View",
+    "created_at": "2026-07-09T08:30:00.000Z"
+  },
+  {
+    "id": "feed_003",
+    "dealership": "hyd-d01",
+    "type": "FOLLOWUP_DUE",
+    "label": "FOLLOW-UP DUE",
+    "msg": "Priya Sharma — TCO enquiry overdue",
+    "sub": "Ola S1 Pro · Due since 10 AM",
+    "icon": "⚠",
+    "color": "#F59E0B",
+    "actionLabel": "Call",
+    "created_at": "2026-07-08T09:00:00.000Z"
+  },
+  {
+    "id": "feed_004",
+    "dealership": "hyd-d01",
+    "type": "LEAD_CREATED",
+    "label": "NEW LEAD",
+    "msg": "Rajesh Kumar added via Walk-in",
+    "sub": "Tata Nexon EV",
+    "icon": "✦",
+    "color": "#2563EB",
+    "actionLabel": "View",
+    "created_at": "2026-07-09T07:00:00.000Z"
+  },
+  {
+    "id": "feed_005",
+    "dealership": "hyd-d01",
+    "type": "QUOTE_SENT",
+    "label": "QUOTE SENT",
+    "msg": "Meena Nair — MG ZS EV quoted",
+    "sub": "Promo code EV10OFF applied",
+    "icon": "📄",
+    "color": "#7C3AED",
+    "actionLabel": "View",
+    "created_at": "2026-07-08T11:00:00.000Z"
+  }
+]

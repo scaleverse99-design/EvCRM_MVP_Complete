@@ -3,9 +3,9 @@ export default async function sitemap() {
   
   return [
     "",
-    "/news",
-    "/subsidies",
+    "/showroom",
     "/charging",
+    "/service-centers",
     "/login",
     "/register"
   ].map(route => ({

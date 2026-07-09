@@ -95,7 +95,7 @@ function Alert({ type="error", msg, onClose }) {
 // ── Success screen ─────────────────────────────────────────────────
 function SuccessScreen({ role, name }) {
   const router = useRouter()
-  const dest   = role==="superadmin" ? "/admin" : (role==="dealer" ? "/dealer" : "/queue")
+  const dest   = (role==="superadmin"||role==="founder") ? "/admin" : (role==="dealer" ? "/dealer" : "/queue")
   const [pct,  setPct] = useState(0)
   const [msg,  setMsg] = useState("Accessing Expert Environment...")
 
@@ -148,7 +148,7 @@ export default function LoginPage() {
 
       authFetch("/api/auth/me").then(r=>r.json()).then(d=>{
         if (d.success) {
-          const route = d.user.role === "superadmin" ? "/admin" : (d.user.role === "dealer" ? "/dealer" : "/queue")
+          const route = (d.user.role === "superadmin" || d.user.role === "founder") ? "/admin" : (d.user.role === "dealer" ? "/dealer" : "/queue")
           router.replace(route) // Use replace to avoid back-button loops
         }
       }).catch(()=>{})

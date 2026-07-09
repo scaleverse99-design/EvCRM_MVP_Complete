@@ -16,5 +16,14 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
     "expires_at": "2026-05-13T18:57:29.998Z",
     "created_at": "2026-05-06T18:57:29.998Z"
+  },
+  {
+    "id": "sess_temp_preview",
+    "user_id": "user_dealer_001",
+    "token_hash": "9aac7f675880dbce4816385bf9f34ba630ea5b761fe43d0a78ef911308eb61a6",
+    "ip_address": "127.0.0.1",
+    "user_agent": "claude-preview",
+    "expires_at": "2026-07-09T17:16:03.523Z",
+    "created_at": "2026-07-09T16:16:03.524Z"
   }
 ]
