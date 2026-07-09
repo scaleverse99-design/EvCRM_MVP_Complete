@@ -1,21 +1,6 @@
 import { NextResponse } from "next/server"
 import { verifyToken } from "../../../../lib/auth"
-import fs from "fs"
-import path from "path"
-
-const DATA_FILE = path.join(process.cwd(), "data", "leads.json")
-
-function readLeads() {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"))
-  } catch {
-    return []
-  }
-}
-
-function writeLeads(leads) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(leads, null, 2))
-}
+import { readTable, writeTable } from "../../../../lib/store"
 
 export async function GET(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
@@ -25,7 +10,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const dealership = searchParams.get("dealership")
 
-  let leads = readLeads()
+  let leads = await readTable("leads")
   if (dealership) leads = leads.filter(l => l.dealership === dealership)
 
   // Sort by created_at descending
@@ -40,7 +25,7 @@ export async function POST(req) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const leads = readLeads()
+  const leads = await readTable("leads")
 
   const newLead = {
     id: `lead_${Date.now()}`,
@@ -57,7 +42,7 @@ export async function POST(req) {
   }
 
   leads.push(newLead)
-  writeLeads(leads)
+  await writeTable("leads", leads)
 
   return NextResponse.json({ success: true, lead: newLead })
 }
@@ -70,12 +55,12 @@ export async function PATCH(req) {
   const body = await req.json()
   const { id, ...updates } = body
 
-  const leads = readLeads()
+  const leads = await readTable("leads")
   const idx = leads.findIndex(l => l.id === id)
   if (idx === -1) return NextResponse.json({ error: "Lead not found" }, { status: 404 })
 
   leads[idx] = { ...leads[idx], ...updates }
-  writeLeads(leads)
+  await writeTable("leads", leads)
 
   return NextResponse.json({ success: true, lead: leads[idx] })
 }

@@ -28,7 +28,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const dealership = user.dealership || searchParams.get("dealership")
 
-  const all = readJson(BOOK_FILE)
+  const all = await readJson(BOOK_FILE)
   const bookings = dealership ? all.filter(b => b.dealership === dealership) : all
   return NextResponse.json({ success: true, bookings, total: bookings.length })
 }
@@ -45,7 +45,7 @@ export async function PATCH(req) {
   const { id, action } = body
   if (!id || !action) return NextResponse.json({ error: "id and action are required" }, { status: 400 })
 
-  const booking = readJson(BOOK_FILE).find(b => b.id === id)
+  const booking = (await readJson(BOOK_FILE)).find(b => b.id === id)
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 })
   if (!canAccess(user, booking)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
@@ -58,22 +58,22 @@ export async function PATCH(req) {
     }
     try {
       await capturePayment(booking.razorpayPaymentId, booking.amountPaise)
-      let updated = updateBooking(id, { paymentStatus: "CAPTURED_HELD_IN_PG", status: "SALE_CONFIRMED" })
+      let updated = await updateBooking(id, { paymentStatus: "CAPTURED_HELD_IN_PG", status: "SALE_CONFIRMED" })
 
-      const dealers = readJson(DEALERS_FILE)
+      const dealers = await readJson(DEALERS_FILE)
       const dealer = dealers.find(d => d.id === booking.dealership)
       if (dealer?.razorpayAccountId) {
         try {
           await createTransfer(booking.razorpayPaymentId, dealer.razorpayAccountId, booking.amountPaise)
-          updated = updateBooking(id, { paymentStatus: "RELEASED_TO_DEALER" })
+          updated = await updateBooking(id, { paymentStatus: "RELEASED_TO_DEALER" })
         } catch (transferErr) {
           // Capture succeeded but payout failed/not eligible yet — funds stay
           // in the platform account, dealer can be paid out manually.
-          updated = updateBooking(id, { payoutError: transferErr.error?.description || transferErr.message })
+          updated = await updateBooking(id, { payoutError: transferErr.error?.description || transferErr.message })
         }
       }
 
-      const { customer, task } = finalizeSale(updated)
+      const { customer, task } = await finalizeSale(updated)
       return NextResponse.json({ success: true, booking: updated, customer, task })
     } catch (e) {
       return NextResponse.json({ error: e.error?.description || e.message || "Capture failed" }, { status: 502 })
@@ -91,12 +91,12 @@ export async function PATCH(req) {
       } catch (e) {
         return NextResponse.json({ error: e.error?.description || e.message || "Refund failed" }, { status: 502 })
       }
-      const updated = updateBooking(id, { status: "CANCELLED", paymentStatus: "REFUNDED" })
+      const updated = await updateBooking(id, { status: "CANCELLED", paymentStatus: "REFUNDED" })
       return NextResponse.json({ success: true, booking: updated })
     }
     // AUTHORIZED_HELD (never captured) or SKIPPED_NO_GATEWAY — nothing to refund,
     // an uncaptured authorization simply expires on its own.
-    const updated = updateBooking(id, { status: "CANCELLED" })
+    const updated = await updateBooking(id, { status: "CANCELLED" })
     return NextResponse.json({ success: true, booking: updated })
   }
 

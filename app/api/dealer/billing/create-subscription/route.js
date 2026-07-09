@@ -15,15 +15,10 @@
 // plan_id in RAZORPAY_PLAN_ID.
 
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
 import { verifyToken } from "../../../../../lib/auth"
 import { getRazorpay, isRazorpayConfigured, getPublicKeyId } from "../../../../../lib/razorpay"
 import { TRIAL_DAYS } from "../../../../../lib/billing"
-
-const USERS_FILE = path.join(process.cwd(), "data", "users.json")
-function readUsers()      { try { return JSON.parse(fs.readFileSync(USERS_FILE, "utf8")) } catch { return [] } }
-function writeUsers(data) { fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2)) }
+import { readTable, writeTable } from "../../../../../lib/store"
 
 async function getUser(req) {
   const auth = req.headers.get("authorization") || ""
@@ -46,7 +41,7 @@ export async function POST(req) {
 
   const { dealerName, dealerEmail, dealerPhone } = await req.json()
 
-  const users = readUsers()
+  const users = await readTable("users")
   const idx = users.findIndex(u => u.id === authUser.sub)
   if (idx === -1) return NextResponse.json({ error: "Dealer account not found" }, { status: 404 })
   const dealer = users[idx]
@@ -83,7 +78,7 @@ export async function POST(req) {
       razorpaySubscriptionId: subscription.id,
       mandateStatus: "pending",
     }
-    writeUsers(users)
+    await writeTable("users", users)
 
     return NextResponse.json({
       subscriptionId: subscription.id,

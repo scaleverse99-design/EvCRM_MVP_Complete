@@ -8,7 +8,7 @@ export async function POST(req) {
 
   if (!vehicleId) return NextResponse.json({ error: "vehicleId is required" }, { status: 400 })
 
-  const vehicle = findVehicle(vehicleId)
+  const vehicle = await findVehicle(vehicleId)
   if (!vehicle) return NextResponse.json({ error: "Vehicle not found" }, { status: 404 })
 
   if (!isRazorpayConfigured()) {

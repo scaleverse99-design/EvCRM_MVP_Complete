@@ -1,6 +1,6 @@
 // ── app/api/webhooks/razorpay-subscription/route.js ──────────────────
 // Handles Razorpay subscription lifecycle events so a dealer's
-// billingStatus in users.json always matches reality.
+// billingStatus always matches reality.
 //
 // Register this URL in Razorpay Dashboard → Settings → Webhooks (as a
 // SEPARATE webhook from the marketplace payment one, with its own secret):
@@ -12,20 +12,15 @@
 // Requires env var: RAZORPAY_SUBSCRIPTION_WEBHOOK_SECRET
 
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
 import { verifyWebhookSignature } from "../../../../lib/razorpay"
+import { readTable, writeTable } from "../../../../lib/store"
 
-const USERS_FILE = path.join(process.cwd(), "data", "users.json")
-function readUsers()      { try { return JSON.parse(fs.readFileSync(USERS_FILE, "utf8")) } catch { return [] } }
-function writeUsers(data) { fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2)) }
-
-function updateDealer(dealerId, updates) {
-  const users = readUsers()
+async function updateDealer(dealerId, updates) {
+  const users = await readTable("users")
   const idx = users.findIndex(u => u.id === dealerId)
   if (idx === -1) return null
   users[idx] = { ...users[idx], ...updates }
-  writeUsers(users)
+  await writeTable("users", users)
   return users[idx]
 }
 
@@ -47,21 +42,21 @@ export async function POST(req) {
     switch (event.event) {
       case "subscription.authenticated":
         // Mandate authorized during trial — billingStatus stays "trial" until it actually ends.
-        updateDealer(dealerId, { mandateStatus: "authorized" })
+        await updateDealer(dealerId, { mandateStatus: "authorized" })
         break
 
       case "subscription.activated":
       case "subscription.charged":
-        updateDealer(dealerId, { billingStatus: "active" })
+        await updateDealer(dealerId, { billingStatus: "active" })
         break
 
       case "subscription.pending":
       case "subscription.halted":
-        updateDealer(dealerId, { billingStatus: "past_due" })
+        await updateDealer(dealerId, { billingStatus: "past_due" })
         break
 
       case "subscription.cancelled":
-        updateDealer(dealerId, { billingStatus: "cancelled" })
+        await updateDealer(dealerId, { billingStatus: "cancelled" })
         break
 
       default:

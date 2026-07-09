@@ -20,7 +20,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const dealership = user.dealership || searchParams.get("dealership")
 
-  const all = readJson(FILE)
+  const all = await readJson(FILE)
   const customers = dealership ? all.filter(c => c.dealership === dealership) : all
   return NextResponse.json({ success: true, customers, total: customers.length })
 }
@@ -52,9 +52,9 @@ export async function POST(req) {
     createdAt: new Date().toISOString(),
   }
 
-  const customers = readJson(FILE)
+  const customers = await readJson(FILE)
   customers.unshift(customer)
-  writeJson(FILE, customers)
+  await writeJson(FILE, customers)
 
   return NextResponse.json({ success: true, customer })
 }
@@ -69,7 +69,7 @@ export async function PATCH(req) {
   const { id, addReminder, completeReminderId, ...updates } = body
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
-  const customers = readJson(FILE)
+  const customers = await readJson(FILE)
   const idx = customers.findIndex(c => c.id === id)
   if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (user.role === "dealer" && customers[idx].dealership !== user.dealership) {
@@ -92,7 +92,7 @@ export async function PATCH(req) {
     customers[idx] = { ...customers[idx], ...updates }
   }
   customers[idx].updatedAt = new Date().toISOString()
-  writeJson(FILE, customers)
+  await writeJson(FILE, customers)
 
   return NextResponse.json({ success: true, customer: customers[idx] })
 }

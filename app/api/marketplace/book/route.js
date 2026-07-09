@@ -15,7 +15,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "vehicleId, name and phone are required" }, { status: 400 })
   }
 
-  const result = createBookingAndLead({ vehicleId, name, phone, email, preferredDate, message })
+  const result = await createBookingAndLead({ vehicleId, name, phone, email, preferredDate, message })
   if (result.error) return NextResponse.json({ error: result.error }, { status: 404 })
 
   const { booking, vehicle } = result

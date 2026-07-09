@@ -28,7 +28,7 @@ export async function POST(req) {
   // Signature is valid, so the payment is authorized. Under manual capture
   // (payment_capture:0 on the order) the funds are held, not yet moved —
   // dealer "Confirm Sale" triggers the actual capture later.
-  const result = createBookingAndLead({
+  const result = await createBookingAndLead({
     vehicleId, name, phone, email, preferredDate, message,
     paymentMeta: {
       paymentStatus: "AUTHORIZED_HELD",

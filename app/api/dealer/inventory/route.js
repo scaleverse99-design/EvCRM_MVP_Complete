@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
 import { verifyToken } from "../../../../lib/auth"
-
-const FILE = path.join(process.cwd(), "data", "inventory.json")
-function read()       { try { return JSON.parse(fs.readFileSync(FILE,"utf8")) } catch { return [] } }
-function write(data)  { fs.writeFileSync(FILE, JSON.stringify(data, null, 2)) }
+import { readTable, writeTable } from "../../../../lib/store"
 
 async function getUser(req) {
   const auth = req.headers.get("authorization") || ""
@@ -22,7 +17,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const dealership = user.dealership || searchParams.get("dealership")
 
-  const inv = read()
+  const inv = await readTable("inventory")
   const items = dealership ? inv.filter(v => v.dealership === dealership) : inv
   return NextResponse.json({ success:true, inventory:items, total:items.length })
 }
@@ -66,9 +61,9 @@ export async function POST(req) {
     createdAt:   new Date().toISOString()
   }
 
-  const inv = read()
+  const inv = await readTable("inventory")
   inv.unshift(item)
-  write(inv)
+  await writeTable("inventory", inv)
 
   return NextResponse.json({ success:true, item })
 }
@@ -82,7 +77,7 @@ export async function PATCH(req) {
   const { id, ...updates } = body
   if (!id) return NextResponse.json({ error:"id required" }, { status:400 })
 
-  const inv = read()
+  const inv = await readTable("inventory")
   const idx = inv.findIndex(v => v.id === id)
   if (idx === -1) return NextResponse.json({ error:"Not found" }, { status:404 })
 
@@ -92,7 +87,7 @@ export async function PATCH(req) {
   }
 
   inv[idx] = { ...inv[idx], ...updates, updatedAt: new Date().toISOString() }
-  write(inv)
+  await writeTable("inventory", inv)
 
   return NextResponse.json({ success:true, item:inv[idx] })
 }
@@ -106,12 +101,12 @@ export async function DELETE(req) {
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error:"id required" }, { status:400 })
 
-  let inv = read()
+  let inv = await readTable("inventory")
   const target = inv.find(v => v.id === id)
   if (!target) return NextResponse.json({ error:"Not found" }, { status:404 })
   if (user.role === "dealer" && target.dealership !== user.dealership) return NextResponse.json({ error:"Forbidden" }, { status:403 })
 
   inv = inv.filter(v => v.id !== id)
-  write(inv)
+  await writeTable("inventory", inv)
   return NextResponse.json({ success:true })
 }

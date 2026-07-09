@@ -20,7 +20,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const dealership = user.dealership || searchParams.get("dealership")
 
-  const all = readJson(FILE)
+  const all = await readJson(FILE)
   const tasks = dealership ? all.filter(t => t.dealership === dealership) : all
   return NextResponse.json({ success: true, tasks, total: tasks.length })
 }
@@ -36,7 +36,7 @@ export async function POST(req) {
   const body = await req.json()
   const dealership = user.dealership || body.dealership
 
-  const task = createTask({
+  const task = await createTask({
     dealership,
     title: body.title,
     type: body.type || "manual",
@@ -58,7 +58,7 @@ export async function PATCH(req) {
   const { id, ...updates } = body
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
-  const tasks = readJson(FILE)
+  const tasks = await readJson(FILE)
   const idx = tasks.findIndex(t => t.id === id)
   if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (user.role === "dealer" && tasks[idx].dealership !== user.dealership) {
@@ -66,7 +66,7 @@ export async function PATCH(req) {
   }
 
   tasks[idx] = { ...tasks[idx], ...updates, updatedAt: new Date().toISOString() }
-  writeJson(FILE, tasks)
+  await writeJson(FILE, tasks)
 
   return NextResponse.json({ success: true, task: tasks[idx] })
 }
@@ -80,7 +80,7 @@ export async function DELETE(req) {
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
-  let tasks = readJson(FILE)
+  let tasks = await readJson(FILE)
   const target = tasks.find(t => t.id === id)
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (user.role === "dealer" && target.dealership !== user.dealership) {
@@ -88,6 +88,6 @@ export async function DELETE(req) {
   }
 
   tasks = tasks.filter(t => t.id !== id)
-  writeJson(FILE, tasks)
+  await writeJson(FILE, tasks)
   return NextResponse.json({ success: true })
 }

@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
-
-const FILE = path.join(process.cwd(), "data", "inventory.json")
-
-function readInventory() {
-  try { return JSON.parse(fs.readFileSync(FILE, "utf8")) } catch { return [] }
-}
+import { readTable } from "../../../../lib/store"
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url)
@@ -22,7 +15,8 @@ export async function GET(req) {
   const q          = searchParams.get("q")           // free text search
   const sort       = searchParams.get("sort") || "default"
 
-  let items = readInventory().filter(v => v.status === "IN_STOCK")
+  const all = await readTable("inventory")
+  let items = all.filter(v => v.status === "IN_STOCK")
 
   if (type)       items = items.filter(v => v.type === type)
   if (brand)      items = items.filter(v => v.brand.toLowerCase() === brand.toLowerCase())
@@ -49,7 +43,6 @@ export async function GET(req) {
   if (sort === "rating_desc") items.sort((a,b) => b.rating - a.rating)
 
   // Aggregated filter options for the filter bar
-  const all = readInventory()
   const brands    = [...new Set(all.map(v => v.brand))].sort()
   const districts = [...new Set(all.map(v => v.district).filter(Boolean))].sort()
   const types     = [...new Set(all.map(v => v.type))].sort()
