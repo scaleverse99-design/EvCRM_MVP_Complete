@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
 import { verifyToken } from "../../../../lib/auth"
-import { readJson, updateBooking } from "../../../../lib/marketplace"
+import { readJson, updateBooking, finalizeSale } from "../../../../lib/marketplace"
 import { capturePayment, refundPayment, createTransfer, isRazorpayConfigured } from "../../../../lib/razorpay"
 
 const BOOK_FILE    = path.join(process.cwd(), "data", "bookings.json")
@@ -72,7 +72,9 @@ export async function PATCH(req) {
           updated = updateBooking(id, { payoutError: transferErr.error?.description || transferErr.message })
         }
       }
-      return NextResponse.json({ success: true, booking: updated })
+
+      const { customer, task } = finalizeSale(updated)
+      return NextResponse.json({ success: true, booking: updated, customer, task })
     } catch (e) {
       return NextResponse.json({ error: e.error?.description || e.message || "Capture failed" }, { status: 502 })
     }

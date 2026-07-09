@@ -23,7 +23,7 @@
     "onRoad": 2150000,
     "emi": 32100,
     "tokenAmount": 1000,
-    "status": "IN_STOCK",
+    "status": "SOLD",
     "images": [
       "🚙"
     ],
@@ -44,7 +44,8 @@
       "bestseller",
       "long-range"
     ],
-    "createdAt": "2026-07-01T00:00:00.000Z"
+    "createdAt": "2026-07-01T00:00:00.000Z",
+    "updatedAt": "2026-07-09T17:35:54.330Z"
   },
   {
     "id": "tata-tiago-ev-d01",

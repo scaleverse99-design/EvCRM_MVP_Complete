@@ -1,0 +1,24 @@
+[
+  {
+    "id": "cust_1783618554330",
+    "dealership": "hyd-d01",
+    "name": "Suresh Raju",
+    "phone": "9876543210",
+    "email": "",
+    "vehicle": "Tata Motors Nexon EV Max LR Dark Edition",
+    "vehicleId": "tata-nexon-ev-max-d01",
+    "bookingId": "book_1783594701952",
+    "leadId": "lead_1783594701953",
+    "purchaseDate": "2026-07-09T17:35:54.330Z",
+    "purchaseAmount": 1929000,
+    "serviceReminders": [
+      {
+        "id": "svc_1783618554330",
+        "type": "First Service",
+        "dueDate": "2026-10-07T17:35:54.330Z",
+        "done": false
+      }
+    ],
+    "createdAt": "2026-07-09T17:35:54.330Z"
+  }
+]

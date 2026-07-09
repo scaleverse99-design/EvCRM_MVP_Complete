@@ -25,10 +25,12 @@ const DEALER_ID  = "hyd-d01"
 
 /* ── Tab Nav ─── */
 const TABS = [
-  { id:"dashboard", icon:"📊", label:"Dashboard"  },
-  { id:"leads",     icon:"👥", label:"Leads"       },
-  { id:"inventory", icon:"🚗", label:"Inventory"   },
-  { id:"bookings",  icon:"📅", label:"Bookings"    },
+  { id:"dashboard",  icon:"📊", label:"Dashboard"  },
+  { id:"leads",      icon:"👥", label:"Leads"       },
+  { id:"inventory",  icon:"🚗", label:"Inventory"   },
+  { id:"bookings",   icon:"📅", label:"Bookings"    },
+  { id:"customers",  icon:"🧑‍🤝‍🧑", label:"Customers"  },
+  { id:"tasks",      icon:"✅", label:"Tasks"       },
 ]
 
 /* ─────────────────────────────────────────────
@@ -272,7 +274,7 @@ function InventorySection({ dealership, user }) {
    props signature `{ leads, loading, onRefresh }`
    was recoverable from context)
 ───────────────────────────────────────────── */
-function LeadsSection({ leads, loading, onRefresh }) {
+function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
   const [updating, setUpdating] = useState(null)
   const [filterStatus, setFilterStatus] = useState("")
 
@@ -285,6 +287,14 @@ function LeadsSection({ leads, loading, onRefresh }) {
     setUpdating(lead.id)
     try {
       await authFetch("/api/dealer/leads", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:lead.id, status }) })
+      onRefresh?.()
+    } finally { setUpdating(null) }
+  }
+
+  const setRep = async (lead, assignedRep) => {
+    setUpdating(lead.id)
+    try {
+      await authFetch("/api/dealer/leads", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:lead.id, assignedRep }) })
       onRefresh?.()
     } finally { setUpdating(null) }
   }
@@ -305,15 +315,15 @@ function LeadsSection({ leads, loading, onRefresh }) {
       <Card noPad>
         <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
           <thead><tr style={{ background:C.bg }}>
-            {["Customer","Vehicle","Source","Status","Follow-up","Actions"].map(h=>(
+            {["Customer","Vehicle","Source","Status","Rep","Follow-up","Actions"].map(h=>(
               <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:700, color:C.ink2, textTransform:"uppercase" }}>{h}</th>
             ))}
           </tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding:40, textAlign:"center", color:C.ink3 }}>Loading leads…</td></tr>
+              <tr><td colSpan={7} style={{ padding:40, textAlign:"center", color:C.ink3 }}>Loading leads…</td></tr>
             ) : displayed.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding:40, textAlign:"center" }}>
+              <tr><td colSpan={7} style={{ padding:40, textAlign:"center" }}>
                 <div style={{ fontSize:32, marginBottom:10 }}>👥</div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.ink }}>No leads yet</div>
               </td></tr>
@@ -334,6 +344,13 @@ function LeadsSection({ leads, loading, onRefresh }) {
                     <select value={l.status} disabled={updating===l.id} onChange={e=>setStatus(l, e.target.value)}
                       style={{ background:sc.bg, color:sc.color, border:`1px solid ${sc.color}30`, borderRadius:8, padding:"4px 10px", fontSize:10, fontWeight:700, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
                       {Object.keys(STATUS_CONFIG).map(s=><option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td style={{ padding:"10px 16px" }}>
+                    <select value={l.assignedRep||""} disabled={updating===l.id} onChange={e=>setRep(l, e.target.value)}
+                      style={{ background:C.bg, border:`1px solid ${C.border}`, color:l.assignedRep?C.ink:C.ink3, borderRadius:8, padding:"4px 10px", fontSize:10, fontWeight:600, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
+                      <option value="">Unassigned</option>
+                      {reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </td>
                   <td style={{ padding:"10px 16px", color:C.ink3 }}>
@@ -459,6 +476,222 @@ function BookingsSection({ dealership }) {
               })}
             </tbody>
           </table>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   CUSTOMER SECTION — post-sale customers,
+   service reminders, upgrade campaign outreach
+───────────────────────────────────────────── */
+function CustomerSection({ dealership }) {
+  const [customers, setCustomers] = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [acting,    setActing]    = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await authFetch(`/api/dealer/customers?dealership=${dealership}`).then(r=>r.json())
+      if (data.success) setCustomers(data.customers || [])
+    } finally { setLoading(false) }
+  }, [dealership])
+
+  useEffect(() => { load() }, [load])
+
+  const completeReminder = async (customerId, reminderId) => {
+    setActing(reminderId)
+    try {
+      await authFetch("/api/dealer/customers", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:customerId, completeReminderId:reminderId }) })
+      load()
+    } finally { setActing(null) }
+  }
+
+  const getUpgradeLink = (c) => {
+    const msg = `Hi ${c.name}, it's been a while since you got your ${c.vehicle}! We have some great upgrade offers this month — want to hear about them?`
+    return `https://wa.me/${(c.phone||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom:16, fontSize:13, color:C.ink2 }}>{customers.length} customers who completed a purchase</div>
+
+      {loading ? (
+        <div style={{ padding:60, textAlign:"center", color:C.ink3 }}>Loading customers…</div>
+      ) : customers.length === 0 ? (
+        <Card style={{ padding:60, textAlign:"center" }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🧑‍🤝‍🧑</div>
+          <div style={{ fontSize:16, fontWeight:700, color:C.ink }}>No customers yet</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:6 }}>
+            When you confirm a sale on the Bookings tab, the buyer automatically becomes a customer here — with a first service reminder scheduled.
+          </div>
+        </Card>
+      ) : (
+        <Card noPad>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+            <thead><tr style={{ background:C.bg }}>
+              {["Customer","Vehicle","Purchased","Amount","Service Reminders","Actions"].map(h=>(
+                <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:700, color:C.ink2, textTransform:"uppercase" }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {customers.map(c => (
+                <tr key={c.id} style={{ borderTop:`1px solid ${C.border}` }}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <td style={{ padding:"10px 16px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <Avatar name={c.name} size={28} />
+                      <div><div style={{ fontWeight:700, color:C.ink }}>{c.name}</div><div style={{ fontSize:10, color:C.ink3 }}>{c.phone}</div></div>
+                    </div>
+                  </td>
+                  <td style={{ padding:"10px 16px", color:C.ink2 }}>{c.vehicle}</td>
+                  <td style={{ padding:"10px 16px", color:C.ink3 }}>{new Date(c.purchaseDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</td>
+                  <td style={{ padding:"10px 16px", fontWeight:700, color:C.green }}>{fmt.currency(c.purchaseAmount)}</td>
+                  <td style={{ padding:"10px 16px" }}>
+                    {(c.serviceReminders||[]).length === 0 ? <span style={{ color:C.ink3 }}>—</span> : (
+                      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                        {c.serviceReminders.map(r => {
+                          const overdue = !r.done && new Date(r.dueDate) < new Date()
+                          return (
+                            <div key={r.id} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <span style={{ fontSize:10, color: r.done ? C.ink3 : overdue ? C.red : C.ink2, textDecoration: r.done ? "line-through" : "none" }}>
+                                {r.type} · {new Date(r.dueDate).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}{overdue && !r.done ? " (overdue)" : ""}
+                              </span>
+                              {!r.done && (
+                                <button onClick={()=>completeReminder(c.id, r.id)} disabled={acting===r.id}
+                                  style={{ background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:6, padding:"1px 6px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                                  {acting===r.id ? "…" : "✓ Done"}
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding:"10px 16px" }}>
+                    <a href={getUpgradeLink(c)} target="_blank" rel="noopener noreferrer"
+                      style={{ background:`${C.purple}15`, border:`1px solid ${C.purple}25`, color:C.purple, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, textDecoration:"none" }}>
+                      💬 Upgrade Campaign
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   TASK SECTION — daily workflow, auto-generated
+   follow-up/service tasks, overdue alerts
+───────────────────────────────────────────── */
+function TaskSection({ dealership }) {
+  const [tasks,   setTasks]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [acting,  setActing]  = useState(null)
+  const [newTitle, setNewTitle] = useState("")
+  const [newDue,   setNewDue]   = useState("")
+  const [showFilter, setShowFilter] = useState("open") // open | done | all
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await authFetch(`/api/dealer/tasks?dealership=${dealership}`).then(r=>r.json())
+      if (data.success) setTasks(data.tasks || [])
+    } finally { setLoading(false) }
+  }, [dealership])
+
+  useEffect(() => { load() }, [load])
+
+  const markDone = async (id) => {
+    setActing(id)
+    try {
+      await authFetch("/api/dealer/tasks", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id, status:"DONE" }) })
+      load()
+    } finally { setActing(null) }
+  }
+
+  const addTask = async () => {
+    if (!newTitle.trim()) return
+    setActing("new")
+    try {
+      await authFetch("/api/dealer/tasks", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dealership, title:newTitle, type:"manual", dueDate: newDue || null }) })
+      setNewTitle(""); setNewDue(""); load()
+    } finally { setActing(null) }
+  }
+
+  const displayed = tasks.filter(t => showFilter==="all" ? true : showFilter==="done" ? t.status==="DONE" : t.status!=="DONE")
+  const overdueCount = tasks.filter(t => t.status!=="DONE" && t.dueDate && new Date(t.dueDate) < new Date()).length
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <div style={{ fontSize:13, color:C.ink2 }}>
+          {tasks.filter(t=>t.status!=="DONE").length} open tasks
+          {overdueCount > 0 && <span style={{ color:C.red, fontWeight:700 }}> · {overdueCount} overdue</span>}
+        </div>
+        <select value={showFilter} onChange={e=>setShowFilter(e.target.value)}
+          style={{ background:C.card, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 14px", fontSize:11, fontWeight:600, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
+          <option value="open">Open</option>
+          <option value="done">Done</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+
+      <Card style={{ marginBottom:16 }}>
+        <div style={{ display:"flex", gap:10 }}>
+          <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Add a task…"
+            style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+          <input type="date" value={newDue} onChange={e=>setNewDue(e.target.value)}
+            style={{ background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+          <button onClick={addTask} disabled={acting==="new"}
+            style={{ background:C.green, border:"none", color:"#fff", borderRadius:10, padding:"9px 18px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            {acting==="new" ? "…" : "+ Add"}
+          </button>
+        </div>
+      </Card>
+
+      {loading ? (
+        <div style={{ padding:60, textAlign:"center", color:C.ink3 }}>Loading tasks…</div>
+      ) : displayed.length === 0 ? (
+        <Card style={{ padding:60, textAlign:"center" }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+          <div style={{ fontSize:16, fontWeight:700, color:C.ink }}>Nothing here</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:6 }}>Follow-up and service tasks are created automatically from leads and customer sales.</div>
+        </Card>
+      ) : (
+        <Card noPad>
+          <div>
+            {displayed.map(t => {
+              const overdue = t.status!=="DONE" && t.dueDate && new Date(t.dueDate) < new Date()
+              return (
+                <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderTop:`1px solid ${C.border}` }}>
+                  <div style={{ width:22, height:22, borderRadius:6, border:`1.5px solid ${t.status==="DONE"?C.green:C.border}`, background:t.status==="DONE"?C.green:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, cursor: t.status==="DONE" ? "default" : "pointer" }}
+                    onClick={()=> t.status!=="DONE" && markDone(t.id)}>
+                    {t.status==="DONE" && <span style={{ color:"#fff", fontSize:12 }}>✓</span>}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:t.status==="DONE"?C.ink3:C.ink, textDecoration:t.status==="DONE"?"line-through":"none" }}>{t.title}</div>
+                    <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>
+                      {t.type==="follow_up" ? "Lead follow-up" : t.type==="service" ? "Service reminder" : "Manual task"}
+                      {t.autoGenerated && " · auto"}
+                    </div>
+                  </div>
+                  {t.dueDate && (
+                    <span style={{ fontSize:10, fontWeight:700, color: overdue ? C.red : C.ink3 }}>
+                      {overdue ? "Overdue · " : ""}{new Date(t.dueDate).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </Card>
       )}
     </div>
@@ -691,11 +924,15 @@ function DealerDashboard() {
         </>
       )}
 
-      {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} />}
+      {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} reps={reps} />}
 
       {activeTab === "inventory" && <InventorySection dealership={dealership} user={user} />}
 
       {activeTab === "bookings"  && <BookingsSection dealership={dealership} />}
+
+      {activeTab === "customers" && <CustomerSection dealership={dealership} />}
+
+      {activeTab === "tasks"     && <TaskSection dealership={dealership} />}
 
       {/* Quick Lead modal */}
       {quickLead && (
