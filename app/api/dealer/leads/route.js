@@ -3,6 +3,14 @@ import { verifyToken } from "../../../../lib/auth"
 import { readTable, writeTable } from "../../../../lib/store"
 import { createTask } from "../../../../lib/marketplace"
 
+// The set of rep-ids a given rep is allowed to see leads for: always their
+// own, plus any reps they're currently covering during leave.
+async function repVisibleRepIds(repId) {
+  const users = await readTable("users")
+  const me = users.find(u => u.role === "rep" && u.repId === repId)
+  return new Set([repId, ...(me?.covers || [])])
+}
+
 export async function GET(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
   const user = token ? verifyToken(token) : null
@@ -14,10 +22,12 @@ export async function GET(req) {
   let leads = await readTable("leads")
   if (dealership) leads = leads.filter(l => l.dealership === dealership)
 
-  // Sales reps only ever see the leads assigned to them — a dealer's pipeline
-  // stays sealed; a rep can't browse other reps' or unassigned leads.
+  // Sales reps see the leads assigned to them, plus any leads of reps they've
+  // been granted temporary leave-coverage over (ownership never transfers).
+  // A dealer's pipeline stays sealed otherwise.
   if (user.role === "rep") {
-    leads = leads.filter(l => l.assignedRep === user.repId)
+    const allowed = await repVisibleRepIds(user.repId)
+    leads = leads.filter(l => allowed.has(l.assignedRep))
   }
 
   // Sort by created_at descending
@@ -81,10 +91,12 @@ export async function PATCH(req) {
   const idx = leads.findIndex(l => l.id === id)
   if (idx === -1) return NextResponse.json({ error: "Lead not found" }, { status: 404 })
 
-  // Reps may only act on their own leads, and may never reassign a lead
-  // (only the dealer controls who owns which lead).
+  // Reps may act on their own leads and on leads they're covering during
+  // another rep's leave, but may never reassign a lead (only the dealer
+  // controls who owns which lead).
   if (user.role === "rep") {
-    if (leads[idx].assignedRep !== user.repId) {
+    const allowed = await repVisibleRepIds(user.repId)
+    if (!allowed.has(leads[idx].assignedRep)) {
       return NextResponse.json({ error: "This lead is not assigned to you" }, { status: 403 })
     }
     if ("assignedRep" in updates) delete updates.assignedRep

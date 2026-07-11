@@ -115,5 +115,68 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-18T08:02:33.056Z",
     "created_at": "2026-07-11T08:02:33.056Z"
+  },
+  {
+    "id": "sess_1783758317358",
+    "user_id": "user_dealer_001",
+    "token_hash": "18e18b27130700e70bd91a0bf87b84514c4ec4ab1477e47da07ac885630b3743",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:25:17.358Z",
+    "created_at": "2026-07-11T08:25:17.358Z"
+  },
+  {
+    "id": "sess_1783758318499",
+    "user_id": "user_1783758317494",
+    "token_hash": "b7d3eded86c6322a9022911898a2ed11c760d2e48ec766ebbe76a5982ea7c873",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:25:18.499Z",
+    "created_at": "2026-07-11T08:25:18.499Z"
+  },
+  {
+    "id": "sess_1783758646815",
+    "user_id": "user_1783758317494",
+    "token_hash": "5065fc7ef417eb5ba4fe074adf1f62c1e18049a2277998235bcc4f3d18b79d89",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:30:46.815Z",
+    "created_at": "2026-07-11T08:30:46.815Z"
+  },
+  {
+    "id": "sess_1783758647341",
+    "user_id": "user_1783754669851",
+    "token_hash": "106e9d8c1d3dcc0de331ea984f835177ebefd69feca49e336e0b8d4298eb84ed",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:30:47.341Z",
+    "created_at": "2026-07-11T08:30:47.341Z"
+  },
+  {
+    "id": "sess_1783758768290",
+    "user_id": "user_dealer_001",
+    "token_hash": "f8b39194f85d47231d5eb2374674978dda276098af675f2c6a5f5ed6ad9f5f48",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:32:48.290Z",
+    "created_at": "2026-07-11T08:32:48.290Z"
+  },
+  {
+    "id": "sess_1783758768951",
+    "user_id": "user_1783758317494",
+    "token_hash": "ce0dee36340cfe5d909fd89d489351622280b8420fa2b58b92e3a2af2a4d9c97",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:32:48.951Z",
+    "created_at": "2026-07-11T08:32:48.951Z"
+  },
+  {
+    "id": "sess_1783758769631",
+    "user_id": "user_1783754669851",
+    "token_hash": "7e3693844239573ffd659b96573e97489eb7724132191db06c15b6fae8585f20",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:32:49.631Z",
+    "created_at": "2026-07-11T08:32:49.631Z"
   }
 ]

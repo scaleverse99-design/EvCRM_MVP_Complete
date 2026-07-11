@@ -42,5 +42,19 @@
     "active": true,
     "color": "#F97316",
     "createdAt": "2026-07-11T07:24:29.851Z"
+  },
+  {
+    "id": "rep_1783758317494",
+    "dealership": "hyd-d01",
+    "name": "Priya Menon",
+    "phone": "9876500022",
+    "email": "priya.rep@deccanev.in",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#DB2777",
+    "createdAt": "2026-07-11T08:25:17.494Z"
   }
 ]

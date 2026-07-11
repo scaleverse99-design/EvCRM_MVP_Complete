@@ -653,6 +653,14 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
 }
 
 function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
+  const { user: _lsUser } = useAuth()
+  // For a rep, flag leads they're only covering (owned by someone else) so
+  // they know these belong to a colleague on leave, not to them.
+  const myRepId = _lsUser?.role === "rep" ? _lsUser.repId : null
+  const coveredOwnerName = (lead) => {
+    if (!myRepId || !lead.assignedRep || lead.assignedRep === myRepId) return null
+    return reps.find(r => r.id === lead.assignedRep)?.name || "colleague"
+  }
   const isMobile = useIsMobile()
   const [updating, setUpdating] = useState(null)
   const [filterStatus, setFilterStatus] = useState("")
@@ -790,7 +798,10 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }} onClick={()=>setDetailLead(l)}>
                   <Avatar name={l.name} size={36} />
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, color:C.ink, fontSize:14 }}>{l.name}</div>
+                    <div style={{ fontWeight:700, color:C.ink, fontSize:14 }}>
+                      {l.name}
+                      {coveredOwnerName(l) && <span style={{ fontSize:8.5, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>COVERING FOR {coveredOwnerName(l).toUpperCase()}</span>}
+                    </div>
                     <div style={{ fontSize:11, color:C.ink3 }}>{l.phone}{l.vehicle ? ` · ${l.vehicle}` : ""}</div>
                   </div>
                   <select value={l.status} disabled={updating===l.id} onClick={e=>e.stopPropagation()} onChange={e=>setStatus(l, e.target.value)}
@@ -843,7 +854,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
                   <td style={{ padding:"10px 16px", cursor:"pointer" }} onClick={()=>setDetailLead(l)}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <Avatar name={l.name} size={28} />
-                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div></div>
+                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}{coveredOwnerName(l) && <span style={{ fontSize:8, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>COVERING · {coveredOwnerName(l)}</span>}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div></div>
                       {(l.notes||[]).length > 0 && <span style={{ fontSize:9, color:C.ink3 }}>📝{l.notes.length}</span>}
                     </div>
                   </td>
@@ -1528,6 +1539,15 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
     else alert((await res.json()).error || "Could not reset password")
   }
 
+  // Leave coverage — coverRep temporarily gains follow-up access to
+  // absentRep's leads without taking ownership. Toggle from the dealer side.
+  const toggleCoverage = async (coverRep, absentRepId) => {
+    const isActive = (coverRep.covers || []).includes(absentRepId)
+    await authFetch("/api/dealer/reps", { method:"PATCH", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ id:coverRep.id, action: isActive ? "revoke_coverage" : "grant_coverage", coversRepId: absentRepId }) })
+    onRepsRefresh?.()
+  }
+
   const addPipelineStage = () => {
     if (!newStage.trim()) return
     const stages = [...(settings.pipelineStages||[]), newStage.trim().toUpperCase()]
@@ -1559,31 +1579,56 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
       <Card>
         <SectionHeading>👥 Team Management</SectionHeading>
         <div style={{ fontSize:10.5, color:C.ink3, marginBottom:12, lineHeight:1.5 }}>
-          Give each rep their own login. They sign in on their phone and see <b>only the leads you assign to them</b> — never your billing, settings, or other reps' pipelines. Deactivate to revoke access instantly.
+          Give each rep their own login. They sign in on their phone and see <b>only the leads you assign to them</b> — never your billing, settings, or other reps' pipelines. Deactivate to revoke access instantly. When a rep is on leave, use <b>Cover</b> to let a teammate follow up their leads without changing ownership.
         </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14, maxHeight:200, overflowY:"auto" }}>
-          {reps.length === 0 ? <div style={{ fontSize:11, color:C.ink3 }}>No reps added yet</div> : reps.map(r => (
-            <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, opacity:r.active===false?0.55:1 }}>
-              <Avatar name={r.name} size={28} color={r.color} />
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>
-                  {r.name}
-                  {r.hasLogin
-                    ? <span style={{ fontSize:8.5, fontWeight:800, color:r.active===false?"#B91C1C":"#065F46", background:r.active===false?"#FEE2E2":"#D1FAE5", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>{r.active===false?"LOGIN DISABLED":"CAN LOG IN"}</span>
-                    : <span style={{ fontSize:8.5, fontWeight:800, color:C.ink3, background:C.bg, borderRadius:5, padding:"1px 6px", marginLeft:6 }}>NO LOGIN</span>}
+        <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14, maxHeight:260, overflowY:"auto" }}>
+          {reps.length === 0 ? <div style={{ fontSize:11, color:C.ink3 }}>No reps added yet</div> : reps.map(r => {
+            const repName = (id) => reps.find(x=>x.id===id)?.name || "rep"
+            return (
+            <div key={r.id} style={{ opacity:r.active===false?0.55:1, borderBottom:`1px solid ${C.border}`, paddingBottom:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <Avatar name={r.name} size={28} color={r.color} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>
+                    {r.name}
+                    {r.hasLogin
+                      ? <span style={{ fontSize:8.5, fontWeight:800, color:r.active===false?"#B91C1C":"#065F46", background:r.active===false?"#FEE2E2":"#D1FAE5", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>{r.active===false?"LOGIN DISABLED":"CAN LOG IN"}</span>
+                      : <span style={{ fontSize:8.5, fontWeight:800, color:C.ink3, background:C.bg, borderRadius:5, padding:"1px 6px", marginLeft:6 }}>NO LOGIN</span>}
+                  </div>
+                  <div style={{ fontSize:9, color:C.ink3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.email || r.phone || "—"} · {r.leads||0} leads · {r.closed||0} closed</div>
                 </div>
-                <div style={{ fontSize:9, color:C.ink3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.email || r.phone || "—"} · {r.leads||0} leads · {r.closed||0} closed</div>
+                {r.hasLogin && (
+                  <>
+                    <button onClick={()=>resetRepPassword(r)} title="Reset password" style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>🔑</button>
+                    <button onClick={()=>toggleRepActive(r)} style={{ background:"none", border:`1px solid ${r.active===false?C.green:C.border}`, color:r.active===false?C.green:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      {r.active===false ? "Reactivate" : "Deactivate"}
+                    </button>
+                  </>
+                )}
               </div>
+
+              {/* Leave coverage — this rep covers other reps' leads while they're out */}
               {r.hasLogin && (
-                <>
-                  <button onClick={()=>resetRepPassword(r)} title="Reset password" style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>🔑</button>
-                  <button onClick={()=>toggleRepActive(r)} style={{ background:"none", border:`1px solid ${r.active===false?C.green:C.border}`, color:r.active===false?C.green:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                    {r.active===false ? "Reactivate" : "Deactivate"}
-                  </button>
-                </>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:6, paddingLeft:36, flexWrap:"wrap" }}>
+                  <span style={{ fontSize:9, color:C.ink3, fontWeight:700 }}>Covers:</span>
+                  {(r.covers||[]).length === 0 && <span style={{ fontSize:9, color:C.ink3 }}>nobody</span>}
+                  {(r.covers||[]).map(cid => (
+                    <span key={cid} style={{ display:"inline-flex", alignItems:"center", gap:4, background:"#EDE9FE", color:"#6D28D9", fontSize:9, fontWeight:700, borderRadius:6, padding:"2px 6px" }}>
+                      {repName(cid)}
+                      <button onClick={()=>toggleCoverage(r, cid)} title="Stop covering" style={{ background:"none", border:"none", color:"#6D28D9", cursor:"pointer", fontSize:10, lineHeight:1, padding:0 }}>✕</button>
+                    </span>
+                  ))}
+                  <select value="" onChange={e=>{ if(e.target.value) toggleCoverage(r, e.target.value) }}
+                    style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink3, borderRadius:6, padding:"2px 6px", fontSize:9, fontFamily:"inherit", outline:"none", cursor:"pointer" }}>
+                    <option value="">+ cover for…</option>
+                    {reps.filter(o => o.id !== r.id && !(r.covers||[]).includes(o.id)).map(o => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
         {repErr && <div style={{ fontSize:10, color:"#B91C1C", background:"#FEE2E2", borderRadius:7, padding:"6px 10px", marginBottom:8 }}>{repErr}</div>}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:6 }}>

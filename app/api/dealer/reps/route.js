@@ -46,6 +46,7 @@ export async function GET(req) {
       hasLogin: !!account,
       active: account ? account.is_active !== false : false,
       lastLogin: account?.last_login || null,
+      covers: account?.covers || [],   // repIds this rep is currently covering
       leads: myLeads.length,
       closed: myLeads.filter(l => l.status === "CLOSED").length,
     }
@@ -137,7 +138,7 @@ export async function PATCH(req) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  // Login-account actions (manager only)
+  // Login-account + coverage actions (manager only)
   if (action) {
     if (!isManager(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     const users = await readTable("users")
@@ -149,10 +150,26 @@ export async function PATCH(req) {
     else if (action === "reset_password") {
       if ((password || "").length < 6) return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
       users[uidx].password_hash = await hashPassword(password)
-    } else return NextResponse.json({ error: "Unknown action" }, { status: 400 })
+    }
+    // Leave coverage: the rep at `id` temporarily gains follow-up access to
+    // the leads of the rep at `coversRepId`. Ownership never changes — the
+    // absent rep keeps all their leads; the covering rep just gets a window
+    // into them so nothing goes un-followed-up during leave.
+    else if (action === "grant_coverage") {
+      if (!body.coversRepId || body.coversRepId === id) {
+        return NextResponse.json({ error: "Pick a different rep to cover for" }, { status: 400 })
+      }
+      const covers = new Set(users[uidx].covers || [])
+      covers.add(body.coversRepId)
+      users[uidx].covers = [...covers]
+    }
+    else if (action === "revoke_coverage") {
+      users[uidx].covers = (users[uidx].covers || []).filter(x => x !== body.coversRepId)
+    }
+    else return NextResponse.json({ error: "Unknown action" }, { status: 400 })
 
     await writeTable("users", users)
-    return NextResponse.json({ success: true, id, active: users[uidx].is_active !== false })
+    return NextResponse.json({ success: true, id, active: users[uidx].is_active !== false, covers: users[uidx].covers || [] })
   }
 
   // Plain rep-record field edits

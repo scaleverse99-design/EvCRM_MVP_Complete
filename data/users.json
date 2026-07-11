@@ -18,7 +18,7 @@
     "phone": "919999988888",
     "is_active": true,
     "created_at": "2026-07-08T20:58:05.234Z",
-    "last_login": "2026-07-11T08:02:33.060Z",
+    "last_login": "2026-07-11T08:32:48.291Z",
     "trialStartDate": "2026-07-08T20:58:05.234Z",
     "billingStatus": "active_oem_sponsored",
     "mandateStatus": "none",
@@ -60,6 +60,21 @@
     "is_active": true,
     "created_by": "dealer@deccanev.in",
     "created_at": "2026-07-11T07:24:29.851Z",
-    "last_login": "2026-07-11T08:01:54.989Z"
+    "last_login": "2026-07-11T08:32:49.632Z"
+  },
+  {
+    "id": "user_1783758317494",
+    "email": "priya.rep@deccanev.in",
+    "name": "Priya Menon",
+    "phone": "9876500022",
+    "password_hash": "$2a$12$aBET.TuoGyeKzLVcuHtIzuc3qTCLGVr2dIIdmiNi2AUjDpC1mPTzy",
+    "role": "rep",
+    "repId": "rep_1783758317494",
+    "dealership": "hyd-d01",
+    "is_active": true,
+    "created_by": "dealer@deccanev.in",
+    "created_at": "2026-07-11T08:25:17.494Z",
+    "last_login": "2026-07-11T08:32:48.952Z",
+    "covers": []
   }
 ]
