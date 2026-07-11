@@ -1,0 +1,29 @@
+[
+  {
+    "id": "quote_1783666370861",
+    "dealership": "hyd-d01",
+    "quoteId": "EV-TEST1",
+    "leadId": null,
+    "customerName": "Suresh Raju",
+    "customerPhone": "9876543210",
+    "vehicleName": "Tata Nexon EV Max LR",
+    "exShowroom": 1980000,
+    "fameSubsidy": 150000,
+    "stateSubsidy": 75000,
+    "dealerDiscount": 50000,
+    "registration": 85000,
+    "accessories": 25000,
+    "netPrice": 1815000,
+    "offer": "Free home charger installation worth ₹8,000 + 2 years free service",
+    "validityDays": 7,
+    "dealerName": "Deccan EV Hub",
+    "dealerPhone": "9000000001",
+    "dealerCity": "Hyderabad",
+    "receipt": null,
+    "sentVia": [],
+    "createdBy": "dealer@deccanev.in",
+    "createdAt": "2026-07-10T06:52:50.861Z",
+    "customerResponse": "agreed",
+    "customerAgreedAt": "2026-07-10T06:56:21.884Z"
+  }
+]

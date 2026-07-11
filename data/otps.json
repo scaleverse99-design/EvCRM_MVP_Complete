@@ -1,0 +1,26 @@
+[
+  {
+    "id": "otp_1783700515520",
+    "phone": "9876543210",
+    "otpHash": "$2a$10$/XTdn2vArRVqaXBB84NtAOh1HZKiXN10sKJvsKmlIA7YNSxmxB.vC",
+    "purpose": "customer_portal",
+    "used": true,
+    "createdAt": "2026-07-10T16:21:55.520Z"
+  },
+  {
+    "id": "otp_1783700637410",
+    "phone": "9876543210",
+    "otpHash": "$2a$10$nmJtQhI65acGb8UzEKwOZ.FHMy4/uuJwXx2RMNomCtSmYyNDAYuRm",
+    "purpose": "customer_portal",
+    "used": true,
+    "createdAt": "2026-07-10T16:23:57.410Z"
+  },
+  {
+    "id": "otp_1783723715178",
+    "phone": "1112223334",
+    "otpHash": "$2a$10$ijeT0XR8uVelM03mt5Z3meaKvdep6YNV.qKxDa60yWGpglOtT2dby",
+    "purpose": "customer_portal",
+    "used": false,
+    "createdAt": "2026-07-10T22:48:35.178Z"
+  }
+]

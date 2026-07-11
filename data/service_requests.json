@@ -1,0 +1,52 @@
+[
+  {
+    "id": "svc_1783700645339",
+    "dealership": "hyd-d01",
+    "customerName": "Suresh Raju",
+    "customerPhone": "9876543210",
+    "vehicle": "Tata Motors Nexon EV Max LR Dark Edition",
+    "orderId": "book_1783594701952",
+    "orderDetails": {
+      "vehicleName": "Tata Motors Nexon EV Max LR Dark Edition",
+      "dealerName": "Deccan EV Hub Hitech",
+      "bookedAt": "2026-07-09T10:58:21.952Z",
+      "tokenAmount": 1000,
+      "status": "PENDING_PAYMENT"
+    },
+    "issueType": "Motor issue",
+    "description": "Motor making loud grinding noise since yesterday, power cuts off above 40 km/h. Need urgent inspection.",
+    "attachments": [],
+    "status": "ESCALATED_OEM",
+    "createdAt": "2026-07-10T16:24:05.339Z",
+    "respondedAt": "2026-07-10T16:24:47.531Z",
+    "respondedBy": "dealer@deccanev.in",
+    "resolvedAt": null,
+    "escalatedAt": "2026-07-10T16:25:04.900Z",
+    "timeline": [
+      {
+        "at": "2026-07-10T16:24:05.339Z",
+        "event": "Request raised by customer",
+        "by": "9876543210"
+      },
+      {
+        "at": "2026-07-10T16:24:47.531Z",
+        "event": "Dealer responded: Service team assigned — pickup scheduled for tomorrow morning",
+        "by": "dealer@deccanev.in"
+      },
+      {
+        "at": "2026-07-10T16:25:04.900Z",
+        "event": "Escalated to OEM: Motor replacement needed under warranty — booking OEM service slot",
+        "by": "dealer@deccanev.in"
+      },
+      {
+        "at": "2026-07-10T20:20:04.387Z",
+        "event": "OEM assigned service agent: Kiran Kumar (Tata Service Hyderabad)",
+        "by": "oem@tatamotors.in"
+      }
+    ],
+    "escalatedBy": "dealer@deccanev.in",
+    "oemNote": "Motor replacement needed under warranty — booking OEM service slot",
+    "oemAgent": "Kiran Kumar (Tata Service Hyderabad)",
+    "oemAssignedAt": "2026-07-10T20:20:04.387Z"
+  }
+]

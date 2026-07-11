@@ -1,33 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://evcrm.in/</loc>
-    <lastmod>2026-04-05</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://evcrm.in/blog</loc>
-    <lastmod>2026-04-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://evcrm.in/login</loc>
-    <lastmod>2026-04-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://evcrm.in/register</loc>
-    <lastmod>2026-04-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://evcrm.in/showroom</loc>
-    <lastmod>2026-04-05</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
+<url>
+<loc>https://evcrm.in</loc>
+<lastmod>2026-07-10T22:36:28.147Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://evcrm.in/showroom</loc>
+<lastmod>2026-07-10T22:36:28.148Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://evcrm.in/charging</loc>
+<lastmod>2026-07-10T22:36:28.148Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://evcrm.in/service-centers</loc>
+<lastmod>2026-07-10T22:36:28.148Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://evcrm.in/login</loc>
+<lastmod>2026-07-10T22:36:28.148Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://evcrm.in/register</loc>
+<lastmod>2026-07-10T22:36:28.148Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
 </urlset>

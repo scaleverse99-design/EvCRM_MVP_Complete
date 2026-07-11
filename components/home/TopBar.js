@@ -112,8 +112,6 @@ export default function TopBar({ location, setLocation }) {
           <nav style={{ display: "flex", alignItems: "center", gap: 28 }}>
             <div style={{ display: "flex", gap: 24, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
               <Link href="/showroom" style={{ textDecoration: "none", color: "inherit", opacity: 0.8 }}>Buy Vehicles</Link>
-              <Link href="/news" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Regional News</Link>
-              <Link href="/subsidies" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Subsidies</Link>
               <Link href="/charging" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Charge Stations</Link>
             </div>
 

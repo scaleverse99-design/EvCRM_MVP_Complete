@@ -20,6 +20,49 @@ const WA_REPLY_MAP = {
   default:    (l) => `Hi ${l.name}, thanks for your interest in ${l.vehicle || 'our vehicles'}. How can we help you today?`,
 }
 
+/* ── Stage-based contact templates ───────────────────────────────────────
+   Auto-filled per lead status for WhatsApp / SMS / Email. The rep always
+   reviews (and can edit) before sending — these are starting points. */
+const CONTACT_TEMPLATES = {
+  NEW: {
+    whatsapp: (l,d) => `Hi ${l.name}! 👋 I'm from ${d}. Thanks for your interest in the ${l.vehicle || "EV range"}. Would you like to visit our showroom or book a free test drive this week?`,
+    sms:      (l,d) => `Hi ${l.name}, thanks for your enquiry about the ${l.vehicle || "EV"} at ${d}. Reply or call us to book a free test drive.`,
+    emailSub: (l)   => `Your ${l.vehicle || "EV"} enquiry — let's get you riding`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nThank you for your interest in the ${l.vehicle || "our EV range"}!\n\nI'd love to help you with:\n• A free test drive at your convenience\n• Latest on-road price with current offers\n• EMI options starting at low monthly rates\n\nWhen would be a good time for you to visit, or shall I call you?\n\nBest regards,\n${d}`,
+  },
+  WARM: {
+    whatsapp: (l,d) => `Hi ${l.name}! Following up from ${d} on the ${l.vehicle || "EV"} you liked. We have a test drive slot open this week — shall I reserve one for you? 🚗⚡`,
+    sms:      (l,d) => `Hi ${l.name}, ${d} here. Test drive slots for the ${l.vehicle || "EV"} are open this week. Reply YES and we'll book one for you.`,
+    emailSub: (l)   => `Test drive slot available — ${l.vehicle || "your EV"}`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nJust following up on your interest in the ${l.vehicle || "EV"}.\n\nWe have test drive slots available this week and I'd be happy to reserve one for you. It takes just 20 minutes and there's no obligation.\n\nShall I book you in? Just reply with a day that works.\n\nBest regards,\n${d}`,
+  },
+  HOT: {
+    whatsapp: (l,d) => `Hi ${l.name}! Great news from ${d} — I've prepared the best price for your ${l.vehicle || "EV"} including all current offers and subsidies. When can we meet to finalise? I can also share EMI options. 🎉`,
+    sms:      (l,d) => `Hi ${l.name}, your special price for the ${l.vehicle || "EV"} is ready at ${d}. Call us today to lock it in before the offer ends.`,
+    emailSub: (l)   => `Your final price is ready — ${l.vehicle || "EV"}`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nI've put together the best possible deal for your ${l.vehicle || "EV"}:\n\n• Special negotiated price with all applicable discounts\n• Flexible EMI plans to fit your budget\n• Fast-track delivery\n\nThis pricing is valid for a limited time. Can we schedule a quick call or visit today to finalise?\n\nBest regards,\n${d}`,
+  },
+  COLD: {
+    whatsapp: (l,d) => `Hi ${l.name}! It's been a while since we spoke about the ${l.vehicle || "EV"} at ${d}. We have new offers this month that might change the maths for you — want me to share the details? 😊`,
+    sms:      (l,d) => `Hi ${l.name}, new offers on the ${l.vehicle || "EV"} at ${d} this month. Reply INFO and we'll send you the details.`,
+    emailSub: (l)   => `New offers on the ${l.vehicle || "EV"} you were considering`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nIt's been a while since we last spoke about the ${l.vehicle || "EV"}.\n\nA few things have changed that may interest you:\n• New pricing and festive offers this month\n• Improved EMI schemes\n• Rising petrol prices make the EV savings even bigger\n\nWould you like an updated quote? No pressure — happy to help whenever you're ready.\n\nBest regards,\n${d}`,
+  },
+  CLOSED: {
+    whatsapp: (l,d) => `Hi ${l.name}! 🎉 Congratulations again on your ${l.vehicle || "new EV"} from ${d}. How's the ride so far? If you know friends or family considering an EV, we'd love an introduction — referral benefits apply!`,
+    sms:      (l,d) => `Hi ${l.name}, hope you're loving your ${l.vehicle || "new EV"}! For service bookings or referrals, just reply to this message. — ${d}`,
+    emailSub: (l)   => `How's your ${l.vehicle || "new EV"} treating you?`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nCongratulations again on your ${l.vehicle || "new EV"}!\n\nA quick check-in:\n• How has the experience been so far?\n• Your first free service is coming up — we'll remind you\n• Know someone considering an EV? Our referral programme has benefits for you both\n\nThanks for choosing us.\n\nBest regards,\n${d}`,
+  },
+  LOST: {
+    whatsapp: (l,d) => `Hi ${l.name}, ${d} here. We understand the timing wasn't right for the ${l.vehicle || "EV"} earlier. We've got fresh offers and new models in — would you like a quick update? No pressure at all. 🙏`,
+    sms:      (l,d) => `Hi ${l.name}, fresh offers and new EV models at ${d}. Reply INFO if you'd like an update — no pressure.`,
+    emailSub: ()    => `We'd love a second chance — new EV offers inside`,
+    emailBody:(l,d) => `Hi ${l.name},\n\nWe understand the ${l.vehicle || "EV"} didn't work out last time — completely fair.\n\nSince then:\n• New models have arrived in our showroom\n• Prices and EMI schemes have improved\n• Exchange bonuses are at their highest this quarter\n\nIf you're still considering an EV at any point, I'd be glad to help. Just reply to this email.\n\nBest regards,\n${d}`,
+  },
+}
+CONTACT_TEMPLATES.default = CONTACT_TEMPLATES.NEW
+
 const MONTHS    = ["Oct","Nov","Dec","Jan","Feb","Mar"]
 const SALES_MOCK = [11,14,18,15,16,22]
 const DEALER_ID  = "hyd-d01"
@@ -32,7 +75,19 @@ const TABS = [
   { id:"bookings",   icon:"📅", label:"Bookings"    },
   { id:"customers",  icon:"🧑‍🤝‍🧑", label:"Customers"  },
   { id:"tasks",      icon:"✅", label:"Tasks"       },
+  { id:"service",    icon:"🔧", label:"Service"     },
+  { id:"buildprice", icon:"₹",  label:"BuildPrice"  },
+  { id:"quotepro",   icon:"📋", label:"QuotePro"    },
   { id:"settings",   icon:"⚙️", label:"Settings"    },
+]
+
+const BP_VEHICLES = [
+  { id:1, brand:"Tata",  model:"Nexon EV Max",   type:"4W SUV",  range:465, chargeTime:60,  topSpeed:150, exShowroom:1980000 },
+  { id:2, brand:"Ather", model:"450X Gen 3",     type:"Scooter", range:150, chargeTime:75,  topSpeed:90,  exShowroom:155000  },
+  { id:3, brand:"Ola",   model:"S1 Pro Gen 2",   type:"Scooter", range:195, chargeTime:90,  topSpeed:116, exShowroom:149999  },
+  { id:4, brand:"Okaya", model:"Faast F4",       type:"Scooter", range:120, chargeTime:240, topSpeed:75,  exShowroom:105000  },
+  { id:5, brand:"TVS",   model:"iQube ST",       type:"Scooter", range:100, chargeTime:350, topSpeed:82,  exShowroom:135000  },
+  { id:6, brand:"Bajaj", model:"Chetak Premium", type:"Scooter", range:108, chargeTime:300, topSpeed:63,  exShowroom:135000  },
 ]
 
 /* ─────────────────────────────────────────────
@@ -351,6 +406,164 @@ function toCSV(rows) {
   return [headers.join(","), ...lines].join("\n")
 }
 
+/* ── Responsive: most dealers/reps run this on phones, not laptops ─────── */
+function useIsMobile(bp = 768) {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width:${bp}px)`)
+    const update = () => setMobile(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [bp])
+  return mobile
+}
+
+/* ── Contact triggers: Call / WhatsApp / SMS / Email per lead ──────────── */
+const CHANNEL_META = {
+  call:     { icon:"📞", label:"Call",     color:"#3B82F6" },
+  whatsapp: { icon:"💬", label:"WhatsApp", color:"#059669" },
+  sms:      { icon:"📱", label:"SMS",      color:"#8B5CF6" },
+  email:    { icon:"✉️", label:"Email",    color:"#F97316" },
+  note:     { icon:"📝", label:"Note",     color:"#6B7280" },
+}
+
+function timeAgo(iso) {
+  if (!iso) return ""
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return "just now"
+  if (s < 3600) return `${Math.floor(s/60)}m ago`
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`
+  if (s < 604800) return `${Math.floor(s/86400)}d ago`
+  return new Date(iso).toLocaleDateString("en-IN", { day:"numeric", month:"short" })
+}
+
+function leadPhoneDigits(lead) {
+  let d = (lead.phone || "").replace(/\D/g, "")
+  if (d.length === 10) d = "91" + d
+  return d
+}
+
+/* Chip showing the last outreach on a lead — visible to dealer + reps */
+function LastActionChip({ lead }) {
+  const la = lead.lastAction
+  if (!la) return <span style={{ fontSize:9, color:C.ink3 }}>No contact yet</span>
+  const m = CHANNEL_META[la.type] || CHANNEL_META.note
+  return (
+    <span title={`${m.label} by ${la.by || "rep"} · ${new Date(la.at).toLocaleString("en-IN")}`}
+      style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:9, fontWeight:600, color:m.color, background:`${m.color}12`, border:`1px solid ${m.color}25`, borderRadius:6, padding:"2px 7px", whiteSpace:"nowrap" }}>
+      {m.icon} {m.label} · {timeAgo(la.at)}
+    </span>
+  )
+}
+
+/* Preview-before-send: auto-fills the message from the lead's current stage,
+   rep can edit, then Send opens the native app (WhatsApp / SMS / mail). */
+function ContactPreviewModal({ lead, channel, dealerName, onClose, onSent }) {
+  const t = CONTACT_TEMPLATES[lead.status] || CONTACT_TEMPLATES.default
+  const [subject, setSubject] = useState(channel === "email" ? t.emailSub(lead) : "")
+  const [msg, setMsg] = useState(channel === "email" ? t.emailBody(lead, dealerName) : t[channel](lead, dealerName))
+  const [sending, setSending] = useState(false)
+  const m = CHANNEL_META[channel]
+
+  const send = async () => {
+    setSending(true)
+    const digits = leadPhoneDigits(lead)
+    let url = ""
+    if (channel === "whatsapp") url = `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
+    if (channel === "sms")      url = `sms:+${digits}?body=${encodeURIComponent(msg)}`
+    if (channel === "email")    url = `mailto:${lead.email || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`
+    window.open(url, "_blank")
+    await onSent(channel, msg)
+    setSending(false)
+    onClose()
+  }
+
+  const inputSt = { width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }
+
+  return (
+    <Modal title={`${m.icon} ${m.label} — ${lead.name}`} onClose={onClose} width={480}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <span style={{ background:(STATUS_CONFIG[lead.status]||STATUS_CONFIG.NEW).bg, color:(STATUS_CONFIG[lead.status]||STATUS_CONFIG.NEW).color, fontSize:9, fontWeight:700, padding:"3px 10px", borderRadius:6 }}>
+          {lead.status} stage template
+        </span>
+        <span style={{ fontSize:10, color:C.ink3 }}>Review & edit before sending</span>
+      </div>
+      {channel === "email" && (
+        <div style={{ marginBottom:10 }}>
+          <div style={{ fontSize:9, fontWeight:700, color:C.ink3, textTransform:"uppercase", marginBottom:4 }}>Subject</div>
+          <input value={subject} onChange={e=>setSubject(e.target.value)} style={inputSt} />
+        </div>
+      )}
+      <div style={{ fontSize:9, fontWeight:700, color:C.ink3, textTransform:"uppercase", marginBottom:4 }}>Message</div>
+      <textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={channel === "email" ? 10 : 5}
+        style={{ ...inputSt, resize:"vertical", lineHeight:1.5, marginBottom:14 }} />
+      <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+        <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:10, padding:"10px 18px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+        <button onClick={send} disabled={sending}
+          style={{ background:m.color, border:"none", color:"#fff", borderRadius:10, padding:"10px 22px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+          {sending ? "…" : `${m.icon} Send via ${m.label}`}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+/* The 4 contact trigger buttons. Every action is logged to the lead's
+   timeline with channel + timestamp and stamps lastAction on the lead. */
+function ContactActions({ lead, onRefresh, compact=false }) {
+  const { user } = useAuth()
+  const [preview, setPreview] = useState(null) // channel string
+  const dealerName = user?.name || user?.dealerName || "our dealership"
+
+  const logAction = async (channel, detail) => {
+    try {
+      await authFetch("/api/dealer/leads", {
+        method:"PATCH", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ id: lead.id, addNote: { text: detail, channel } })
+      })
+      onRefresh?.()
+    } catch {}
+  }
+
+  const handleCall = () => {
+    const digits = leadPhoneDigits(lead)
+    window.location.href = `tel:+${digits}`
+    logAction("call", `Called ${lead.name} (${lead.phone})`)
+  }
+
+  const onSent = (channel, msg) =>
+    logAction(channel, `${CHANNEL_META[channel].label} sent (${lead.status} template): "${msg.slice(0, 80)}${msg.length > 80 ? "…" : ""}"`)
+
+  const btnSize = compact ? 30 : 38
+  const btn = (channel, onClick, disabled, title) => {
+    const m = CHANNEL_META[channel]
+    return (
+      <button key={channel} onClick={onClick} disabled={disabled} title={disabled ? "Blocked — Do Not Disturb" : title}
+        style={{ width:btnSize, height:btnSize, borderRadius:"50%", border:`1.5px solid ${disabled ? C.border : m.color+"35"}`,
+          background: disabled ? C.bg : `${m.color}12`, fontSize: compact ? 12 : 15, cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.45 : 1, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"inherit" }}>
+        {m.icon}
+      </button>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ display:"flex", gap: compact ? 5 : 8, alignItems:"center" }}>
+        {btn("call", handleCall, false, `Call ${lead.phone}`)}
+        {btn("whatsapp", ()=>setPreview("whatsapp"), !!lead.dnd, "WhatsApp with auto-filled message")}
+        {btn("sms", ()=>setPreview("sms"), !!lead.dnd, "SMS with auto-filled message")}
+        {btn("email", ()=>setPreview("email"), !lead.email, lead.email ? "Email with auto-drafted body" : "No email on this lead")}
+      </div>
+      {preview && (
+        <ContactPreviewModal lead={lead} channel={preview} dealerName={dealerName}
+          onClose={()=>setPreview(null)} onSent={onSent} />
+      )}
+    </>
+  )
+}
+
 /* ── Lead Detail Modal — 2.2, 2.9 notes, 3.7 test drive history ── */
 function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
   const [noteText, setNoteText] = useState("")
@@ -395,19 +608,18 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
         </div>
       )}
 
-      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:16 }}>
-        {!lead.dnd ? (
-          <a href={getWhatsAppLink(lead)} target="_blank" rel="noopener noreferrer"
-            style={{ display:"inline-block", background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, textDecoration:"none" }}>
-            💬 Message on WhatsApp
-          </a>
-        ) : (
-          <span style={{ background:`${C.red}10`, color:C.red, borderRadius:8, padding:"8px 16px", fontSize:11, fontWeight:700 }}>🔕 Do Not Disturb — messaging blocked</span>
-        )}
-        <button onClick={toggleDND} style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:8, padding:"8px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+      <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8, flexWrap:"wrap" }}>
+        <ContactActions lead={lead} onRefresh={onRefresh} />
+        <LastActionChip lead={lead} />
+        <button onClick={toggleDND} style={{ marginLeft:"auto", background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:8, padding:"8px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
           {lead.dnd ? "Remove DND" : "🔕 Mark DND"}
         </button>
       </div>
+      {lead.dnd && (
+        <div style={{ background:`${C.red}10`, color:C.red, borderRadius:8, padding:"6px 12px", fontSize:10, fontWeight:700, marginBottom:12 }}>
+          🔕 Do Not Disturb — messaging channels blocked, calls still allowed
+        </div>
+      )}
 
       <SectionHeading>Communication Timeline</SectionHeading>
       <div style={{ display:"flex", gap:8, marginBottom:12 }}>
@@ -426,18 +638,22 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
       <div style={{ maxHeight:220, overflowY:"auto", display:"flex", flexDirection:"column", gap:8 }}>
         {(lead.notes||[]).length === 0 ? (
           <div style={{ fontSize:11, color:C.ink3, textAlign:"center", padding:"12px 0" }}>No activity logged yet</div>
-        ) : lead.notes.map(n => (
-          <div key={n.id} style={{ padding:"8px 10px", background:C.bg, borderRadius:8 }}>
-            <div style={{ fontSize:11, color:C.ink }}>{n.channel==="call" ? "📞 " : ""}{n.text}</div>
-            <div style={{ fontSize:9, color:C.ink3, marginTop:3 }}>{n.author} · {new Date(n.created_at).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
-          </div>
-        ))}
+        ) : lead.notes.map(n => {
+          const cm = CHANNEL_META[n.channel] || CHANNEL_META.note
+          return (
+            <div key={n.id} style={{ padding:"8px 10px", background:C.bg, borderRadius:8, borderLeft:`3px solid ${cm.color}` }}>
+              <div style={{ fontSize:11, color:C.ink }}>{cm.icon} {n.text}</div>
+              <div style={{ fontSize:9, color:C.ink3, marginTop:3 }}>{n.author} · {new Date(n.created_at).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
+            </div>
+          )
+        })}
       </div>
     </Modal>
   )
 }
 
 function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
+  const isMobile = useIsMobile()
   const [updating, setUpdating] = useState(null)
   const [filterStatus, setFilterStatus] = useState("")
   const [filterRep, setFilterRep] = useState("")
@@ -557,6 +773,49 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
         </div>
       )}
 
+      {isMobile ? (
+        /* ── Mobile: card list — reps work leads one-thumb on the phone ── */
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {loading ? (
+            <div style={{ padding:40, textAlign:"center", color:C.ink3, fontSize:12 }}>Loading leads…</div>
+          ) : displayed.length === 0 ? (
+            <div style={{ padding:40, textAlign:"center" }}>
+              <div style={{ fontSize:32, marginBottom:10 }}>👥</div>
+              <div style={{ fontSize:14, fontWeight:700, color:C.ink }}>No leads match</div>
+            </div>
+          ) : displayed.map(l => {
+            const sc = STATUS_CONFIG[l.status] || STATUS_CONFIG.NEW
+            return (
+              <div key={l.id} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:14 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }} onClick={()=>setDetailLead(l)}>
+                  <Avatar name={l.name} size={36} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, color:C.ink, fontSize:14 }}>{l.name}</div>
+                    <div style={{ fontSize:11, color:C.ink3 }}>{l.phone}{l.vehicle ? ` · ${l.vehicle}` : ""}</div>
+                  </div>
+                  <select value={l.status} disabled={updating===l.id} onClick={e=>e.stopPropagation()} onChange={e=>setStatus(l, e.target.value)}
+                    style={{ background:sc.bg, color:sc.color, border:`1px solid ${sc.color}30`, borderRadius:8, padding:"6px 8px", fontSize:10, fontWeight:700, outline:"none", fontFamily:"inherit" }}>
+                    {Object.keys(STATUS_CONFIG).map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+                  <Tag label={l.source||"direct"} color={C.ink3} />
+                  <select value={l.assignedRep||""} disabled={updating===l.id} onChange={e=>setRep(l, e.target.value)}
+                    style={{ background:C.bg, border:`1px solid ${C.border}`, color:l.assignedRep?C.ink:C.ink3, borderRadius:8, padding:"5px 8px", fontSize:10, fontWeight:600, outline:"none", fontFamily:"inherit" }}>
+                    <option value="">Unassigned</option>
+                    {reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                  {l.next_followup && <span style={{ fontSize:10, color:C.ink3 }}>📅 {new Date(l.next_followup).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</span>}
+                </div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                  <ContactActions lead={l} onRefresh={onRefresh} />
+                  <LastActionChip lead={l} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
       <Card noPad>
         <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
           <thead><tr style={{ background:C.bg }}>
@@ -607,14 +866,10 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
                     {l.next_followup ? new Date(l.next_followup).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) : "—"}
                   </td>
                   <td style={{ padding:"10px 16px" }}>
-                    {l.dnd ? (
-                      <span style={{ background:`${C.red}10`, color:C.red, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700 }}>🔕 DND</span>
-                    ) : (
-                      <a href={getWhatsAppLink(l)} target="_blank" rel="noopener noreferrer"
-                        style={{ background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, textDecoration:"none" }}>
-                        💬 WhatsApp
-                      </a>
-                    )}
+                    <div style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"flex-start" }}>
+                      <ContactActions lead={l} onRefresh={onRefresh} compact />
+                      <LastActionChip lead={l} />
+                    </div>
                   </td>
                 </tr>
               )
@@ -622,6 +877,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
           </tbody>
         </table>
       </Card>
+      )}
 
       {detailLead && <LeadDetailModal lead={leads.find(l=>l.id===detailLead.id) || detailLead} reps={reps} onClose={()=>setDetailLead(null)} onRefresh={onRefresh} />}
 
@@ -1399,16 +1655,803 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
 }
 
 /* ─────────────────────────────────────────────
+   BUILDPRICE SECTION — EV Pricing Calculator
+───────────────────────────────────────────── */
+function BuildPriceSection({ onBuildQuote }) {
+  const isMobile = useIsMobile()
+  const [pid, setPid] = useState(BP_VEHICLES[0].id)
+  const [discounts, setDiscounts] = useState([])
+  const [addingDiscount, setAddingDiscount] = useState(false)
+  const [newDisc, setNewDisc] = useState({ name:"", amount:"" })
+
+  const p   = BP_VEHICLES.find(x => x.id === pid) || BP_VEHICLES[0]
+  const totalDiscounts = discounts.reduce((s, d) => s + d.amount, 0)
+  const net = Math.max(0, p.exShowroom - totalDiscounts)
+  const emi36 = fmt.emi(net, 36)
+  const emi48 = fmt.emi(net, 48)
+  const emi60 = fmt.emi(net, 60)
+  const petrolMonthly = Math.round((p.range / 15) * 105)
+  const evMonthly     = Math.round(p.range * 2.5)
+  const saving        = petrolMonthly - evMonthly
+
+  function addDiscount() {
+    const amt = parseInt(newDisc.amount)
+    if (!newDisc.name.trim() || isNaN(amt) || amt <= 0) return
+    setDiscounts(d => [...d, { id: Date.now(), name: newDisc.name.trim(), amount: amt }])
+    setNewDisc({ name:"", amount:"" })
+    setAddingDiscount(false)
+  }
+
+  function removeDiscount(id) {
+    setDiscounts(d => d.filter(x => x.id !== id))
+  }
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+        <div>
+          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>BuildPrice — EV Pricing Calculator</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Select vehicle, add discounts or subsidies, and calculate net price with EMI options. Then build a quote in QuotePro.</div>
+        </div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
+        {/* Left — Inputs */}
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:10 }}>SELECT VEHICLE</div>
+            {BP_VEHICLES.map(pr => (
+              <button key={pr.id} onClick={() => setPid(pr.id)} style={{
+                width:"100%", background:pid===pr.id?"#ecfdf5":C.bg,
+                border:`1.5px solid ${pid===pr.id?C.green:C.border}`,
+                color:pid===pr.id?C.green:C.ink2, borderRadius:10,
+                padding:"10px 14px", fontSize:12, fontWeight:pid===pr.id?700:400,
+                cursor:"pointer", textAlign:"left", marginBottom:6,
+                display:"flex", justifyContent:"space-between", alignItems:"center",
+                fontFamily:"inherit", transition:"all 0.15s"
+              }}>
+                <span>{pr.brand} {pr.model} <span style={{ fontSize:10, color:C.ink3, fontWeight:400 }}>({pr.type})</span></span>
+                <span style={{ fontSize:12, fontWeight:800, color:pid===pr.id?C.green:C.ink3 }}>{fmt.currency(pr.exShowroom)}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* EV vs Petrol Savings */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:12 }}>EV vs PETROL — MONTHLY SAVINGS</div>
+            <div style={{ display:"flex", gap:0 }}>
+              {[
+                { v:`₹${saving.toLocaleString("en-IN")}`, l:"Saved/month", c:C.green },
+                { v:`${p.range}km`, l:"Real range", c:C.blue },
+                { v:`₹${evMonthly.toLocaleString("en-IN")}`, l:"Charging/month", c:C.teal||"#0D9488" },
+              ].map((s,i) => (
+                <div key={i} style={{ flex:1, textAlign:"center", paddingLeft:i>0?16:0, borderLeft:i>0?`1px solid ${C.border}`:"none" }}>
+                  <div style={{ fontSize:20, fontWeight:900, color:s.c }}>{s.v}</div>
+                  <div style={{ fontSize:10, color:C.ink3, marginTop:3 }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:12, background:"#ecfdf5", borderRadius:9, padding:"9px 12px", fontSize:11, color:C.green, lineHeight:1.6, border:`1px solid ${C.green}20` }}>
+              💡 vs petrol: Save ₹{saving.toLocaleString("en-IN")}/month = <strong>₹{(saving*12).toLocaleString("en-IN")}/year</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Right — Results */}
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:12 }}>PRICE BREAKDOWN</div>
+
+            {/* Ex-Showroom — always shown */}
+            <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
+              <span style={{ fontSize:12, color:C.ink3 }}>Ex-Showroom Price</span>
+              <span style={{ fontSize:12, fontWeight:700, color:C.ink }}>{fmt.currency(p.exShowroom)}</span>
+            </div>
+
+            {/* Dealer-added discounts / subsidies */}
+            {discounts.map(d => (
+              <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
+                  <span style={{ fontSize:12, color:C.green }}>✓ {d.name}</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.green }}>−{fmt.currency(d.amount)}</span>
+                  <button onClick={() => removeDiscount(d.id)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:14, fontWeight:700, padding:0, lineHeight:1 }}>✕</button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add discount / subsidy form */}
+            {addingDiscount ? (
+              <div style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                <input value={newDisc.name} onChange={e => setNewDisc(d => ({...d, name:e.target.value}))}
+                  placeholder="e.g. FAME-II Subsidy, State Incentive, Dealer Offer..."
+                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", marginBottom:6, boxSizing:"border-box" }} />
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ fontSize:12, color:C.green, fontWeight:700, flexShrink:0 }}>−₹</span>
+                  <input type="number" value={newDisc.amount} onChange={e => setNewDisc(d => ({...d, amount:e.target.value}))}
+                    placeholder="Amount" min={0}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", fontVariantNumeric:"tabular-nums" }} />
+                  <button onClick={addDiscount} style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Add</button>
+                  <button onClick={() => { setAddingDiscount(false); setNewDisc({name:"",amount:""}) }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink3, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setAddingDiscount(true)} style={{
+                width:"100%", background:"none", border:`1.5px dashed ${C.green}60`, borderRadius:8,
+                padding:"10px", fontSize:12, fontWeight:600, color:C.green, cursor:"pointer",
+                fontFamily:"inherit", marginTop:8, marginBottom:4, transition:"all 0.15s"
+              }}>
+                + Add Discount / Subsidy / Scheme
+              </button>
+            )}
+
+            {/* Net price */}
+            <div style={{ display:"flex", justifyContent:"space-between", padding:"14px 0 4px" }}>
+              <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Price (Customer Pays)</span>
+              <span style={{ fontSize:22, fontWeight:900, color:C.green }}>{fmt.currency(net)}</span>
+            </div>
+            {totalDiscounts > 0 && (
+              <div style={{ fontSize:11, color:C.green, textAlign:"right", fontWeight:600 }}>
+                Total savings: {fmt.currency(totalDiscounts)}
+              </div>
+            )}
+          </div>
+
+          <div style={{ background:`linear-gradient(135deg, #ecfdf5, ${C.card})`, borderRadius:14, padding:18, border:`1px solid ${C.green}30` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:12 }}>EMI OPTIONS (8.5% p.a.)</div>
+            {[{m:36,v:emi36},{m:48,v:emi48},{m:60,v:emi60}].map((e,i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:i<2?`1px solid ${C.border}`:"none" }}>
+                <span style={{ fontSize:12, color:C.ink3 }}>{e.m} months ({Math.round(e.m/12)} yrs)</span>
+                <span style={{ fontSize:15, fontWeight:800, color:C.green }}>₹{e.v.toLocaleString("en-IN")}/mo</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Vehicle specs */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:12 }}>VEHICLE SPECS</div>
+            {[
+              { l:"Range", v:`${p.range} km` },
+              { l:"Top Speed", v:`${p.topSpeed} km/h` },
+              { l:"Charge Time", v:`${p.chargeTime} min` },
+              { l:"Type", v:p.type },
+            ].map((s,i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:i<3?`1px solid ${C.border}`:"none" }}>
+                <span style={{ fontSize:11, color:C.ink3 }}>{s.l}</span>
+                <span style={{ fontSize:11, fontWeight:600, color:C.ink2 }}>{s.v}</span>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => onBuildQuote({
+            vehicleName: `${p.brand} ${p.model}`,
+            exShowroom: p.exShowroom,
+            discounts: discounts,
+            totalDiscounts: totalDiscounts,
+          })} style={{
+            width:"100%", background:C.green, color:"#fff", border:"none", borderRadius:12,
+            padding:"14px 20px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+            boxShadow:`0 4px 14px ${C.green}40`, transition:"all 0.15s"
+          }}>
+            📋 Build Quote with this Price →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   SERVICE SECTION — customer-raised requests
+   Created→Responded SLA tracking + OEM escalation
+───────────────────────────────────────────── */
+const SVC_STATUS = {
+  OPEN:          { label:"OPEN — awaiting response", color:"#F97316", bg:"#FFEDD5" },
+  IN_PROGRESS:   { label:"IN PROGRESS",              color:"#3B82F6", bg:"#DBEAFE" },
+  RESOLVED:      { label:"RESOLVED",                 color:"#059669", bg:"#D1FAE5" },
+  ESCALATED_OEM: { label:"ESCALATED TO OEM",         color:"#8B5CF6", bg:"#EDE9FE" },
+}
+
+function fmtDur(ms) {
+  const m = Math.floor(ms / 60000)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 48) return `${h}h ${m % 60}m`
+  return `${Math.floor(h / 24)}d ${h % 24}h`
+}
+
+function ServiceSection({ dealership }) {
+  const isMobile = useIsMobile()
+  const [requests, setRequests] = useState([])
+  const [settings, setSettings] = useState({ autoEscalateOEM: false })
+  const [loading, setLoading]   = useState(true)
+  const [acting, setActing]     = useState(null)
+
+  const load = useCallback(async () => {
+    try {
+      const r = await authFetch(`/api/dealer/service?dealership=${dealership}`)
+      const d = await r.json()
+      if (d.requests) setRequests(d.requests)
+      if (d.settings) setSettings(d.settings)
+    } catch {}
+    setLoading(false)
+  }, [dealership])
+
+  useEffect(() => { load() }, [load])
+
+  const act = async (id, action, withNote=false) => {
+    let note = ""
+    if (withNote) {
+      note = window.prompt(action === "escalate" ? "Note for the OEM (issue summary, parts needed…):" : "Add a note (optional):") || ""
+      if (note === "" && action === "escalate" && !window.confirm("Escalate without a note?")) return
+    }
+    setActing(id)
+    try {
+      const r = await authFetch("/api/dealer/service", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id, action, note }) })
+      const d = await r.json()
+      if (d.request) setRequests(reqs => reqs.map(x => x.id === id ? d.request : x))
+    } finally { setActing(null) }
+  }
+
+  const toggleAuto = async () => {
+    const enabled = !settings.autoEscalateOEM
+    setSettings({ autoEscalateOEM: enabled })
+    await authFetch("/api/dealer/service", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"toggle_auto_escalate", enabled }) })
+    load()
+  }
+
+  const open = requests.filter(r => r.status === "OPEN").length
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16, gap:12, flexWrap:"wrap" }}>
+        <div>
+          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>Service Requests {open > 0 && <span style={{ background:"#F97316", color:"#fff", fontSize:11, fontWeight:800, borderRadius:10, padding:"2px 10px", marginLeft:8, verticalAlign:"middle" }}>{open} open</span>}</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Raised by customers from MyGarage. Respond fast — response time is tracked on every request.</div>
+        </div>
+        <label style={{ display:"flex", alignItems:"center", gap:8, background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 14px", cursor:"pointer", flexShrink:0 }}>
+          <input type="checkbox" checked={settings.autoEscalateOEM} onChange={toggleAuto} />
+          <span style={{ fontSize:11, fontWeight:700, color:C.ink2 }}>Auto-escalate to OEM if no response in 48h</span>
+        </label>
+      </div>
+
+      {loading ? (
+        <div style={{ padding:40, textAlign:"center", color:C.ink3, fontSize:12 }}>Loading service requests…</div>
+      ) : requests.length === 0 ? (
+        <div style={{ padding:48, textAlign:"center", background:C.card, borderRadius:14, border:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:36, marginBottom:10 }}>🔧</div>
+          <div style={{ fontSize:14, fontWeight:700, color:C.ink }}>No service requests yet</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:6 }}>Customers raise requests from the MyGarage portal (/mygarage)</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {requests.map(r => {
+            const sm = SVC_STATUS[r.status] || SVC_STATUS.OPEN
+            const responded = !!r.respondedAt
+            const waitMs = (responded ? new Date(r.respondedAt) : new Date()) - new Date(r.createdAt)
+            const overdue = !responded && waitMs > 24*60*60*1000
+            return (
+              <div key={r.id} style={{ background:C.card, border:`1px solid ${r.status==="OPEN" ? sm.color+"50" : C.border}`, borderRadius:14, padding:16 }}>
+                {/* Header row */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap", marginBottom:10 }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    <Avatar name={r.customerName} size={34} />
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:C.ink }}>{r.customerName} <span style={{ fontWeight:400, color:C.ink3, fontSize:11 }}>· {r.customerPhone}</span></div>
+                      <div style={{ fontSize:11, color:C.ink3 }}>{r.issueType} · {r.vehicle}</div>
+                    </div>
+                  </div>
+                  <span style={{ background:sm.bg, color:sm.color, fontSize:10, fontWeight:800, borderRadius:8, padding:"5px 12px", whiteSpace:"nowrap" }}>{sm.label}</span>
+                </div>
+
+                {/* SLA line */}
+                <div style={{ display:"flex", gap:14, flexWrap:"wrap", background:C.bg, borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
+                  <span style={{ fontSize:11, color:C.ink3 }}>Raised: <b style={{ color:C.ink2 }}>{new Date(r.createdAt).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</b></span>
+                  {responded ? (
+                    <span style={{ fontSize:11, color:C.green, fontWeight:700 }}>✓ Responded in {fmtDur(waitMs)}</span>
+                  ) : (
+                    <span style={{ fontSize:11, color:overdue ? C.red : "#F97316", fontWeight:700 }}>⏱ Waiting {fmtDur(waitMs)}{overdue ? " — overdue!" : ""}</span>
+                  )}
+                  {r.resolvedAt && <span style={{ fontSize:11, color:C.green }}>Resolved {new Date(r.resolvedAt).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
+                  {r.escalatedAt && <span style={{ fontSize:11, color:"#8B5CF6", fontWeight:700 }}>↗ OEM {r.escalatedBy === "auto" ? "(auto, 48h breach)" : ""} {new Date(r.escalatedAt).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
+                </div>
+
+                {/* Issue + order details */}
+                <div style={{ fontSize:12, color:C.ink2, lineHeight:1.6, marginBottom:10 }}>{r.description}</div>
+                {r.orderDetails && (
+                  <div style={{ fontSize:11, color:C.ink3, marginBottom:10 }}>
+                    📦 Order: {r.orderDetails.vehicleName} · {r.orderDetails.dealerName} · booked {new Date(r.orderDetails.bookedAt).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}{r.orderDetails.tokenAmount ? ` · token ₹${r.orderDetails.tokenAmount.toLocaleString("en-IN")}` : ""}
+                  </div>
+                )}
+
+                {/* Attachments */}
+                {(r.attachments||[]).length > 0 && (
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
+                    {r.attachments.map((a, i) => a.type?.startsWith("image") ? (
+                      <img key={i} src={a.data} alt={a.name} onClick={()=>{ const w = window.open(); w.document.write(`<img src="${a.data}" style="max-width:100%"/>`) }}
+                        style={{ width:70, height:70, objectFit:"cover", borderRadius:10, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                    ) : (
+                      <video key={i} src={a.data} controls style={{ width:140, height:70, borderRadius:10, border:`1px solid ${C.border}`, background:"#000" }} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Actions */}
+                {(r.status === "OPEN" || r.status === "IN_PROGRESS") && (
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    {r.status === "OPEN" && (
+                      <button onClick={()=>act(r.id, "respond", true)} disabled={acting===r.id}
+                        style={{ background:C.blue, color:"#fff", border:"none", borderRadius:9, padding: isMobile?"11px 16px":"8px 16px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>✋ Respond</button>
+                    )}
+                    <button onClick={()=>act(r.id, "resolve", true)} disabled={acting===r.id}
+                      style={{ background:C.green, color:"#fff", border:"none", borderRadius:9, padding: isMobile?"11px 16px":"8px 16px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>✓ Mark Resolved</button>
+                    <button onClick={()=>act(r.id, "escalate", true)} disabled={acting===r.id}
+                      style={{ background:"#8B5CF6", color:"#fff", border:"none", borderRadius:9, padding: isMobile?"11px 16px":"8px 16px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>↗ Escalate to OEM</button>
+                    <a href={`tel:+91${(r.customerPhone||"").replace(/\D/g,"").slice(-10)}`}
+                      style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:9, padding: isMobile?"11px 16px":"8px 16px", fontSize:11, fontWeight:700, textDecoration:"none" }}>📞 Call Customer</a>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <details style={{ marginTop:10 }}>
+                  <summary style={{ fontSize:10.5, color:C.ink3, cursor:"pointer", fontWeight:600 }}>Full timeline ({(r.timeline||[]).length})</summary>
+                  <div style={{ marginTop:8, paddingLeft:8, borderLeft:`2px solid ${C.border}` }}>
+                    {(r.timeline||[]).map((t, i) => (
+                      <div key={i} style={{ fontSize:11, color:C.ink3, marginBottom:5 }}>
+                        <b style={{ color:C.ink2 }}>{new Date(t.at).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</b> — {t.event}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   QUOTEPRO SECTION — Reference Bill Generator
+───────────────────────────────────────────── */
+function QuoteSection({ dealership, dealer, prefill }) {
+  const isMobile = useIsMobile()
+  const [leads,         setLeads]         = useState([])
+  const [quotes,        setQuotes]        = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [saving,        setSaving]        = useState(false)
+  const [selectedLead,  setSelectedLead]  = useState(null)
+  const [receipt,       setReceipt]       = useState(null)
+  const [lastSaved,     setLastSaved]     = useState(null)   // {id, quoteId, customerName}
+
+  const [form, setForm] = useState({
+    customerName:"", customerPhone:"", vehicleName:"",
+    exShowroom:0, dealerDiscount:0,
+    registration:0, accessories:0, offer:"", validityDays:7,
+  })
+
+  useEffect(() => {
+    if (prefill) {
+      setForm(f => ({
+        ...f,
+        vehicleName: prefill.vehicleName || f.vehicleName,
+        exShowroom: prefill.exShowroom || f.exShowroom,
+        dealerDiscount: prefill.totalDiscounts || 0,
+        offer: prefill.discounts?.length
+          ? prefill.discounts.map(d => `${d.name}: −₹${d.amount.toLocaleString("en-IN")}`).join("\n")
+          : f.offer,
+      }))
+    }
+  }, [prefill])
+
+  const quoteId = useMemo(() => `EV-${Math.random().toString(36).substr(2,4).toUpperCase()}`, [])
+  const dealerName = dealer?.name || dealer?.dealerName || dealership || "EV Dealer"
+  const dealerPhone = dealer?.phone || ""
+  const dealerCity  = dealer?.city  || ""
+
+  const netPrice = Math.max(0,
+    form.exShowroom - form.dealerDiscount
+    + form.registration + form.accessories
+  )
+  const emi36 = netPrice > 0
+    ? Math.round((netPrice * 0.085 / 12) / (1 - Math.pow(1 + 0.085/12, -36)))
+    : 0
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const [lr, qr] = await Promise.all([
+          authFetch(`/api/dealer/leads?dealership=${dealership}`),
+          authFetch(`/api/dealer/quotes?dealership=${dealership}`)
+        ])
+        const ld = await lr.json()
+        const qd = await qr.json()
+        if (ld.success) setLeads(ld.leads.filter(l => !["LOST","CLOSED"].includes(l.status)))
+        if (qd.success) setQuotes(qd.quotes)
+      } catch {}
+      setLoading(false)
+    }
+    load()
+  }, [dealership])
+
+  function pickLead(lead) {
+    setSelectedLead(lead)
+    setForm(f => ({ ...f, customerName:lead.name||"", customerPhone:lead.phone||"", vehicleName:lead.vehicle||"" }))
+  }
+
+  function numVal(v) { const n = parseInt(v); return isNaN(n) ? 0 : n }
+
+  function handleUploadReceipt(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setReceipt({ name:file.name, type:file.type, data:ev.target.result })
+    reader.readAsDataURL(file)
+  }
+
+  async function handleSave() {
+    if (!form.customerName.trim()) { alert("Enter customer name or select a lead"); return }
+    setSaving(true)
+    try {
+      const r = await authFetch("/api/dealer/quotes", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          dealership, leadId:selectedLead?.id||null, quoteId,
+          customerName:form.customerName, customerPhone:form.customerPhone,
+          vehicleName:form.vehicleName, exShowroom:form.exShowroom,
+          fameSubsidy:0, stateSubsidy:0,
+          dealerDiscount:form.dealerDiscount, registration:form.registration,
+          accessories:form.accessories, netPrice, offer:form.offer,
+          validityDays:form.validityDays,
+          receipt: receipt ? { name:receipt.name, type:receipt.type, data:receipt.data } : null,
+          dealerName, dealerPhone, dealerCity,
+        })
+      })
+      const d = await r.json()
+      if (d.success) {
+        setQuotes(q => [d.quote, ...q])
+        setLastSaved(d.quote)
+        setSelectedLead(null)
+        setForm({ customerName:"", customerPhone:"", vehicleName:"", exShowroom:0, dealerDiscount:0, registration:0, accessories:0, offer:"", validityDays:7 })
+        setReceipt(null)
+      }
+    } catch {}
+    setSaving(false)
+  }
+
+  function whatsAppShare() {
+    const lines = [
+      `*Reference Quote #${quoteId}*`,
+      `Customer: ${form.customerName}`,
+      form.vehicleName ? `Vehicle: ${form.vehicleName}` : "",
+      "",
+      "*Price Breakdown:*",
+      form.exShowroom   ? `• Ex-Showroom: ₹${form.exShowroom.toLocaleString("en-IN")}` : "",
+      form.dealerDiscount?`• Discounts / Subsidies: -₹${form.dealerDiscount.toLocaleString("en-IN")}` : "",
+      form.registration ? `• Registration+Insurance: ₹${form.registration.toLocaleString("en-IN")}` : "",
+      "",
+      `*Net Price: ₹${netPrice.toLocaleString("en-IN")}*`,
+      emi36 > 0 ? `EMI from ₹${emi36.toLocaleString("en-IN")}/mo (36m @ 8.5%)` : "",
+      form.offer ? `\nSpecial Offer: ${form.offer}` : "",
+      "",
+      `⚠️ REFERENCE DOCUMENT ONLY — Not an original GST invoice`,
+      `Valid for ${form.validityDays} days`,
+      "",
+      dealerName + (dealerPhone ? ` | ${dealerPhone}` : ""),
+    ].filter(Boolean).join("\n")
+    const phone = (form.customerPhone||"").replace(/\D/g,"")
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines)}`, "_blank")
+  }
+
+  function handlePrint() {
+    const el = document.getElementById("ref-bill-preview")
+    if (!el) return
+    const w = window.open("", "_blank", "width=720,height=960")
+    w.document.write(`<!DOCTYPE html><html><head><title>Reference Bill #${quoteId}</title>
+      <style>
+        body{font-family:system-ui,sans-serif;margin:40px;color:#0d1117;font-size:13px}
+        .warn{background:#FEF3C7;border:2px solid #F59E0B;padding:12px 18px;border-radius:8px;margin-bottom:20px;text-align:center}
+        .warn b{color:#92400E;font-size:12px;letter-spacing:.3px}
+        .warn small{display:block;color:#B45309;font-size:11px;margin-top:2px}
+        .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e2e8f0;font-size:12px}
+        .net{font-size:20px;font-weight:900;color:#059669}
+        .offer{background:#ecfdf5;border-radius:6px;padding:10px 14px;border:1px solid #6ee7b730;margin:10px 0}
+        .footer{margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#64748b;line-height:1.6}
+        @media print{button{display:none}}
+      </style></head><body>${el.innerHTML}</body></html>`)
+    w.document.close(); w.focus()
+    setTimeout(() => { w.print(); w.close() }, 300)
+  }
+
+  const priceRows = [
+    { label:"Ex-Showroom Price",          value:form.exShowroom,    sign:"+" },
+    { label:"Discounts / Subsidies",      value:form.dealerDiscount,sign:"−", color:C.green },
+    { label:"Registration + Insurance",   value:form.registration,  sign:"+" },
+    { label:"Accessories / Warranty",     value:form.accessories,   sign:"+" },
+  ]
+
+  const inputSt = { width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }
+  const numSt   = { width:120, background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", textAlign:"right", fontVariantNumeric:"tabular-nums" }
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+        <div>
+          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>QuotePro — Reference Bill Generator</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Generate reference quotes with price breakdowns. Upload billing receipts and share directly to customers.</div>
+        </div>
+        <span style={{ background:"#FEF3C7", color:"#92400E", border:"1.5px solid #F59E0B", borderRadius:8, padding:"6px 14px", fontSize:11, fontWeight:800, flexShrink:0 }}>
+          ⚠️ REFERENCE ONLY — Not a GST Invoice
+        </span>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
+
+        {/* ── LEFT: Builder ── */}
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* Lead linker */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>LINK TO LEAD (OPTIONAL)</div>
+            <select value={selectedLead?.id||""} onChange={e=>{ const l=leads.find(x=>x.id===e.target.value); if(l) pickLead(l) }}
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 13px", fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12 }}>
+              <option value="">— Select a lead to auto-fill —</option>
+              {leads.map(l=><option key={l.id} value={l.id}>{l.name} · {l.vehicle||"No vehicle"} · {STATUS_CONFIG[l.status]?.label||l.status}</option>)}
+            </select>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>CUSTOMER NAME</div>
+                <input value={form.customerName} onChange={e=>setForm(f=>({...f,customerName:e.target.value}))} placeholder="Customer name" style={inputSt} />
+              </div>
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>PHONE</div>
+                <input value={form.customerPhone} onChange={e=>setForm(f=>({...f,customerPhone:e.target.value}))} placeholder="+91 XXXXX XXXXX" style={inputSt} />
+              </div>
+            </div>
+          </div>
+
+          {/* Price breakdown */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>VEHICLE & PRICE BREAKDOWN</div>
+            <input value={form.vehicleName} onChange={e=>setForm(f=>({...f,vehicleName:e.target.value}))} placeholder="Vehicle model name (e.g. Tata Nexon EV Max)"
+              style={{ ...inputSt, marginBottom:12 }} />
+            {priceRows.map(row=>(
+              <div key={row.key||row.label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <span style={{ width:16, fontSize:13, fontWeight:800, color:row.sign==="−"?C.green:C.ink2, flexShrink:0, textAlign:"center" }}>{row.sign}</span>
+                <div style={{ flex:1, fontSize:12, color:C.ink2 }}>{row.label}</div>
+                <input type="number" min={0} value={row.value}
+                  onChange={e=>{
+                    const keyMap = {"Ex-Showroom Price":"exShowroom","Discounts / Subsidies":"dealerDiscount","Registration + Insurance":"registration","Accessories / Warranty":"accessories"}
+                    const k = keyMap[row.label]
+                    if(k) setForm(f=>({...f,[k]:numVal(e.target.value)}))
+                  }}
+                  style={numSt} />
+              </div>
+            ))}
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`2px solid ${C.border}` }}>
+              <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
+              <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
+            </div>
+            {netPrice>0 && <div style={{ fontSize:11, color:C.ink3, textAlign:"right", marginTop:4 }}>EMI ~₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
+          </div>
+
+          {/* Offer & validity */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:8 }}>DEALER SPECIAL OFFER / NOTE</div>
+            <textarea value={form.offer} onChange={e=>setForm(f=>({...f,offer:e.target.value}))}
+              placeholder="e.g. Free home charger installation + 2 years free service..."
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"inherit", outline:"none", minHeight:60, resize:"none", lineHeight:1.5, boxSizing:"border-box" }} />
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+              <span style={{ fontSize:11, color:C.ink3 }}>Valid for</span>
+              <select value={form.validityDays} onChange={e=>setForm(f=>({...f,validityDays:parseInt(e.target.value)}))}
+                style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+                {[3,7,14,30].map(d=><option key={d} value={d}>{d} days</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Receipt Upload */}
+          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1.5px dashed ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:6 }}>UPLOAD PURCHASE RECEIPT (from billing software)</div>
+            <div style={{ fontSize:11, color:C.ink3, marginBottom:12, lineHeight:1.5 }}>
+              Upload the actual GST invoice from your Tally / billing software. This will be attached to the quote and shareable to the customer directly.
+            </div>
+            {receipt ? (
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ background:"#ecfdf5", border:`1px solid ${C.green}`, borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:600, color:C.green, flex:1 }}>📎 {receipt.name}</div>
+                <button onClick={()=>setReceipt(null)} style={{ background:"none", border:"none", color:C.red, cursor:"pointer", fontSize:18, fontWeight:700 }}>✕</button>
+              </div>
+            ) : (
+              <label style={{ display:"block", background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"18px", textAlign:"center", cursor:"pointer" }}>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleUploadReceipt} style={{ display:"none" }} />
+                <div style={{ fontSize:22, marginBottom:4 }}>📂</div>
+                <div style={{ fontSize:12, fontWeight:700, color:C.ink2 }}>Click to upload PDF, JPG or PNG</div>
+                <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>Receipt from Tally / GST billing software</div>
+              </label>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={whatsAppShare} style={{ flex:1, background:"#25D366", color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              💬 WhatsApp
+            </button>
+            <button onClick={handlePrint} style={{ flex:1, background:C.blue, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              🖨️ Print Bill
+            </button>
+            <button onClick={handleSave} disabled={saving} style={{ flex:1, background:saving?C.ink3:C.green, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>
+              {saving?"Saving…":"💾 Save"}
+            </button>
+          </div>
+
+          {/* Share with Customer panel — appears after save */}
+          {lastSaved && (
+            <div style={{ background:"#ecfdf5", border:`1.5px solid ${C.green}`, borderRadius:14, padding:16, marginTop:4 }}>
+              <div style={{ fontSize:12, fontWeight:800, color:C.green, marginBottom:6 }}>✅ Quote saved — Share with Customer</div>
+              <div style={{ fontSize:11, color:C.ink2, marginBottom:12 }}>Send this link to <strong>{lastSaved.customerName}</strong>. They can agree, upload KYC docs, or submit concerns directly.</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <div style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink2, fontFamily:"monospace", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {typeof window!=="undefined" ? `${window.location.origin}/quote/${lastSaved.id}` : `/quote/${lastSaved.id}`}
+                </div>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/quote/${lastSaved.id}`); alert("Link copied!") }}
+                  style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                  Copy
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/quote/${lastSaved.id}`
+                  const msg = `Hi ${lastSaved.customerName}, here is your reference quote for the ${lastSaved.vehicleName||"vehicle"} from ${dealerName}.\n\nReview and respond here:\n${link}\n\nYou can agree to the quote and upload your KYC documents directly from this link. Feel free to reach out if you have any questions.`
+                  window.open(`https://wa.me/${(lastSaved.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`, "_blank")
+                }}
+                style={{ width:"100%", background:"#25D366", color:"#fff", border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>
+                💬 Send via WhatsApp
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT: Preview ── */}
+        <div>
+          <div style={{ background:C.card, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            <div style={{ padding:"10px 16px", background:C.bg, borderBottom:`1px solid ${C.border}`, fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span>REFERENCE BILL PREVIEW</span>
+              <button onClick={handlePrint} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:C.green, fontWeight:700, fontFamily:"inherit" }}>🖨️ Print</button>
+            </div>
+            <div id="ref-bill-preview" style={{ padding:24 }}>
+              {/* Disclaimer */}
+              <div style={{ background:"#FEF3C7", border:"2px solid #F59E0B", borderRadius:10, padding:"10px 16px", marginBottom:20, textAlign:"center" }}>
+                <div style={{ fontSize:11, fontWeight:900, color:"#92400E", letterSpacing:"0.5px" }}>⚠️ REFERENCE DOCUMENT — NOT AN ORIGINAL GST INVOICE</div>
+                <div style={{ fontSize:10, color:"#B45309", marginTop:2 }}>This is a price reference only. The actual GST invoice will be issued by the dealer's billing software separately.</div>
+              </div>
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
+                <div>
+                  <div style={{ fontSize:18, fontWeight:900, color:C.green }}>EV<span style={{ color:C.ink }}>.CRM</span></div>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginTop:2 }}>{dealerName}</div>
+                  {dealerCity && <div style={{ fontSize:10, color:C.ink3 }}>{dealerCity}{dealerPhone ? ` · ${dealerPhone}` : ""}</div>}
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>QUOTE #{quoteId}</div>
+                  <div style={{ fontSize:10, color:C.ink3 }}>Valid: {form.validityDays} days</div>
+                  <div style={{ fontSize:10, color:C.ink3 }}>{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
+                </div>
+              </div>
+              {/* Customer */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:9, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:4 }}>PREPARED FOR</div>
+                <div style={{ fontSize:16, fontWeight:800, color:C.ink }}>{form.customerName||"—"}</div>
+                {form.customerPhone && <div style={{ fontSize:11, color:C.ink3 }}>{form.customerPhone}</div>}
+              </div>
+              {/* Price table */}
+              <div style={{ background:C.bg, borderRadius:10, padding:14, marginBottom:14 }}>
+                {form.vehicleName && <div style={{ fontSize:13, fontWeight:800, color:C.ink, marginBottom:12 }}>{form.vehicleName}</div>}
+                {priceRows.filter(r=>r.value>0).map((row,i)=>(
+                  <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                    <span style={{ fontSize:11, color:C.ink3 }}>{row.sign==="−"?"✓ ":""}{row.label}</span>
+                    <span style={{ fontSize:11, fontWeight:600, color:row.color||C.ink }}>{row.sign==="−"?"−":""}₹{row.value.toLocaleString("en-IN")}</span>
+                  </div>
+                ))}
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
+                  <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
+                </div>
+                {emi36>0 && <div style={{ fontSize:10, color:C.ink3, textAlign:"right", marginTop:3 }}>EMI from ₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
+              </div>
+              {form.offer && (
+                <div style={{ background:"#ecfdf5", borderRadius:8, padding:12, border:`1px solid ${C.green}30`, marginBottom:14 }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:C.green, letterSpacing:"0.5px", marginBottom:4 }}>SPECIAL OFFER</div>
+                  <div style={{ fontSize:11, color:C.ink, lineHeight:1.5 }}>{form.offer}</div>
+                </div>
+              )}
+              {receipt && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:8, padding:"8px 12px", marginBottom:14, border:`1px solid ${C.border}` }}>
+                  <span>📎</span>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>Purchase Receipt Attached</div>
+                    <div style={{ fontSize:10, color:C.ink3 }}>{receipt.name} · From dealer billing software</div>
+                  </div>
+                </div>
+              )}
+              {/* Footer */}
+              <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:4 }}>
+                <div style={{ fontSize:9, color:C.ink3, lineHeight:1.6 }}>
+                  ⚠️ This document is a <b>price reference only</b> and does not constitute a legal GST tax invoice. Prices are estimates based on current subsidies and subject to change. The official GST invoice will be provided by the dealership at time of purchase via their billing software.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Saved quotes */}
+          {quotes.length > 0 && (
+            <div style={{ marginTop:20 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>SAVED QUOTES ({quotes.length})</div>
+              {quotes.map(q => {
+                const crMap = { agreed:{ label:"Agreed", color:C.green, bg:"#ecfdf5" }, not_agreed:{ label:"Has Concerns", color:C.red, bg:"#FEE2E2" }, docs_uploaded:{ label:"KYC Uploaded", color:C.green, bg:"#ecfdf5" } }
+                const cr = crMap[q.customerResponse]
+                const customerLink = typeof window!=="undefined" ? `${window.location.origin}/quote/${q.id}` : `/quote/${q.id}`
+                return (
+                  <div key={q.id} style={{ background:C.card, borderRadius:12, padding:"12px 16px", border:`1px solid ${cr ? cr.color+"40" : C.border}`, marginBottom:8 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.ink }}>{q.customerName}</div>
+                        <div style={{ fontSize:11, color:C.ink3 }}>{q.vehicleName} · ₹{(q.netPrice||0).toLocaleString("en-IN")} · #{q.quoteId}</div>
+                      </div>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <div style={{ fontSize:10, color:C.ink3 }}>{new Date(q.createdAt).toLocaleDateString("en-IN")}</div>
+                        {cr && <span style={{ display:"inline-block", marginTop:4, background:cr.bg, color:cr.color, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:800 }}>{cr.label}</span>}
+                        {!cr && <span style={{ display:"inline-block", marginTop:4, background:C.bg, color:C.ink3, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:700 }}>Awaiting Response</span>}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {q.receipt && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>📎 Receipt</span>}
+                      {q.kycDocs && Object.keys(q.kycDocs).length>0 && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>🪪 {Object.keys(q.kycDocs).length} KYC docs</span>}
+                      {q.customerFeedback && <span style={{ fontSize:10, color:C.red, fontWeight:600 }}>💬 "{q.customerFeedback.slice(0,40)}…"</span>}
+                      {q.leadId && <span style={{ fontSize:10, color:C.blue, fontWeight:600 }}>🔗 Linked lead</span>}
+                    </div>
+                    <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                      <button onClick={()=>{ navigator.clipboard?.writeText(customerLink); alert("Customer link copied!") }}
+                        style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                        🔗 Copy Link
+                      </button>
+                      <button onClick={()=>window.open(`https://wa.me/${(q.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent("Hi "+q.customerName+", please review and respond to your quote here: "+customerLink)}`, "_blank")}
+                        style={{ flex:1, background:"#25D366", border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                        💬 Resend
+                      </button>
+                      <button onClick={()=>window.open(`/quote/${q.id}`, "_blank")}
+                        style={{ flex:1, background:C.blue, border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                        👁️ Preview
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    MAIN DEALER DASHBOARD
 ───────────────────────────────────────────── */
 function DealerDashboard() {
   const router = useRouter()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
 
   const [activeTab,   setActiveTab]   = useState("dashboard")
   const [importModal, setImportModal] = useState(false)
   const [quickLead,   setQuickLead]   = useState(null)
   const [creating,    setCreating]    = useState(false)
+  const [quotePrefill,setQuotePrefill]= useState(null)
 
   const [leads,     setLeads]     = useState([])
   const [feed,      setFeed]      = useState([])
@@ -1524,7 +2567,7 @@ function DealerDashboard() {
 
   const quickActions = [
     { icon:"✦",  label:"Quick Lead",    desc:"Add walk-in / phone", color:C.green,  onClick:()=>setQuickLead({name:"",phone:"",vehicle:""}) },
-    { icon:"📄", label:"Build Quote",   desc:"Price + share 60s",   color:C.blue,   href:"/buildprice" },
+    { icon:"₹",  label:"Build Price",   desc:"Calculator + quote",  color:C.blue,   onClick:()=>setActiveTab("buildprice") },
     { icon:"🌩", label:"Import Data",   desc:"Upload Excel/CSV",    color:C.purple, onClick:()=>setImportModal(true) },
     { icon:"⚡", label:"Today's Queue", desc:"AI-selected leads",   color:C.orange, href:"/queue" },
     { icon:"💬", label:"Connect",       desc:"WhatsApp + email",    color:C.teal,   href:"/connect" },
@@ -1562,11 +2605,11 @@ function DealerDashboard() {
 
       {error && <div style={{ background:`${C.red}10`, border:`1px solid ${C.red}25`, borderRadius:10, padding:"10px 16px", marginBottom:20, fontSize:12, color:C.red }}>⚠ {error}</div>}
 
-      {/* ── Tab Navigation ─── */}
-      <div style={{ display:"flex", gap:4, marginBottom:24, background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:4 }}>
+      {/* ── Tab Navigation — horizontally scrollable on phones ─── */}
+      <div style={{ display:"flex", gap:4, marginBottom:24, background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:4, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={()=>setActiveTab(t.id)}
-            style={{ flex:1, background:activeTab===t.id?C.bg:"transparent", border:activeTab===t.id?`1px solid ${C.border}`:"1px solid transparent", color:activeTab===t.id?C.ink:C.ink2, borderRadius:10, padding:"9px 12px", fontSize:12, fontWeight:activeTab===t.id?700:500, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all 0.15s" }}>
+            style={{ flex: isMobile ? "0 0 auto" : 1, background:activeTab===t.id?C.bg:"transparent", border:activeTab===t.id?`1px solid ${C.border}`:"1px solid transparent", color:activeTab===t.id?C.ink:C.ink2, borderRadius:10, padding: isMobile ? "11px 14px" : "9px 12px", fontSize:12, fontWeight:activeTab===t.id?700:500, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all 0.15s", whiteSpace:"nowrap" }}>
             <span>{t.icon}</span><span>{t.label}</span>
             {t.id==="leads" && stats.hotLeads>0 && <span style={{ background:C.red, color:"#fff", fontSize:9, fontWeight:800, borderRadius:10, padding:"1px 6px", marginLeft:2 }}>{stats.hotLeads}</span>}
           </button>
@@ -1595,7 +2638,7 @@ function DealerDashboard() {
             </div>
           )}
 
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap:14, marginBottom:20 }}>
             {kpis.map(k => (
               <Card key={k.label}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
@@ -1610,7 +2653,7 @@ function DealerDashboard() {
             ))}
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap:14, marginBottom:20 }}>
             <Card>
               <SectionHeading>Lead Pipeline</SectionHeading>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
@@ -1671,7 +2714,7 @@ function DealerDashboard() {
             </Card>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:10, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)", gap:10, marginBottom:20 }}>
             {quickActions.map(a => {
               const body = (
                 <>
@@ -1692,7 +2735,7 @@ function DealerDashboard() {
             })}
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1.3fr 1fr", gap:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1.3fr 1fr", gap:16 }}>
             <Card>
               <SectionHeading action={loadAll} actionLabel="Refresh">Live Activity Feed <LiveBadge/></SectionHeading>
               {feed.length === 0 ? (
@@ -1770,6 +2813,11 @@ function DealerDashboard() {
       {activeTab === "customers" && <CustomerSection dealership={dealership} />}
 
       {activeTab === "tasks"     && <TaskSection dealership={dealership} reps={reps} />}
+
+      {activeTab === "service"    && <ServiceSection dealership={dealership} />}
+      {activeTab === "buildprice" && <BuildPriceSection onBuildQuote={(data) => { setQuotePrefill(data); setActiveTab("quotepro") }} />}
+
+      {activeTab === "quotepro"  && <QuoteSection dealership={dealership} dealer={user} prefill={quotePrefill} />}
 
       {activeTab === "settings"  && <SettingsSection dealership={dealership} dealer={user} reps={reps} onRepsRefresh={loadAll} />}
 

@@ -16,7 +16,20 @@
     "bookingId": "book_1783594701952",
     "preferredDate": "2026-07-10",
     "created_at": "2026-07-09T10:58:21.952Z",
-    "notes": []
+    "notes": [
+      {
+        "id": "note_1783699228643",
+        "text": "WhatsApp sent (CLOSED template): \"Hi Suresh Raju! 🎉 Congratulations again on your Tata Motors Nexon EV Max LR Dar…\"",
+        "channel": "whatsapp",
+        "author": "dealer@deccanev.in",
+        "created_at": "2026-07-10T16:00:28.643Z"
+      }
+    ],
+    "lastAction": {
+      "type": "whatsapp",
+      "at": "2026-07-10T16:00:28.643Z",
+      "by": "dealer@deccanev.in"
+    }
   },
   {
     "id": "lead_001",

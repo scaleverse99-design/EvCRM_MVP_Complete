@@ -90,13 +90,21 @@ export async function PATCH(req) {
   }
 
   if (addNote) {
+    const author = user.email || user.sub
+    const at = new Date().toISOString()
     leads[idx].notes = leads[idx].notes || []
     leads[idx].notes.unshift({
       id: `note_${Date.now()}`,
       text: addNote.text,
-      author: user.email || user.sub,
-      created_at: new Date().toISOString(),
+      channel: addNote.channel || "note",
+      author,
+      created_at: at,
     })
+    // Outreach actions (call / whatsapp / sms / email) also stamp lastAction
+    // so lead lists can show "last touch" without scanning the notes array.
+    if (["call", "whatsapp", "sms", "email"].includes(addNote.channel)) {
+      leads[idx].lastAction = { type: addNote.channel, at, by: author }
+    }
   } else {
     leads[idx] = { ...leads[idx], ...updates }
   }

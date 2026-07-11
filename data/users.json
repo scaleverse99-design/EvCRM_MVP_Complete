@@ -18,11 +18,34 @@
     "phone": "919999988888",
     "is_active": true,
     "created_at": "2026-07-08T20:58:05.234Z",
-    "last_login": "2026-07-09T10:58:24.919Z",
+    "last_login": "2026-07-10T06:45:46.317Z",
+    "trialStartDate": "2026-07-08T20:58:05.234Z",
+    "billingStatus": "active_oem_sponsored",
+    "mandateStatus": "none",
+    "razorpayCustomerId": null,
+    "razorpaySubscriptionId": null,
+    "oemId": "oem-tata",
+    "oemDistributed": false,
+    "oemSponsored": true,
+    "sponsoredBy": "oem-tata",
+    "sponsoredAt": "2026-07-10T20:19:42.747Z"
+  },
+  {
+    "id": "user_oem_001",
+    "email": "oem@tatamotors.in",
+    "password_hash": "$2a$12$37k5dde/Mtedee0iW6S/cuzTOrFetTuh7BbT6jtsAYIXo/9h/.3vi",
+    "role": "oem",
+    "name": "Tata Motors EV (OEM)",
+    "dealership": "oem-tata",
+    "phone": "919999988888",
+    "is_active": true,
+    "created_at": "2026-07-08T20:58:05.234Z",
+    "last_login": "2026-07-10T06:45:46.317Z",
     "trialStartDate": "2026-07-08T20:58:05.234Z",
     "billingStatus": "trial",
     "mandateStatus": "none",
     "razorpayCustomerId": null,
-    "razorpaySubscriptionId": null
+    "razorpaySubscriptionId": null,
+    "oemId": "oem-tata"
   }
 ]

@@ -53,3 +53,11 @@ alter table tasks        disable row level security;
 alter table bookings     disable row level security;
 alter table feed         disable row level security;
 alter table service_centers disable row level security;
+
+-- ── Added 2026-07-11: tables for QuotePro quotes + customer service module ──
+create table if not exists quotes           (id text primary key, data jsonb not null, created_at timestamptz default now());
+create table if not exists service_requests (id text primary key, data jsonb not null, created_at timestamptz default now());
+create table if not exists service_settings (id text primary key, data jsonb not null, created_at timestamptz default now());
+alter table quotes           disable row level security;
+alter table service_requests disable row level security;
+alter table service_settings disable row level security;
