@@ -20,6 +20,16 @@ const WA_REPLY_MAP = {
   default:    (l) => `Hi ${l.name}, thanks for your interest in ${l.vehicle || 'our vehicles'}. How can we help you today?`,
 }
 
+// Human-friendly labels for the raw lead `source` values.
+const SOURCE_LABELS = {
+  marketplace_booking: "Website — Test Drive Booking",
+  website:             "Website Enquiry",
+  walkin:              "Walk-in",
+  instagram:           "Instagram",
+  showroom:            "Showroom",
+  referral:            "Referral",
+}
+
 /* ── Stage-based contact templates ───────────────────────────────────────
    Auto-filled per lead status for WhatsApp / SMS / Email. The rep always
    reviews (and can edit) before sending — these are starting points. */
@@ -597,10 +607,27 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16, padding:12, background:C.bg, borderRadius:10 }}>
-        <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Source</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{lead.source||"—"}</div></div>
+        <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Source</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{SOURCE_LABELS[lead.source] || lead.source || "—"}</div></div>
         <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Rep</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{reps.find(r=>r.id===lead.assignedRep)?.name || "Unassigned"}</div></div>
         <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Follow-up</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{lead.next_followup ? new Date(lead.next_followup).toLocaleDateString("en-IN",{day:"numeric",month:"short"}) : "—"}</div></div>
       </div>
+
+      {/* Booking / test-drive details — shown when the lead came in from the
+          public website so the dealer sees the appointment and reference. */}
+      {(lead.bookingId || lead.source === "marketplace_booking" || lead.source_context === "test_drive") && (
+        <div style={{ background:`${C.green}0D`, border:`1px solid ${C.green}30`, borderRadius:10, padding:12, marginBottom:16 }}>
+          <div style={{ fontSize:10, fontWeight:800, color:C.greenD || "#065F46", marginBottom:10, letterSpacing:"0.4px", display:"flex", alignItems:"center", gap:6 }}>
+            {lead.source_context === "test_drive" ? "🚗 TEST DRIVE REQUEST" : "📦 WEBSITE BOOKING"}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Vehicle</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{lead.vehicle || "—"}</div></div>
+            <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Preferred date</div><div style={{ fontSize:11, fontWeight:800, color:lead.preferredDate ? (C.greenD||"#065F46") : C.ink3 }}>{lead.preferredDate ? new Date(lead.preferredDate).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"}) : "Not specified"}</div></div>
+            {lead.bookingId && <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Booking ref</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{lead.bookingId}</div></div>}
+            {lead.tokenCollected ? <div><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase" }}>Token collected</div><div style={{ fontSize:11, fontWeight:700, color:C.ink }}>₹{Number(lead.tokenCollected).toLocaleString("en-IN")}</div></div> : null}
+          </div>
+          {lead.message && <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${C.green}20` }}><div style={{ fontSize:9, color:C.ink3, textTransform:"uppercase", marginBottom:3 }}>Customer note</div><div style={{ fontSize:11, color:C.ink2, lineHeight:1.5 }}>“{lead.message}”</div></div>}
+        </div>
+      )}
 
       {lead.lostReason && (
         <div style={{ background:`${C.red}10`, border:`1px solid ${C.red}25`, borderRadius:8, padding:"8px 12px", marginBottom:16, fontSize:11, color:C.red }}>

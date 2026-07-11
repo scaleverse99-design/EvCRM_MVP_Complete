@@ -1,5 +1,97 @@
 [
   {
+    "id": "inv_1783769808700",
+    "dealership": "volt-hyd",
+    "brand": "Ather",
+    "model": "450X",
+    "variant": "Gen 3",
+    "type": "2W",
+    "bodyType": "Scooter",
+    "year": 2026,
+    "km": 0,
+    "condition": "new",
+    "color": "Space Grey",
+    "range": 150,
+    "batteryCapacity": "",
+    "topSpeed": 0,
+    "exShowroom": 0,
+    "emi": 0,
+    "tokenAmount": 1000,
+    "status": "IN_STOCK",
+    "vin": "VOLT-ATHER-0001",
+    "isDemo": false,
+    "demoMileage": null,
+    "images": [
+      "🚗"
+    ],
+    "features": [],
+    "tags": [],
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "rating": 0,
+    "reviews": 0,
+    "stockLog": [
+      {
+        "event": "in_stock",
+        "note": "Status changed available → IN_STOCK",
+        "date": "2026-07-11T11:39:09.266Z"
+      },
+      {
+        "event": "received",
+        "note": "Added to inventory",
+        "date": "2026-07-11T11:36:48.700Z"
+      }
+    ],
+    "createdAt": "2026-07-11T11:36:48.700Z",
+    "updatedAt": "2026-07-11T11:39:09.266Z"
+  },
+  {
+    "id": "inv_1783769808678",
+    "dealership": "volt-hyd",
+    "brand": "Tata",
+    "model": "Nexon EV",
+    "variant": "Empowered+ LR",
+    "type": "4W",
+    "bodyType": "SUV",
+    "year": 2026,
+    "km": 0,
+    "condition": "new",
+    "color": "Pristine White",
+    "range": 465,
+    "batteryCapacity": "40.5 kWh",
+    "topSpeed": 150,
+    "exShowroom": 0,
+    "emi": 0,
+    "tokenAmount": 1000,
+    "status": "IN_STOCK",
+    "vin": "VOLT-NEXON-0001",
+    "isDemo": false,
+    "demoMileage": null,
+    "images": [
+      "🚗"
+    ],
+    "features": [],
+    "tags": [],
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "rating": 0,
+    "reviews": 0,
+    "stockLog": [
+      {
+        "event": "in_stock",
+        "note": "Status changed available → IN_STOCK",
+        "date": "2026-07-11T11:39:09.285Z"
+      },
+      {
+        "event": "received",
+        "note": "Added to inventory",
+        "date": "2026-07-11T11:36:48.678Z"
+      }
+    ],
+    "createdAt": "2026-07-11T11:36:48.678Z",
+    "updatedAt": "2026-07-11T11:39:09.285Z"
+  },
+  {
     "id": "tata-nexon-ev-max-d01",
     "dealership": "hyd-d01",
     "dealerName": "Deccan EV Hub Hitech",

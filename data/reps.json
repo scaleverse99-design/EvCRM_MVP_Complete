@@ -56,5 +56,33 @@
     "active": true,
     "color": "#DB2777",
     "createdAt": "2026-07-11T08:25:17.494Z"
+  },
+  {
+    "id": "rep_1783768902746",
+    "dealership": "hyd-d01",
+    "name": "Deepak Sharma",
+    "phone": "9876500033",
+    "email": "deepak.rep@deccanev.in",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#0891B2",
+    "createdAt": "2026-07-11T11:21:42.746Z"
+  },
+  {
+    "id": "rep_1783769820186",
+    "dealership": "volt-hyd",
+    "name": "Anjali Verma",
+    "phone": "9876522222",
+    "email": "anjali.rep@voltmotors.in",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#059669",
+    "createdAt": "2026-07-11T11:37:00.186Z"
   }
 ]
