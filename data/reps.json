@@ -112,5 +112,19 @@
     "active": true,
     "color": "#2563EB",
     "createdAt": "2026-07-11T12:13:00.735Z"
+  },
+  {
+    "id": "rep_1783772693068",
+    "dealership": "hyd-d01",
+    "name": "Balaji",
+    "phone": "8851903901",
+    "email": "hemanthlankalapalli67@gmail.com",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#7C3AED",
+    "createdAt": "2026-07-11T12:24:53.068Z"
   }
 ]

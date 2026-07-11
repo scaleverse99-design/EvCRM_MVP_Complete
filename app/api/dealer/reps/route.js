@@ -36,19 +36,47 @@ export async function GET(req) {
   if (dealership) reps = reps.filter(r => r.dealership === dealership)
 
   // Keep the base fields the dashboard already reads (id/name/color/status)
-  // and add login info for the Team management view.
+  // and add login info + performance stats for the Team management view.
   reps = reps.map(r => {
     const account = users.find(u => u.role === "rep" && u.repId === r.id)
+    const email = account?.email || r.email || ""
     const myLeads = leads.filter(l => l.assignedRep === r.id)
+    const converted = myLeads.filter(l => l.status === "CLOSED").length
+
+    // Contact actions this rep logged, counted from the notes' author + channel.
+    // A rep authors notes by their login email, across any lead they work.
+    const actions = { call: 0, whatsapp: 0, sms: 0, email: 0, note: 0 }
+    const workedLeadIds = new Set()
+    let lastActivity = null
+    if (email) {
+      for (const l of leads) {
+        for (const n of (l.notes || [])) {
+          if (n.author !== email) continue
+          workedLeadIds.add(l.id)
+          if (actions[n.channel] !== undefined) actions[n.channel]++
+          if (!lastActivity || new Date(n.created_at) > new Date(lastActivity)) lastActivity = n.created_at
+        }
+      }
+    }
+    const totalCalls = actions.call
+    const totalMessages = actions.whatsapp + actions.sms + actions.email
+
     return {
       ...r,
-      email: account?.email || r.email || "",
+      email,
       hasLogin: !!account,
       active: account ? account.is_active !== false : false,
       lastLogin: account?.last_login || null,
       covers: account?.covers || [],   // repIds this rep is currently covering
-      leads: myLeads.length,
-      closed: myLeads.filter(l => l.status === "CLOSED").length,
+      // Performance
+      leads: myLeads.length,            // assigned
+      closed: converted,                // converted
+      conversionRate: myLeads.length ? Math.round((converted / myLeads.length) * 100) : 0,
+      worked: workedLeadIds.size,       // distinct leads the rep actually touched
+      calls: totalCalls,
+      messages: totalMessages,
+      actions,                          // {call, whatsapp, sms, email, note}
+      lastActivity,
     }
   })
 

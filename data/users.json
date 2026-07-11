@@ -155,5 +155,43 @@
     "created_by": "dealer@deccanev.in",
     "created_at": "2026-07-11T12:11:07.736Z",
     "last_login": null
+  },
+  {
+    "email": "legacytest@deccanev.in",
+    "password_hash": "$2a$12$mLf4k1Fnf/3xUuxR06TKz.Bd0vyeYquvbD.6RDb7H.2.JMJJe61V.",
+    "role": "rep",
+    "name": "Legacy Test",
+    "phone": "9811111111",
+    "dealership": "hyd-d01",
+    "city": null,
+    "is_active": true,
+    "id": "user_1783772228276",
+    "created_at": "2026-07-11T12:17:08.276Z"
+  },
+  {
+    "email": "legacytest2@deccanev.in",
+    "password_hash": "$2a$12$i47vTR84IBlPJ/ZONjYFBOQsjjb7e8K9ziwQHtTevJFH4V5f0XlqO",
+    "role": "rep",
+    "name": "Legacy Test2",
+    "phone": "9811111112",
+    "dealership": "hyd-d01",
+    "city": null,
+    "is_active": true,
+    "id": "user_1783772230261",
+    "created_at": "2026-07-11T12:17:10.261Z"
+  },
+  {
+    "id": "user_1783772693069",
+    "email": "hemanthlankalapalli67@gmail.com",
+    "name": "Balaji",
+    "phone": "8851903901",
+    "password_hash": "$2a$12$SCQhuCARThuysHqok4WKPeNpaRS/EfGJdWj71v8HUdPQ2j3RQB1by",
+    "role": "rep",
+    "repId": "rep_1783772693068",
+    "dealership": "hyd-d01",
+    "is_active": true,
+    "created_by": "dealer@deccanev.in",
+    "created_at": "2026-07-11T12:24:53.068Z",
+    "last_login": null
   }
 ]

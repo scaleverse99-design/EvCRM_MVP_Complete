@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import Shell from "../../components/layout/Shell"
 import { Card, Btn, Input, Avatar, StatusPill, Toggle, Modal } from "../../components/ui"
 import { C } from "../../lib/constants"
+import { authFetch } from "../../lib/token-storage"
 
 export default function TeamPage() {
   const router = useRouter()
@@ -15,11 +16,13 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
+  // Uses the same /api/dealer/reps endpoint as the dashboard's Team card so
+  // reps created here are properly linked (rep record + scoped login).
   const fetchReps = async () => {
     try {
-      const res = await fetch("/api/admin/users?role=rep")
+      const res = await authFetch("/api/dealer/reps")
       const data = await res.json()
-      if (res.ok) setReps(data.users || [])
+      if (res.ok) setReps((data.reps || []).map(r => ({ ...r, is_active: r.active })))
     } catch(err) {
       console.error(err)
     } finally {
@@ -32,11 +35,12 @@ export default function TeamPage() {
   }, [])
 
   const handleToggleActive = async (rep) => {
+    if (!rep.hasLogin) return // no login to toggle
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await authFetch("/api/dealer/reps", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: rep.id, is_active: !rep.is_active })
+        body: JSON.stringify({ id: rep.id, action: rep.is_active ? "deactivate" : "reactivate" })
       })
       if (res.ok) {
         setReps(reps.map(r => r.id === rep.id ? { ...r, is_active: !rep.is_active } : r))
@@ -50,13 +54,16 @@ export default function TeamPage() {
     setSaving(true)
     setError("")
     try {
-      const res = await fetch("/api/admin/users", {
+      if (!newRep.name.trim()) throw new Error("Full name is required")
+      const res = await authFetch("/api/dealer/reps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newRep, role: "rep" })
+        body: JSON.stringify(newRep)
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || "Failed to create rep")
+      // The API returns the reason under `error`; surface it so the dealer
+      // sees "That email is already in use" instead of a generic failure.
+      if (!res.ok) throw new Error(data.error || data.message || "Failed to create rep")
       setIsModalOpen(false)
       setNewRep({ name: "", email: "", phone: "", password: "" })
       fetchReps()
@@ -92,44 +99,46 @@ export default function TeamPage() {
             <thead>
               <tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, textAlign: "left", fontSize: 11, fontWeight: 700, color: C.ink3, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 <th style={{ padding: "14px 20px" }}>Sales Rep</th>
-                <th style={{ padding: "14px 20px" }}>Contact</th>
-                <th style={{ padding: "14px 20px" }}>Joined</th>
-                <th style={{ padding: "14px 20px", textAlign: "center" }}>Status</th>
-                <th style={{ padding: "14px 20px", textAlign: "right" }}>Actions</th>
+                <th style={{ padding: "14px 12px", textAlign: "center" }}>Assigned</th>
+                <th style={{ padding: "14px 12px", textAlign: "center" }}>Converted</th>
+                <th style={{ padding: "14px 12px", textAlign: "center" }}>Conv. %</th>
+                <th style={{ padding: "14px 12px", textAlign: "center" }}>📞 Calls</th>
+                <th style={{ padding: "14px 12px", textAlign: "center" }}>💬 Msgs</th>
+                <th style={{ padding: "14px 20px", textAlign: "right" }}>Access</th>
               </tr>
             </thead>
             <tbody>
               {reps.map(rep => (
-                <tr key={rep.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                <tr key={rep.id} onClick={() => setSelectedRep(rep)}
+                  style={{ borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.bg}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <td style={{ padding: "14px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <Avatar name={rep.name || rep.email} size={36} color={C.orange} />
+                      <Avatar name={rep.name || rep.email} size={36} color={rep.color || C.orange} />
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{rep.name || "Unknown"}</div>
-                        <div style={{ fontSize: 11, color: C.ink3, marginTop: 2 }}>ID: {rep.id.slice(0,6)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{rep.name || "Unknown"} <span style={{ fontSize: 15, color: C.ink3 }}>›</span></div>
+                        <div style={{ fontSize: 11, color: C.ink3, marginTop: 2 }}>
+                          {rep.hasLogin
+                            ? <span style={{ color: rep.is_active ? C.green : C.red, fontWeight: 700 }}>{rep.is_active ? "● Active login" : "● Login disabled"}</span>
+                            : "No login"}
+                          {rep.email ? ` · ${rep.email}` : ""}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <div style={{ fontSize: 12, color: C.ink }}>{rep.email}</div>
-                    <div style={{ fontSize: 11, color: C.ink3, marginTop: 2 }}>{rep.phone || "No phone"}</div>
-                  </td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <div style={{ fontSize: 12, color: C.ink }}>
-                      {rep.created_at ? new Date(rep.created_at).toLocaleDateString() : "Unknown"}
-                    </div>
-                  </td>
-                  <td style={{ padding: "14px 20px", textAlign: "center" }}>
-                    <StatusPill status={rep.is_active ? "CLOSED" : "COLD"} />
-                    <div style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>{rep.is_active ? "Active" : "Inactive"}</div>
-                  </td>
-                  <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: rep.is_active ? C.green : C.ink3 }}>
-                        {rep.is_active ? "Access ON" : "Access OFF"}
-                      </span>
-                      <Toggle on={rep.is_active} onChange={() => handleToggleActive(rep)} />
-                    </div>
+                  <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 14, fontWeight: 800, color: C.ink }}>{rep.leads || 0}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 14, fontWeight: 800, color: C.green }}>{rep.closed || 0}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, fontWeight: 700, color: (rep.conversionRate||0) >= 25 ? C.green : C.ink2 }}>{rep.conversionRate || 0}%</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, fontWeight: 700, color: C.ink }}>{rep.calls || 0}</td>
+                  <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, fontWeight: 700, color: C.ink }}>{rep.messages || 0}</td>
+                  <td style={{ padding: "14px 20px", textAlign: "right" }} onClick={e => e.stopPropagation()}>
+                    {rep.hasLogin
+                      ? <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: rep.is_active ? C.green : C.ink3 }}>{rep.is_active ? "ON" : "OFF"}</span>
+                          <Toggle on={rep.is_active} onChange={() => handleToggleActive(rep)} />
+                        </div>
+                      : <span style={{ fontSize: 10, color: C.ink3 }}>—</span>}
                   </td>
                 </tr>
               ))}
@@ -137,6 +146,59 @@ export default function TeamPage() {
           </table>
         )}
       </Card>
+
+      {/* Rep performance detail */}
+      {selectedRep && (
+        <Modal title={`${selectedRep.name} — Performance`} onClose={() => setSelectedRep(null)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <Avatar name={selectedRep.name || selectedRep.email} size={44} color={selectedRep.color || C.orange} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: C.ink3 }}>{selectedRep.email || "no login"} {selectedRep.phone ? `· ${selectedRep.phone}` : ""}</div>
+              <div style={{ fontSize: 11, color: C.ink3, marginTop: 2 }}>
+                {selectedRep.hasLogin ? (selectedRep.is_active ? "Active login" : "Login disabled") : "No login"}
+                {selectedRep.lastActivity ? ` · last active ${new Date(selectedRep.lastActivity).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}` : " · no activity yet"}
+              </div>
+            </div>
+          </div>
+
+          {/* Top-line funnel */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+            {[
+              ["Assigned", selectedRep.leads || 0, C.ink],
+              ["Worked", selectedRep.worked || 0, C.blue],
+              ["Converted", selectedRep.closed || 0, C.green],
+              ["Conv. rate", `${selectedRep.conversionRate || 0}%`, (selectedRep.conversionRate||0) >= 25 ? C.green : C.ink2],
+            ].map(([label, val, color]) => (
+              <div key={label} style={{ background: C.bg, borderRadius: 10, padding: "12px 8px", textAlign: "center" }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color }}>{val}</div>
+                <div style={{ fontSize: 9.5, color: C.ink3, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.3px" }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Contact activity breakdown */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink3, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 8 }}>Contact activity</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 8 }}>
+            {[
+              ["📞", "Calls", selectedRep.actions?.call || 0],
+              ["💬", "WhatsApp", selectedRep.actions?.whatsapp || 0],
+              ["📱", "SMS", selectedRep.actions?.sms || 0],
+              ["✉️", "Email", selectedRep.actions?.email || 0],
+            ].map(([icon, label, val]) => (
+              <div key={label} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
+                <div style={{ fontSize: 16 }}>{icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginTop: 2 }}>{val}</div>
+                <div style={{ fontSize: 9, color: C.ink3 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: C.ink3, lineHeight: 1.6, background: C.bg, borderRadius: 8, padding: "8px 12px" }}>
+            {selectedRep.worked || 0} of {selectedRep.leads || 0} assigned leads worked ·{" "}
+            {(selectedRep.calls || 0) + (selectedRep.messages || 0)} total outreach actions logged.
+            {selectedRep.covers?.length ? ` Currently covering ${selectedRep.covers.length} teammate${selectedRep.covers.length>1?"s":""}' leads.` : ""}
+          </div>
+        </Modal>
+      )}
 
       {isModalOpen && (
         <Modal title="Add New Sales Rep" onClose={() => !saving && setIsModalOpen(false)}>
