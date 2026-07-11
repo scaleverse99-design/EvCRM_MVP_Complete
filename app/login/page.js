@@ -100,17 +100,18 @@ function SuccessScreen({ role, name }) {
   const [msg,  setMsg] = useState("Accessing Expert Environment...")
 
   useEffect(()=>{
-    const t = setInterval(()=>{
-      setPct(p=>{ 
-        if(p>=100){ 
-          router.replace(dest); 
-          clearInterval(t); 
-          return 100 
-        } 
-        return p + 2 // Accelerate progress
-      })
-    }, 20) // Snappy 20ms pulses
-    return ()=>clearInterval(t)
+    // Progress bar is purely cosmetic — keep it a PURE state updater with no
+    // side effects (React double-invokes updaters in StrictMode and drops
+    // side effects inside them, which previously stopped the redirect firing).
+    const bar = setInterval(()=>{
+      setPct(p => p >= 100 ? 100 : p + 2)
+    }, 20)
+    // Navigation is driven by its own timeout, decoupled from render state.
+    // Full-page navigation (not router.replace) so the root AuthProvider
+    // re-mounts and re-reads the freshly-saved token — a soft navigation
+    // leaves the provider's user=null and Shell bounces back to /login (loop).
+    const go = setTimeout(()=>{ window.location.assign(dest) }, 1100)
+    return ()=>{ clearInterval(bar); clearTimeout(go) }
   }, [])
 
   return (
@@ -149,7 +150,7 @@ export default function LoginPage() {
       authFetch("/api/auth/me").then(r=>r.json()).then(d=>{
         if (d.success) {
           const route = (d.user.role === "superadmin" || d.user.role === "founder") ? "/admin" : (d.user.role === "oem" ? "/oem" : "/dealer")
-          router.replace(route) // Use replace to avoid back-button loops
+          window.location.assign(route) // full nav so AuthProvider re-reads the token
         }
       }).catch(()=>{})
     })

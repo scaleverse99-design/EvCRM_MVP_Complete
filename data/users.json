@@ -18,7 +18,7 @@
     "phone": "919999988888",
     "is_active": true,
     "created_at": "2026-07-08T20:58:05.234Z",
-    "last_login": "2026-07-11T08:32:48.291Z",
+    "last_login": "2026-07-11T09:13:12.128Z",
     "trialStartDate": "2026-07-08T20:58:05.234Z",
     "billingStatus": "active_oem_sponsored",
     "mandateStatus": "none",
@@ -60,7 +60,7 @@
     "is_active": true,
     "created_by": "dealer@deccanev.in",
     "created_at": "2026-07-11T07:24:29.851Z",
-    "last_login": "2026-07-11T08:32:49.632Z"
+    "last_login": "2026-07-11T08:51:15.665Z"
   },
   {
     "id": "user_1783758317494",
@@ -76,5 +76,17 @@
     "created_at": "2026-07-11T08:25:17.494Z",
     "last_login": "2026-07-11T08:32:48.952Z",
     "covers": []
+  },
+  {
+    "email": "haji@rahuldealership.com",
+    "password_hash": "$2a$12$U/AK7yIFUDeJsYxQI90LtukNv7owdaA.kq4zkp2h.eEk6nYL9Ac4y",
+    "role": "rep",
+    "name": "haji",
+    "phone": "8851903901",
+    "dealership": "hyd-d01",
+    "city": null,
+    "is_active": true,
+    "id": "user_1783759206755",
+    "created_at": "2026-07-11T08:40:06.755Z"
   }
 ]
