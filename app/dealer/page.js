@@ -1538,8 +1538,13 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
   const addRep = async () => {
     setRepErr("")
     if (!newRep.name.trim()) { setRepErr("Rep name is required"); return }
-    if (!newRep.email.trim() || !newRep.password) { setRepErr("Email and a starting password are required so the rep can log in"); return }
-    if (newRep.password.length < 6) { setRepErr("Password must be at least 6 characters"); return }
+    // Login is optional — a dealer can add a rep as an assignment name only.
+    // But if they start giving login details, require the full pair.
+    const wantsLogin = newRep.email.trim() || newRep.password
+    if (wantsLogin) {
+      if (!newRep.email.trim() || !newRep.password) { setRepErr("For a login, enter both an email and a starting password (or leave both blank to add the rep without a login)"); return }
+      if (newRep.password.length < 6) { setRepErr("Password must be at least 6 characters"); return }
+    }
     setAddingRep(true)
     try {
       const res = await authFetch("/api/dealer/reps", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dealership, ...newRep }) })
@@ -1663,13 +1668,14 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
             style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
           <input value={newRep.phone} onChange={e=>setNewRep(r=>({...r,phone:e.target.value}))} placeholder="Phone"
             style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
-          <input value={newRep.email} onChange={e=>setNewRep(r=>({...r,email:e.target.value}))} placeholder="Login email" type="email"
+          <input value={newRep.email} onChange={e=>setNewRep(r=>({...r,email:e.target.value}))} placeholder="Login email (optional)" type="email"
             style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
-          <input value={newRep.password} onChange={e=>setNewRep(r=>({...r,password:e.target.value}))} placeholder="Starting password" type="text"
+          <input value={newRep.password} onChange={e=>setNewRep(r=>({...r,password:e.target.value}))} placeholder="Starting password (optional)" type="text"
             style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
         </div>
+        <div style={{ fontSize:9.5, color:C.ink3, marginBottom:6 }}>Add email + password to give the rep a login. Leave blank to add them as an assignment name only.</div>
         <button onClick={addRep} disabled={addingRep} style={{ width:"100%", background:C.green, border:"none", color:"#fff", borderRadius:8, padding:"9px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-          {addingRep ? "Creating…" : "+ Add Rep & Create Login"}
+          {addingRep ? "Adding…" : (newRep.email.trim() || newRep.password ? "+ Add Rep & Create Login" : "+ Add Rep")}
         </button>
       </Card>
 

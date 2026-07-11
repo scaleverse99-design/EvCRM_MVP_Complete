@@ -141,5 +141,19 @@
     "is_active": true,
     "id": "user_1783770855100",
     "created_at": "2026-07-11T11:54:15.100Z"
+  },
+  {
+    "id": "user_1783771867737",
+    "email": "testrep1@deccanev.in",
+    "name": "Test Rep One",
+    "phone": "9800000001",
+    "password_hash": "$2a$12$Lvhxis2FxJ/qPhqs/TwItutkXsQxvjQJsf.o/tBuX3uL6kQHTvdMG",
+    "role": "rep",
+    "repId": "rep_1783771867736",
+    "dealership": "hyd-d01",
+    "is_active": true,
+    "created_by": "dealer@deccanev.in",
+    "created_at": "2026-07-11T12:11:07.736Z",
+    "last_login": null
   }
 ]

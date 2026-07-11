@@ -84,5 +84,33 @@
     "active": true,
     "color": "#059669",
     "createdAt": "2026-07-11T11:37:00.186Z"
+  },
+  {
+    "id": "rep_1783771867736",
+    "dealership": "hyd-d01",
+    "name": "Test Rep One",
+    "phone": "9800000001",
+    "email": "testrep1@deccanev.in",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#059669",
+    "createdAt": "2026-07-11T12:11:07.736Z"
+  },
+  {
+    "id": "rep_1783771980735",
+    "dealership": "hyd-d01",
+    "name": "Name Only Rep",
+    "phone": "9800000009",
+    "email": "",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#2563EB",
+    "createdAt": "2026-07-11T12:13:00.735Z"
   }
 ]
