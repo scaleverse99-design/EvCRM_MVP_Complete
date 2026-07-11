@@ -74,6 +74,7 @@ export async function POST(req) {
       email:      user.email,
       role:       user.role,
       dealership: user.dealership,
+      repId:      user.repId,   // present only for sales-rep accounts
     })
 
     const tokenHash = hashToken(token)
@@ -95,6 +96,7 @@ export async function POST(req) {
         role:       user.role,
         name:       user.name,
         dealership: user.dealership,
+        ...(user.repId ? { repId: user.repId } : {}),
       }
     })
 

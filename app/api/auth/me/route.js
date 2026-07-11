@@ -29,6 +29,7 @@ export async function GET(req) {
         name:       user.name,
         dealership: user.dealership,
         phone:      user.phone || "",
+        ...(user.repId ? { repId: user.repId } : {}),
         opsmanager_url: process.env.OPSMANAGER_URL,
         opsmanager_token: process.env.OPSMANAGER_TOKEN,
         // Billing — trialStartDate falls back to account creation date for

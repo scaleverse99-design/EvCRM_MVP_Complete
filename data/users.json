@@ -18,7 +18,7 @@
     "phone": "919999988888",
     "is_active": true,
     "created_at": "2026-07-08T20:58:05.234Z",
-    "last_login": "2026-07-10T06:45:46.317Z",
+    "last_login": "2026-07-11T08:02:33.060Z",
     "trialStartDate": "2026-07-08T20:58:05.234Z",
     "billingStatus": "active_oem_sponsored",
     "mandateStatus": "none",
@@ -47,5 +47,19 @@
     "razorpayCustomerId": null,
     "razorpaySubscriptionId": null,
     "oemId": "oem-tata"
+  },
+  {
+    "id": "user_1783754669851",
+    "email": "ravi.rep@deccanev.in",
+    "name": "Ravi Kiran",
+    "phone": "9876500011",
+    "password_hash": "$2a$12$PrBwU5ztdgzjWhnDTjjJ2O3kZnDkqjPAnBybfYNGK9we67TrCslry",
+    "role": "rep",
+    "repId": "rep_1783754669851",
+    "dealership": "hyd-d01",
+    "is_active": true,
+    "created_by": "dealer@deccanev.in",
+    "created_at": "2026-07-11T07:24:29.851Z",
+    "last_login": "2026-07-11T08:01:54.989Z"
   }
 ]

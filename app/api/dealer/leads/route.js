@@ -14,6 +14,12 @@ export async function GET(req) {
   let leads = await readTable("leads")
   if (dealership) leads = leads.filter(l => l.dealership === dealership)
 
+  // Sales reps only ever see the leads assigned to them — a dealer's pipeline
+  // stays sealed; a rep can't browse other reps' or unassigned leads.
+  if (user.role === "rep") {
+    leads = leads.filter(l => l.assignedRep === user.repId)
+  }
+
   // Sort by created_at descending
   leads.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
@@ -74,6 +80,15 @@ export async function PATCH(req) {
   const leads = await readTable("leads")
   const idx = leads.findIndex(l => l.id === id)
   if (idx === -1) return NextResponse.json({ error: "Lead not found" }, { status: 404 })
+
+  // Reps may only act on their own leads, and may never reassign a lead
+  // (only the dealer controls who owns which lead).
+  if (user.role === "rep") {
+    if (leads[idx].assignedRep !== user.repId) {
+      return NextResponse.json({ error: "This lead is not assigned to you" }, { status: 403 })
+    }
+    if ("assignedRep" in updates) delete updates.assignedRep
+  }
 
   // 9.5 Auto Task on Status Change — a lead going HOT or QUOTED needs a
   // same-day follow-up with no manual step required.

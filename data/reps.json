@@ -28,5 +28,19 @@
     "closed": 1,
     "status": "offline",
     "color": "#7C3AED"
+  },
+  {
+    "id": "rep_1783754669851",
+    "dealership": "hyd-d01",
+    "name": "Ravi Kiran",
+    "phone": "9876500011",
+    "email": "ravi.rep@deccanev.in",
+    "rate": 0,
+    "leads": 0,
+    "closed": 0,
+    "status": "offline",
+    "active": true,
+    "color": "#F97316",
+    "createdAt": "2026-07-11T07:24:29.851Z"
   }
 ]

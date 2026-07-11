@@ -1473,7 +1473,8 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
   const [settings, setSettings] = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [saving,   setSaving]   = useState(false)
-  const [newRep,   setNewRep]   = useState({ name:"", phone:"", email:"" })
+  const [newRep,   setNewRep]   = useState({ name:"", phone:"", email:"", password:"" })
+  const [repErr,   setRepErr]   = useState("")
   const [addingRep, setAddingRep] = useState(false)
   const [newStage, setNewStage] = useState("")
 
@@ -1497,18 +1498,34 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
   }
 
   const addRep = async () => {
-    if (!newRep.name.trim()) return
+    setRepErr("")
+    if (!newRep.name.trim()) { setRepErr("Rep name is required"); return }
+    if (!newRep.email.trim() || !newRep.password) { setRepErr("Email and a starting password are required so the rep can log in"); return }
+    if (newRep.password.length < 6) { setRepErr("Password must be at least 6 characters"); return }
     setAddingRep(true)
     try {
-      await authFetch("/api/dealer/reps", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dealership, ...newRep }) })
-      setNewRep({ name:"", phone:"", email:"" })
+      const res = await authFetch("/api/dealer/reps", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ dealership, ...newRep }) })
+      const data = await res.json()
+      if (!res.ok) { setRepErr(data.error || "Could not create rep"); return }
+      setNewRep({ name:"", phone:"", email:"", password:"" })
       onRepsRefresh?.()
     } finally { setAddingRep(false) }
   }
 
+  // Deactivate/reactivate controls the rep's LOGIN (revokes access instantly
+  // when someone leaves) while keeping their historical lead data intact.
   const toggleRepActive = async (rep) => {
-    await authFetch("/api/dealer/reps", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:rep.id, active: rep.active===false ? true : false }) })
+    await authFetch("/api/dealer/reps", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:rep.id, action: rep.active===false ? "reactivate" : "deactivate" }) })
     onRepsRefresh?.()
+  }
+
+  const resetRepPassword = async (rep) => {
+    const password = window.prompt(`Set a new password for ${rep.name} (min 6 chars):`)
+    if (!password) return
+    if (password.length < 6) { alert("Password must be at least 6 characters"); return }
+    const res = await authFetch("/api/dealer/reps", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:rep.id, action:"reset_password", password }) })
+    if (res.ok) alert(`Password updated for ${rep.name}. Share it with them securely.`)
+    else alert((await res.json()).error || "Could not reset password")
   }
 
   const addPipelineStage = () => {
@@ -1538,32 +1555,50 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
         </button>
       </Card>
 
-      {/* 10.2 Team Management */}
+      {/* 10.2 Team Management — rep logins (dealer-controlled provisioning) */}
       <Card>
         <SectionHeading>👥 Team Management</SectionHeading>
-        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14, maxHeight:180, overflowY:"auto" }}>
+        <div style={{ fontSize:10.5, color:C.ink3, marginBottom:12, lineHeight:1.5 }}>
+          Give each rep their own login. They sign in on their phone and see <b>only the leads you assign to them</b> — never your billing, settings, or other reps' pipelines. Deactivate to revoke access instantly.
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14, maxHeight:200, overflowY:"auto" }}>
           {reps.length === 0 ? <div style={{ fontSize:11, color:C.ink3 }}>No reps added yet</div> : reps.map(r => (
-            <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, opacity:r.active===false?0.5:1 }}>
-              <Avatar name={r.name} size={26} color={r.color} />
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>{r.name} {r.active===false && "(inactive)"}</div>
-                <div style={{ fontSize:9, color:C.ink3 }}>{r.phone||"no phone"} · {r.rate||0}% conversion</div>
+            <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, opacity:r.active===false?0.55:1 }}>
+              <Avatar name={r.name} size={28} color={r.color} />
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>
+                  {r.name}
+                  {r.hasLogin
+                    ? <span style={{ fontSize:8.5, fontWeight:800, color:r.active===false?"#B91C1C":"#065F46", background:r.active===false?"#FEE2E2":"#D1FAE5", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>{r.active===false?"LOGIN DISABLED":"CAN LOG IN"}</span>
+                    : <span style={{ fontSize:8.5, fontWeight:800, color:C.ink3, background:C.bg, borderRadius:5, padding:"1px 6px", marginLeft:6 }}>NO LOGIN</span>}
+                </div>
+                <div style={{ fontSize:9, color:C.ink3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.email || r.phone || "—"} · {r.leads||0} leads · {r.closed||0} closed</div>
               </div>
-              <button onClick={()=>toggleRepActive(r)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                {r.active===false ? "Reactivate" : "Deactivate"}
-              </button>
+              {r.hasLogin && (
+                <>
+                  <button onClick={()=>resetRepPassword(r)} title="Reset password" style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>🔑</button>
+                  <button onClick={()=>toggleRepActive(r)} style={{ background:"none", border:`1px solid ${r.active===false?C.green:C.border}`, color:r.active===false?C.green:C.ink3, borderRadius:6, padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    {r.active===false ? "Reactivate" : "Deactivate"}
+                  </button>
+                </>
+              )}
             </div>
           ))}
         </div>
-        <div style={{ display:"flex", gap:6 }}>
+        {repErr && <div style={{ fontSize:10, color:"#B91C1C", background:"#FEE2E2", borderRadius:7, padding:"6px 10px", marginBottom:8 }}>{repErr}</div>}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:6 }}>
           <input value={newRep.name} onChange={e=>setNewRep(r=>({...r,name:e.target.value}))} placeholder="Rep name"
-            style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
           <input value={newRep.phone} onChange={e=>setNewRep(r=>({...r,phone:e.target.value}))} placeholder="Phone"
-            style={{ width:100, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
-          <button onClick={addRep} disabled={addingRep} style={{ background:C.green, border:"none", color:"#fff", borderRadius:8, padding:"7px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-            {addingRep ? "…" : "+ Add"}
-          </button>
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
+          <input value={newRep.email} onChange={e=>setNewRep(r=>({...r,email:e.target.value}))} placeholder="Login email" type="email"
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
+          <input value={newRep.password} onChange={e=>setNewRep(r=>({...r,password:e.target.value}))} placeholder="Starting password" type="text"
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, fontFamily:"inherit", outline:"none" }} />
         </div>
+        <button onClick={addRep} disabled={addingRep} style={{ width:"100%", background:C.green, border:"none", color:"#fff", borderRadius:8, padding:"9px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+          {addingRep ? "Creating…" : "+ Add Rep & Create Login"}
+        </button>
       </Card>
 
       {/* 10.3 Working Hours */}
@@ -2464,11 +2499,24 @@ function DealerDashboard() {
 
   const dealership = user?.dealership || DEALER_ID
 
+  // A sales rep gets a locked-down view: only their own leads plus the
+  // quoting tools. Everything that exposes the wider business — dashboard
+  // KPIs, inventory, bookings, customers, team/billing settings — is hidden.
+  const isRep = user?.role === "rep"
+  const REP_TAB_IDS = ["leads", "buildprice", "quotepro"]
+  const visibleTabs = isRep ? TABS.filter(t => REP_TAB_IDS.includes(t.id)) : TABS
+
   // Auth guard
   useEffect(() => {
     if (!user) return
     if (user.role === "founder" || user.role === "superadmin") router.replace("/admin")
+    if (user.role === "oem") router.replace("/oem")
   }, [user, router])
+
+  // Reps land on their leads, and can never sit on a hidden tab.
+  useEffect(() => {
+    if (isRep && !REP_TAB_IDS.includes(activeTab)) setActiveTab("leads")
+  }, [isRep, activeTab])
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -2589,16 +2637,20 @@ function DealerDashboard() {
 
   return (
     <Shell title="Dealer Dashboard">
-      <TrialBanner dealer={user} />
+      {!isRep && <TrialBanner dealer={user} />}
 
-      {/* Dealer welcome bar */}
+      {/* Welcome bar — dealer sees the showroom, a rep sees their own pipeline */}
       <div style={{ background:`${C.green}10`, border:`1px solid ${C.green}25`, borderRadius:10, padding:"10px 16px", marginBottom:20, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:16 }}>🏪</span>
-          <span style={{ fontSize:12, fontWeight:600, color:C.green }}>Dealer Portal — <b>{user?.name || "Dealer"}</b> · {user?.dealership || dealership}</span>
+          <span style={{ fontSize:16 }}>{isRep ? "⚡" : "🏪"}</span>
+          <span style={{ fontSize:12, fontWeight:600, color:C.green }}>
+            {isRep
+              ? <>Sales Rep — <b>{user?.name || "Rep"}</b> · your assigned leads</>
+              : <>Dealer Portal — <b>{user?.name || "Dealer"}</b> · {user?.dealership || dealership}</>}
+          </span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <span style={{ fontSize:11, color:C.ink3 }}>Live CRM Dashboard</span>
+          <span style={{ fontSize:11, color:C.ink3 }}>{isRep ? "My Pipeline" : "Live CRM Dashboard"}</span>
           <Link href="/buy-vehicles" target="_blank" style={{ fontSize:11, fontWeight:700, color:C.accent||C.green, textDecoration:"none", background:`${C.green}10`, border:`1px solid ${C.green}25`, borderRadius:20, padding:"4px 12px" }}>🌐 Marketplace</Link>
         </div>
       </div>
@@ -2607,7 +2659,7 @@ function DealerDashboard() {
 
       {/* ── Tab Navigation — horizontally scrollable on phones ─── */}
       <div style={{ display:"flex", gap:4, marginBottom:24, background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:4, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {TABS.map(t => (
+        {visibleTabs.map(t => (
           <button key={t.id} onClick={()=>setActiveTab(t.id)}
             style={{ flex: isMobile ? "0 0 auto" : 1, background:activeTab===t.id?C.bg:"transparent", border:activeTab===t.id?`1px solid ${C.border}`:"1px solid transparent", color:activeTab===t.id?C.ink:C.ink2, borderRadius:10, padding: isMobile ? "11px 14px" : "9px 12px", fontSize:12, fontWeight:activeTab===t.id?700:500, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all 0.15s", whiteSpace:"nowrap" }}>
             <span>{t.icon}</span><span>{t.label}</span>

@@ -34,5 +34,86 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-17T06:45:46.316Z",
     "created_at": "2026-07-10T06:45:46.316Z"
+  },
+  {
+    "id": "sess_1783754632370",
+    "user_id": "user_dealer_001",
+    "token_hash": "b386530aac0fc19aef709de419a812bce05db9952c5fac75ced61893fa75160e",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:23:52.370Z",
+    "created_at": "2026-07-11T07:23:52.370Z"
+  },
+  {
+    "id": "sess_1783754669710",
+    "user_id": "user_dealer_001",
+    "token_hash": "2571a204bd5335a5d2990e1b589eb0fccee4bda23c6955dc6fbd009529240781",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:24:29.710Z",
+    "created_at": "2026-07-11T07:24:29.710Z"
+  },
+  {
+    "id": "sess_1783755489373",
+    "user_id": "user_1783754669851",
+    "token_hash": "a58566d210542940c8cc8b40f359976809723394b463a12ef08aeeb710fbacc3",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:38:09.373Z",
+    "created_at": "2026-07-11T07:38:09.373Z"
+  },
+  {
+    "id": "sess_1783755490809",
+    "user_id": "user_dealer_001",
+    "token_hash": "7e1dd9412f272f7e4c2047a89d9466174b6ab8feb8c71dfc4b77f1703fb83b3c",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:38:10.809Z",
+    "created_at": "2026-07-11T07:38:10.809Z"
+  },
+  {
+    "id": "sess_1783756778203",
+    "user_id": "user_1783754669851",
+    "token_hash": "ca03354a454658a477a0f05fa4bcd6ea8cc1e189e1d54e4c8fe5b1d1d04e2a60",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:59:38.203Z",
+    "created_at": "2026-07-11T07:59:38.203Z"
+  },
+  {
+    "id": "sess_1783756778657",
+    "user_id": "user_dealer_001",
+    "token_hash": "487035424aec260c65363d4d122df76ecd37cc1ec67219fa26a6eeee89aa2cc4",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T07:59:38.657Z",
+    "created_at": "2026-07-11T07:59:38.657Z"
+  },
+  {
+    "id": "sess_1783756892380",
+    "user_id": "user_dealer_001",
+    "token_hash": "3a050fc25025d037e80493d64bd0fc15de60bec808f8e6b3ef38f18202c03133",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T08:01:32.380Z",
+    "created_at": "2026-07-11T08:01:32.380Z"
+  },
+  {
+    "id": "sess_1783756914988",
+    "user_id": "user_1783754669851",
+    "token_hash": "3f0d7806788368ee8bbe0f712eccfba56bce7e6fd758dbc5d1f9802003417481",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-18T08:01:54.988Z",
+    "created_at": "2026-07-11T08:01:54.988Z"
+  },
+  {
+    "id": "sess_1783756953056",
+    "user_id": "user_dealer_001",
+    "token_hash": "0864ba74de4474bc54416f505d144a3e269b514740485ce235282bf8a607dccd",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-18T08:02:33.056Z",
+    "created_at": "2026-07-11T08:02:33.056Z"
   }
 ]
