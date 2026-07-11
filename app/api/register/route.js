@@ -50,7 +50,16 @@ export async function POST(req) {
     // ── Hash password ─────────────────────────────────────────────
     const passwordHash = await hashPassword(password)
 
+    // Generate a stable, unique dealership id from the business/dealership
+    // name so every dealer's data is scoped to their own key. (The signup
+    // form doesn't send a dealership id, only a name — derive one here.)
+    const nameForSlug = (dealership || name || "dealer").trim()
+    const slug = nameForSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "dealer"
+    const dealershipId = `${slug}-${Math.random().toString(36).slice(2, 6)}`
+
     // ── Insert user ───────────────────────────────────────────────
+    // Self-serve trial: dealers are activated immediately (the 30-day trial
+    // + billing system gates them later). No manual approval step.
     const { data: newUser, error: insertError } = await supabaseAdmin
       .from("evcrm_users")
       .insert({
@@ -59,9 +68,12 @@ export async function POST(req) {
         role,
         name:          name.trim(),
         phone:         phone?.trim() || null,
-        dealership:    dealership?.trim() || null,
+        dealership:    role === "dealer" ? dealershipId : (dealership?.trim() || null),
+        dealershipName: role === "dealer" ? nameForSlug : null,
         city:          city?.trim() || null,
-        is_active:     role === "rep" ? true : false, // dealers need admin approval
+        is_active:     true,
+        trialStartDate: new Date().toISOString(),
+        billingStatus:  "trial",
       })
       .select()
       .single()
@@ -81,26 +93,23 @@ export async function POST(req) {
       // Don't fail registration if email fails
     }
 
-    // ── Auto-login for reps, pending approval for dealers ─────────
-    if (role === "rep") {
-      const token     = generateToken({ userId:newUser.id, email:emailClean, role, dealership })
-      const tokenHash = hashToken(token)
-      const ipAddress = req.headers.get("x-forwarded-for") || "unknown"
-      const userAgent = req.headers.get("user-agent") || "unknown"
-      await createSession(newUser.id, tokenHash, ipAddress, userAgent)
-      await logLoginAttempt(emailClean, ipAddress, true)
+    // ── Auto-login (both dealers and reps) ────────────────────────
+    // Return the token in the BODY too — Firebase Hosting strips Set-Cookie
+    // from function responses, so the client saves it to localStorage.
+    const token     = generateToken({ userId:newUser.id, email:emailClean, role, dealership:newUser.dealership })
+    const tokenHash = hashToken(token)
+    const ipAddress = req.headers.get("x-forwarded-for") || "unknown"
+    const userAgent = req.headers.get("user-agent") || "unknown"
+    await createSession(newUser.id, tokenHash, ipAddress, userAgent)
+    await logLoginAttempt(emailClean, ipAddress, true)
 
-      const response = ok({ user:{ id:newUser.id, email:emailClean, role, name:name.trim() }, autoLoggedIn:true })
-      response.headers.set("Set-Cookie", buildCookieHeader(token))
-      return response
-    }
-
-    // Dealers need admin approval
-    return ok({
-      user:         { id:newUser.id, email:emailClean, role, name:name.trim() },
-      autoLoggedIn: false,
-      message:      "Registration successful! Your account is pending approval. You'll receive an email once approved.",
+    const response = ok({
+      user: { id:newUser.id, email:emailClean, role, name:name.trim(), dealership:newUser.dealership },
+      token,
+      autoLoggedIn: true,
     })
+    response.headers.set("Set-Cookie", buildCookieHeader(token))
+    return response
 
   } catch (error) {
     console.error("[/api/register]", error.message)

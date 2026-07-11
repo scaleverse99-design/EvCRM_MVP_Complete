@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { C, fmt } from "../../lib/constants"
 import { Btn, Input, Card, Tag } from "../../components/ui"
 import DISTRICTS from "../../data/districts.json"
+import { saveToken } from "../../lib/token-storage"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -63,14 +64,18 @@ export default function RegisterPage() {
         body: JSON.stringify({
           ...form,
           role: "dealer",
+          dealership: form.businessName || form.name, // scoping key derived server-side
           city: form.district // Mapping for existing backend
         })
       })
-      if (res.ok) {
-        router.push("/dealer")
+      const data = await res.json()
+      if (res.ok && data.success) {
+        // Save the JWT (Firebase strips Set-Cookie) then hard-navigate so the
+        // AuthProvider re-mounts and picks up the fresh session.
+        if (data.token) saveToken(data.token)
+        window.location.assign("/dealer")
       } else {
-        const data = await res.json()
-        setErrors({ global: data.error || "Registration failed" })
+        setErrors({ global: data.error || (data.errors && Object.values(data.errors)[0]) || "Registration failed" })
       }
     } catch (err) {
       setErrors({ global: "Network error" })
@@ -195,9 +200,9 @@ export default function RegisterPage() {
                    <div style={{ display: "flex", gap: 12 }}>
                       <div style={{ fontSize: 24 }}>📦</div>
                       <div>
-                         <div style={{ fontSize: 13, fontWeight: 800, color: "#854D0E" }}>One-Click Provisioning</div>
+                         <div style={{ fontSize: 13, fontWeight: 800, color: "#854D0E" }}>Instant Setup</div>
                          <div style={{ fontSize: 11, color: "#854D0E", opacity: 0.8, lineHeight: 1.4 }}>
-                            By confirming, we'll automatically set up your Google Sheets CRM and Dealer Dashboard.
+                            By confirming, your CRM dashboard is created instantly and your 30-day free trial starts. No setup, no card required.
                          </div>
                       </div>
                    </div>
