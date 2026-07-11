@@ -110,10 +110,10 @@ export default function RegisterPage() {
                 <p style={{ fontSize: 13, color: C.ink3, marginBottom: 24 }}>Enter your basic details to start your 30-day free trial.</p>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                   <Input label="FULL NAME" placeholder="e.g. Ramesh Kumar" value={form.name} onChange={v => setForm({...form, name: v})} error={errors.name} />
-                   <Input label="WORK EMAIL" type="email" placeholder="ramesh@dealership.com" value={form.email} onChange={v => setForm({...form, email: v})} error={errors.email} />
-                   <Input label="PASSWORD" type="password" placeholder="Minimum 8 characters" value={form.password} onChange={v => setForm({...form, password: v})} error={errors.password} />
-                   <Input label="MOBILE NUMBER" type="tel" placeholder="10-digit mobile" value={form.phone} onChange={v => setForm({...form, phone: v})} error={errors.phone} maxLength={10} />
+                   <Input label="FULL NAME" placeholder="e.g. Ramesh Kumar" value={form.name} onChange={e => setForm({...form, name: e.target.value})} error={errors.name} />
+                   <Input label="WORK EMAIL" type="email" placeholder="ramesh@dealership.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} error={errors.email} />
+                   <Input label="PASSWORD" type="password" placeholder="Minimum 8 characters" value={form.password} onChange={e => setForm({...form, password: e.target.value})} error={errors.password} />
+                   <Input label="MOBILE NUMBER" type="tel" placeholder="10-digit mobile" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} error={errors.phone} maxLength={10} />
                    
                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div>
@@ -141,8 +141,8 @@ export default function RegisterPage() {
                 <p style={{ fontSize: 13, color: C.ink3, marginBottom: 24 }}>Verify your dealership to unlock the verified badge.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                   <Input label="LEGAL BUSINESS NAME" placeholder="e.g. SRM EV Motors PVT LTD" value={form.businessName} onChange={v => setForm({...form, businessName: v})} error={errors.businessName} />
-                   <Input label="GSTIN (OPTIONAL)" placeholder="22AAAAA0000A1Z5" value={form.gstin} onChange={v => setForm({...form, gstin: v})} error={errors.gstin} hint="Required for verified badge" />
+                   <Input label="LEGAL BUSINESS NAME" placeholder="e.g. SRM EV Motors PVT LTD" value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})} error={errors.businessName} />
+                   <Input label="GSTIN (OPTIONAL)" placeholder="22AAAAA0000A1Z5" value={form.gstin} onChange={e => setForm({...form, gstin: e.target.value})} error={errors.gstin} hint="Required for verified badge" />
                    
                    <div>
                       <label style={{ fontSize: 11, fontWeight: 800, color: C.ink3, marginBottom: 12, display: "block" }}>BRANDS YOU SELL</label>
@@ -161,7 +161,7 @@ export default function RegisterPage() {
                       </div>
                    </div>
 
-                   <Input label="OFFICE ADDRESS" placeholder="Full address in your district" value={form.address} onChange={v => setForm({...form, address: v})} />
+                   <Input label="OFFICE ADDRESS" placeholder="Full address in your district" value={form.address} onChange={e => setForm({...form, address: e.target.value})} />
 
                    <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
                       <Btn variant="secondary" onClick={() => setStep(1)} style={{ flex: 1 }}>Back</Btn>
