@@ -193,12 +193,16 @@ export default function LoginPage() {
   // ── Login ─────────────────────────────────────────────────────
   const handleLogin = async () => {
     setLoginErr("")
-    if (!email.trim())  { setLoginErr("Email is required"); return }
-    if (!password)      { setLoginErr("Password is required"); return }
+    // Chrome autofill often fills the inputs without firing React's onChange,
+    // leaving the state empty — so fall back to the live DOM values.
+    const emailVal = (email.trim() || document.querySelector('input[type=email]')?.value?.trim() || "")
+    const passVal  = (password || document.querySelector('input[type=password]')?.value || "")
+    if (!emailVal) { setLoginErr("Email is required"); return }
+    if (!passVal)  { setLoginErr("Password is required"); return }
 
     setLogging(true)
     try {
-      const res  = await fetch("/api/auth/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:email.trim(), password }) })
+      const res  = await fetch("/api/auth/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailVal, password:passVal }) })
       const data = await res.json()
 
       if (!res.ok) { setLoginErr(data.error||"Invalid email or password"); return }
@@ -260,16 +264,20 @@ export default function LoginPage() {
   // ── Forgot: Reset password ────────────────────────────────────
   const handleReset = async () => {
     setFpErrors({})
+    // Autofill fallback: read live DOM values if React state is empty.
+    const pwInputs = document.querySelectorAll('input[type=password]')
+    const newVal     = fpNew     || pwInputs[0]?.value || ""
+    const confirmVal = fpConfirm || pwInputs[1]?.value || ""
     const e = {}
-    if (fpNew.length < 8)      e.password = "Minimum 8 characters"
-    else if (!/[A-Z]/.test(fpNew)) e.password = "Must include an uppercase letter"
-    else if (!/\d/.test(fpNew))    e.password = "Must include a number"
-    if (fpNew !== fpConfirm)   e.confirm  = "Passwords do not match"
+    if (newVal.length < 8)      e.password = "Minimum 8 characters"
+    else if (!/[A-Z]/.test(newVal)) e.password = "Must include an uppercase letter"
+    else if (!/\d/.test(newVal))    e.password = "Must include a number"
+    if (newVal !== confirmVal)   e.confirm  = "Passwords do not match"
     if (Object.keys(e).length) { setFpErrors(e); return }
 
     setFpLoad(true)
     try {
-      const res  = await fetch("/api/auth/reset-password", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:fpEmail.trim(), newPassword:fpNew, confirmPassword:fpConfirm }) })
+      const res  = await fetch("/api/auth/reset-password", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:fpEmail.trim(), newPassword:newVal, confirmPassword:confirmVal }) })
       const data = await res.json()
       if (!res.ok) { setFpMsg({ type:"error", text:data.error||"Reset failed. Please try again." }); return }
       setFpMsg({ type:"success", text:"Password reset successfully! You can now sign in with your new password." })
@@ -447,7 +455,7 @@ export default function LoginPage() {
                 error={fpErrors.confirm}
               />
 
-              <PBtn onClick={handleReset} loading={fpLoad} disabled={!fpNew||!fpConfirm}>
+              <PBtn onClick={handleReset} loading={fpLoad}>
                 Reset Password →
               </PBtn>
             </>
