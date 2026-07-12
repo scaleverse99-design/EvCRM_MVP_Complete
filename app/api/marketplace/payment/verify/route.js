@@ -1,39 +1,34 @@
 import { NextResponse } from "next/server"
 import { createBookingAndLead } from "../../../../../lib/marketplace"
-import { verifyPaymentSignature } from "../../../../../lib/razorpay"
+import { getOrderStatus } from "../../../../../lib/cashfree"
 
+// Called after the customer completes Cashfree checkout. We verify by
+// fetching the order server-side (Cashfree has no client-side signature) and
+// only create the booking + lead once the order is actually PAID.
 export async function POST(req) {
   const body = await req.json()
-  const {
-    razorpay_order_id, razorpay_payment_id, razorpay_signature,
-    vehicleId, name, phone, email, preferredDate, message,
-  } = body
+  const { orderId, vehicleId, name, phone, email, preferredDate, message } = body
 
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 })
-  }
-  if (!vehicleId || !name || !phone) {
-    return NextResponse.json({ error: "vehicleId, name and phone are required" }, { status: 400 })
-  }
+  if (!orderId)                   return NextResponse.json({ error: "orderId is required" }, { status: 400 })
+  if (!vehicleId || !name || !phone) return NextResponse.json({ error: "vehicleId, name and phone are required" }, { status: 400 })
 
-  const valid = verifyPaymentSignature({
-    orderId: razorpay_order_id,
-    paymentId: razorpay_payment_id,
-    signature: razorpay_signature,
-  })
-  if (!valid) {
-    return NextResponse.json({ error: "Payment verification failed — signature mismatch" }, { status: 400 })
+  let order
+  try {
+    order = await getOrderStatus(orderId)
+  } catch (e) {
+    return NextResponse.json({ error: e.data?.message || "Could not verify payment" }, { status: 502 })
   }
 
-  // Signature is valid, so the payment is authorized. Under manual capture
-  // (payment_capture:0 on the order) the funds are held, not yet moved —
-  // dealer "Confirm Sale" triggers the actual capture later.
+  if (order.order_status !== "PAID") {
+    return NextResponse.json({ error: `Payment not completed (status: ${order.order_status})` }, { status: 400 })
+  }
+
   const result = await createBookingAndLead({
     vehicleId, name, phone, email, preferredDate, message,
     paymentMeta: {
-      paymentStatus: "AUTHORIZED_HELD",
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id,
+      paymentStatus:  "PAID",
+      cashfreeOrderId: orderId,
+      amountPaid:      order.order_amount,
     },
   })
   if (result.error) return NextResponse.json({ error: result.error }, { status: 404 })
