@@ -32,21 +32,32 @@ function LeadsContent() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000) }
 
   const loadLeads = async () => {
-    if (!user?.opsmanager_url) return
     setLoading(true)
     try {
-      const data = await OpsProxy.get("leads", user, "ev-crm")
-      setLeads(Array.isArray(data) ? data : [])
+      const { getToken } = await import("../../lib/token-storage")
+      const token = getToken()
+      const url = user?.dealership ? `/api/dealer/leads?dealership=${user.dealership}` : "/api/dealer/leads"
+      const res = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setLeads(data.leads || [])
+      }
     } catch (err) {
-      console.error("[Sovereign Sync Error]:", err)
+      console.error("[Leads Fetch Error]:", err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadLeads()
-  }, [user?.opsmanager_url])
+    if (user) {
+      loadLeads()
+    }
+  }, [user])
 
   useEffect(() => {
     if (leadId && leads.length > 0) {
@@ -58,20 +69,26 @@ function LeadsContent() {
   }, [leadId, leads])
 
   const handleStatusChange = async (id, newStatus) => {
-    if (!user?.opsmanager_url) return
     try {
-      const res = await OpsProxy.act("UPDATE_RECORD", {
-        sheet: "leads",
-        id: id,
-        updates: { 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        }
-      }, user, "ev-crm")
-
-      if (res.success) {
+      const { getToken } = await import("../../lib/token-storage")
+      const token = getToken()
+      const res = await fetch("/api/dealer/leads", {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id,
+          status: newStatus
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
         showToast(`✅ Lead updated to ${newStatus}`)
         loadLeads()
+      } else {
+        showToast(`❌ ${data.error || "Update failed"}`)
       }
     } catch (err) {
       showToast("❌ Update failed")
@@ -93,6 +110,24 @@ function LeadsContent() {
                 <p style={{ color: C.ink3, margin: "4px 0" }}>{selectedLead.email} · {selectedLead.phone}</p>
                 <StatusPill status={selectedLead.status} />
               </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+              <a href={`tel:+${(selectedLead.phone || "").replace(/\D/g, "").length === 10 ? "91" + (selectedLead.phone || "").replace(/\D/g, "") : (selectedLead.phone || "").replace(/\D/g, "")}`}
+                style={{ flex: 1, textDecoration: "none", display: "flex", gap: 8, alignItems: "center", justifyContent: "center", background: "#2563EB15", border: "1px solid #2563EB40", color: "#2563EB", borderRadius: 12, padding: "12px 0", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                📞 CALL
+              </a>
+              <a href={`https://wa.me/${(selectedLead.phone || "").replace(/\D/g, "").length === 10 ? "91" + (selectedLead.phone || "").replace(/\D/g, "") : (selectedLead.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent("Hi " + selectedLead.name + ", following up on your EV showroom inquiry.")}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ flex: 1, textDecoration: "none", display: "flex", gap: 8, alignItems: "center", justifyContent: "center", background: "#16A34A15", border: "1px solid #16A34A40", color: "#16A34A", borderRadius: 12, padding: "12px 0", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                💬 WHATSAPP
+              </a>
+              {selectedLead.email ? (
+                <a href={`mailto:${selectedLead.email}?subject=${encodeURIComponent("Following up on your EV inquiry")}`}
+                  style={{ flex: 1, textDecoration: "none", display: "flex", gap: 8, alignItems: "center", justifyContent: "center", background: "#EA580C15", border: "1px solid #EA580C40", color: "#EA580C", borderRadius: 12, padding: "12px 0", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                  ✉ EMAIL
+                </a>
+              ) : null}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 }}>
               <div style={{ background: C.bg, padding: 15, borderRadius: 12 }}>
@@ -135,7 +170,7 @@ function LeadsContent() {
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Sovereign Pipeline</h1>
-              <p style={{ fontSize: 12, color: C.ink3 }}>{leads.length} active leads synchronized from Drive</p>
+              <p style={{ fontSize: 12, color: C.ink3 }}>{leads.length} active leads from database</p>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setView(view === "kanban" ? "table" : "kanban")} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", fontSize: 11, cursor: "pointer" }}>
@@ -151,16 +186,37 @@ function LeadsContent() {
                   {status} ({leads.filter(l => l.status === status).length})
                 </div>
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 10px 10px", padding: 12, minHeight: 400 }}>
-                  {leads.filter(l => l.status === status).map(lead => (
-                    <div 
-                      key={lead.id} 
-                      onClick={() => router.push(`/leads?id=${lead.id}`)}
-                      style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: 12, marginBottom: 10, cursor: "pointer", transition: "transform 0.1s" }}
-                    >
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{lead.name}</div>
-                      <div style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>{lead.vehicle || "General Inquiry"}</div>
-                    </div>
-                  ))}
+                  {leads.filter(l => l.status === status).map(lead => {
+                    const digits = (lead.phone || "").replace(/\D/g, "")
+                    const phoneDigits = digits.length === 10 ? "91" + digits : digits
+                    const waLink = `https://wa.me/${phoneDigits}?text=${encodeURIComponent("Hi " + lead.name + ", following up on your EV showroom inquiry.")}`
+                    const callLink = `tel:+${phoneDigits}`
+                    const mailLink = lead.email ? `mailto:${lead.email}?subject=${encodeURIComponent("Following up on your EV inquiry")}` : null
+
+                    return (
+                      <div 
+                        key={lead.id} 
+                        onClick={() => router.push(`/leads?id=${lead.id}`)}
+                        style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, padding: 12, marginBottom: 10, cursor: "pointer", transition: "transform 0.1s" }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{lead.name}</div>
+                        <div style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>{lead.vehicle || "General Inquiry"}</div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 10 }} onClick={e => e.stopPropagation()}>
+                          <a href={callLink} title={`Call ${lead.phone}`} style={{ display: "inline-flex", width: 26, height: 26, borderRadius: "50%", background: "#F3F4F6", border: `1px solid ${C.border}`, alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 11 }}>
+                            📞
+                          </a>
+                          <a href={waLink} target="_blank" rel="noopener noreferrer" title="WhatsApp" style={{ display: "inline-flex", width: 26, height: 26, borderRadius: "50%", background: "#F3F4F6", border: `1px solid ${C.border}`, alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 11 }}>
+                            💬
+                          </a>
+                          {mailLink ? (
+                            <a href={mailLink} title={`Email ${lead.email}`} style={{ display: "inline-flex", width: 26, height: 26, borderRadius: "50%", background: "#F3F4F6", border: `1px solid ${C.border}`, alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 11 }}>
+                              ✉
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             ))}

@@ -55,6 +55,7 @@ export async function POST(req) {
     batteryCapacity: body.batteryCapacity || "",
     topSpeed:    body.topSpeed || 0,
     exShowroom:  body.exShowroom || 0,
+    onRoadPrice: body.onRoadPrice || 0,
     emi:         body.emi || 0,
     tokenAmount: 1000,
     status:      body.status || "IN_STOCK",

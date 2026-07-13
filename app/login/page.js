@@ -95,7 +95,7 @@ function Alert({ type="error", msg, onClose }) {
 // ── Success screen ─────────────────────────────────────────────────
 function SuccessScreen({ role, name }) {
   const router = useRouter()
-  const dest   = (role==="superadmin"||role==="founder") ? "/admin" : (role==="oem" ? "/oem" : "/dealer")
+  const dest   = (role==="superadmin"||role==="founder") ? "/admin" : (role==="oem" ? "/oem" : (role==="rep" ? "/queue" : "/dealer"))
   const [pct,  setPct] = useState(0)
   const [msg,  setMsg] = useState("Accessing Expert Environment...")
 
@@ -149,7 +149,7 @@ export default function LoginPage() {
 
       authFetch("/api/auth/me").then(r=>r.json()).then(d=>{
         if (d.success) {
-          const route = (d.user.role === "superadmin" || d.user.role === "founder") ? "/admin" : (d.user.role === "oem" ? "/oem" : "/dealer")
+          const route = (d.user.role === "superadmin" || d.user.role === "founder") ? "/admin" : (d.user.role === "oem" ? "/oem" : (d.user.role === "rep" ? "/queue" : "/dealer"))
           window.location.assign(route) // full nav so AuthProvider re-reads the token
         }
       }).catch(()=>{})

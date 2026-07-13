@@ -45,7 +45,7 @@ const NAV_BY_ROLE = {
       { href:"/dealer/attendance", icon:"🗓", label:"Attendance Monitor" },
     ]},
     { group: "Sales Tools", items: [
-      { href:"/vehicles",          icon:"🚗", label:"Inventory"          },
+      { href:"/dealer?tab=inventory",          icon:"🚗", label:"Inventory"          },
       { href:"/showroom",          icon:"🏪", label:"Showroom"           },
       { href:"/buildprice",        icon:"₹",  label:"Build & Price"      },
       { href:"/quotepro",          icon:"📄", label:"QuotePro"           },

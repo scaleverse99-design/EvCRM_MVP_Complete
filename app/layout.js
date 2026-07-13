@@ -2,11 +2,39 @@ import "./globals.css"
 import { Providers } from "./providers"
 
 export const metadata = {
-  title: "Ev.CRM — EV Dealer Sales OS",
-  description: "India's first sales platform built for EV dealers",
+  title: "EV.CRM — India's Premier EV Sales OS & Commerce Hub",
+  description: "The definitive operating system for EV dealerships. Real-time lead tracking, inventory sync, and AI scoring on evcrm.in.",
+  metadataBase: new URL("https://evcrm.in"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "EV.CRM — India's Premier EV Sales OS & Commerce Hub",
+    description: "The definitive operating system for EV dealerships. Real-time lead tracking, inventory sync, and AI scoring on evcrm.in.",
+    url: "https://evcrm.in",
+    siteName: "EV.CRM",
+    images: [
+      {
+        url: "/hero-dashboard.png",
+        width: 1200,
+        height: 630,
+        alt: "EV.CRM Dashboard",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EV.CRM — India's Premier EV Sales OS & Commerce Hub",
+    description: "The definitive operating system for EV dealerships. Real-time lead tracking, inventory sync, and AI scoring on evcrm.in.",
+    images: ["/hero-dashboard.png"],
+  },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23F9FAFB'/><text y='23' x='3' font-size='18' font-weight='900' fill='%23059669' font-family='Georgia,serif'>E</text></svg>"
-  }
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 }
 
 export const viewport = {

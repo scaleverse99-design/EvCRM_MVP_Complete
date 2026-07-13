@@ -313,5 +313,50 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-18T12:06:16.956Z",
     "created_at": "2026-07-11T12:06:16.956Z"
+  },
+  {
+    "id": "sess_1783791109021",
+    "user_id": "user_1783791108105",
+    "token_hash": "7db8c2e888ae4f66460d8c9a568dc2ea7d267cca7218b5fe47ef6ffc79804229",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T17:31:49.021Z",
+    "created_at": "2026-07-11T17:31:49.021Z"
+  },
+  {
+    "id": "sess_1783791173377",
+    "user_id": "user_1783791108105",
+    "token_hash": "067ecd4432440f7762e9a42274332570c7dbe4423ef049bd596da8e8b4fd100c",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T17:32:53.377Z",
+    "created_at": "2026-07-11T17:32:53.377Z"
+  },
+  {
+    "id": "sess_1783805582948",
+    "user_id": "user_dealer_001",
+    "token_hash": "7fd8b66482dfa52bb9b1cf49a93c30a585c3d3a616a12bd9aab7a03d13775c46",
+    "ip_address": "::1",
+    "user_agent": "curl/8.16.0",
+    "expires_at": "2026-07-18T21:33:02.948Z",
+    "created_at": "2026-07-11T21:33:02.948Z"
+  },
+  {
+    "id": "sess_1783806049891",
+    "user_id": "user_dealer_001",
+    "token_hash": "5bdf96450b7112e8fd5e7343fdb318eb4a3da1cab4f8a644f25e7b71cb1a1eda",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-18T21:40:49.891Z",
+    "created_at": "2026-07-11T21:40:49.891Z"
+  },
+  {
+    "id": "sess_1783806214038",
+    "user_id": "user_dealer_001",
+    "token_hash": "945d12a0159df339063e25ba636f5d40285dc83063271645668e2f4a2cc143b9",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-18T21:43:34.038Z",
+    "created_at": "2026-07-11T21:43:34.038Z"
   }
 ]

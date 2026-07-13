@@ -1,7 +1,7 @@
 "use client"
 import dynamic from "next/dynamic"
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Shell from "../../components/layout/Shell"
 import { Card, Tag, Avatar, ProgressBar, LiveBadge, SectionHeading, Btn, Modal, Input } from "../../components/ui"
@@ -147,6 +147,24 @@ function InventoryReportModal({ inventory, onClose }) {
   )
 }
 
+function F({ label, field, form, setForm, type="text", opts }) {
+  return (
+    <div>
+      <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>{label}</div>
+      {opts ? (
+        <select value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}
+          style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+          {opts.map(o=><option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} placeholder={label}
+          style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}
+        />
+      )}
+    </div>
+  )
+}
+
 function InventorySection({ dealership, user }) {
   const [inventory, setInventory] = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -184,7 +202,7 @@ function InventorySection({ dealership, user }) {
         ...form,
         features: typeof form.features === "string" ? form.features.split(",").map(s=>s.trim()).filter(Boolean) : form.features,
         tags:     typeof form.tags === "string"     ? form.tags.split(",").map(s=>s.trim()).filter(Boolean)     : form.tags,
-        exShowroom: Number(form.exShowroom), emi: Number(form.emi), range: Number(form.range),
+        exShowroom: Number(form.exShowroom), onRoadPrice: Number(form.onRoadPrice), emi: Number(form.emi), range: Number(form.range),
         topSpeed: Number(form.topSpeed), km: Number(form.km), year: Number(form.year),
       }
       const res = editItem
@@ -216,21 +234,48 @@ function InventorySection({ dealership, user }) {
   const inStock   = inventory.filter(v => v.status === "IN_STOCK").length
   const sold      = inventory.filter(v => v.status === "SOLD").length
 
-  const F = ({ label, field, type="text", opts }) => (
-    <div>
-      <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>{label}</div>
-      {opts ? (
-        <select value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}
-          style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
-          {opts.map(o=><option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input type={type} value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} placeholder={label}
-          style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}
-        />
-      )}
-    </div>
-  )
+  const handlePhotoUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement("canvas")
+          const MAX_WIDTH = 640
+          const MAX_HEIGHT = 480
+          let width = img.width
+          let height = img.height
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext("2d")
+          ctx.drawImage(img, 0, 0, width, height)
+          const base64 = canvas.toDataURL("image/jpeg", 0.7)
+          setForm(f => {
+            const currentImages = Array.isArray(f.images) ? f.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
+            if (!currentImages.includes(base64)) {
+              return { ...f, images: [...currentImages, base64] }
+            }
+            return f
+          })
+        }
+        img.src = event.target.result
+      }
+      reader.readAsDataURL(file)
+    })
+  }
 
   const modelGroups = {}
   inventory.forEach(v => {
@@ -354,28 +399,54 @@ function InventorySection({ dealership, user }) {
       {addModal && form && (
         <Modal title={editItem ? `Edit — ${editItem.brand} ${editItem.model}` : "Add Vehicle to Inventory"} onClose={()=>{ setAddModal(false); setForm(null); setEditItem(null) }}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <F label="Brand *"           field="brand" />
-            <F label="Model *"           field="model" />
-            <F label="Variant"           field="variant" />
-            <F label="Colour"            field="color" />
-            <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} />
-            <F label="Body Type"         field="bodyType" opts={BODY_TYPES} />
-            <F label="Year"              field="year"        type="number" />
-            <F label="KM Driven (0=new)" field="km"          type="number" />
-            {/* ── rebuilt: remainder of the form (was lost) ── */}
-            <F label="Range (km)"        field="range"       type="number" />
-            <F label="Battery Capacity"  field="batteryCapacity" />
-            <F label="Top Speed (km/h)"  field="topSpeed"    type="number" />
-            <F label="Ex-Showroom Price" field="exShowroom"  type="number" />
-            <F label="EMI / month"       field="emi"         type="number" />
-            <F label="Status"            field="status"      opts={STATUS_OPTIONS} />
-            <F label="State"             field="state" />
-            <F label="District"          field="district" />
-            <F label="VIN"               field="vin" />
+            <F label="Brand *"           field="brand" form={form} setForm={setForm} />
+            <F label="Model *"           field="model" form={form} setForm={setForm} />
+            <F label="Variant"           field="variant" form={form} setForm={setForm} />
+            <F label="Colour"            field="color" form={form} setForm={setForm} />
+            <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} form={form} setForm={setForm} />
+            <F label="Body Type"         field="bodyType" opts={BODY_TYPES} form={form} setForm={setForm} />
+            <F label="Year"              field="year"        type="number" form={form} setForm={setForm} />
+            <F label="KM Driven (0=new)" field="km"          type="number" form={form} setForm={setForm} />
+            <F label="Range (km)"        field="range"       type="number" form={form} setForm={setForm} />
+            <F label="Battery Capacity"  field="batteryCapacity" form={form} setForm={setForm} />
+            <F label="Top Speed (km/h)"  field="topSpeed"    type="number" form={form} setForm={setForm} />
+            <F label="Ex-Showroom Price" field="exShowroom"  type="number" form={form} setForm={setForm} />
+            <F label="On-Road Price"     field="onRoadPrice"  type="number" form={form} setForm={setForm} />
+            <F label="EMI / month"       field="emi"         type="number" form={form} setForm={setForm} />
+            <F label="Status"            field="status"      opts={STATUS_OPTIONS} form={form} setForm={setForm} />
+            <F label="State"             field="state" form={form} setForm={setForm} />
+            <F label="District"          field="district" form={form} setForm={setForm} />
+            <F label="VIN"               field="vin" form={form} setForm={setForm} />
+            
+            <div style={{ gridColumn: "span 2", marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 8 }}>Vehicle Photos</div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                {(Array.isArray(form?.images) ? form.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []).map((imgUrl, idx) => (
+                  <div key={idx} style={{ position: "relative", width: 80, height: 60, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                    <img src={imgUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button type="button" onClick={() => {
+                      setForm(f => ({
+                        ...f,
+                        images: f.images.filter((_, i) => i !== idx)
+                      }))
+                    }} style={{ position: "absolute", top: 2, right: 2, background: "rgba(239, 68, 68, 0.8)", border: "none", color: "#fff", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 10, padding: 0 }}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                
+                <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} style={{ display: "none" }} id="photo-upload-input" />
+                <label htmlFor="photo-upload-input" style={{ width: 80, height: 60, background: `${C.blue}08`, border: `1.5px dashed ${C.blue}30`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <span style={{ fontSize: 20, color: C.blue, lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 9, color: C.blue, fontWeight: 700 }}>Add Photo</span>
+                </label>
+              </div>
+              <div style={{ fontSize: 10, color: C.ink3, marginTop: 6 }}>Choose multiple photos to upload. Tap '✕' to remove.</div>
+            </div>
           </div>
           <div style={{ marginTop:14, display:"grid", gap:14 }}>
-            <F label="Features (comma-separated)" field="features" />
-            <F label="Tags (comma-separated)"      field="tags" />
+            <F label="Features (comma-separated)" field="features" form={form} setForm={setForm} />
+            <F label="Tags (comma-separated)"      field="tags" form={form} setForm={setForm} />
             <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:C.ink2, cursor:"pointer" }}>
               <input type="checkbox" checked={form?.isDemo||false} onChange={e=>setForm(f=>({...f,isDemo:e.target.checked}))} />
               This is a demo/test-drive vehicle (excluded from marketplace stock counts)
@@ -575,10 +646,21 @@ function ContactActions({ lead, onRefresh, compact=false }) {
 }
 
 /* ── Lead Detail Modal — 2.2, 2.9 notes, 3.7 test drive history ── */
-function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
+function LeadDetailModal({ lead, reps, bookings = [], quotes = [], onClose, onRefresh, onGoToBuildPrice }) {
   const [noteText, setNoteText] = useState("")
   const [saving, setSaving] = useState(false)
   const sc = STATUS_CONFIG[lead.status] || STATUS_CONFIG.NEW
+
+  const hasBooking = useMemo(() => {
+    if (lead.bookingId) return true
+    const norm = p => (p || "").replace(/\D/g, "")
+    const leadPhone = norm(lead.phone)
+    return bookings.some(b => norm(b.phone) === leadPhone || (lead.email && b.email === lead.email))
+  }, [lead, bookings])
+
+  const hasAcceptedQuote = useMemo(() => {
+    return quotes.some(q => q.leadId === lead.id && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded"))
+  }, [lead, quotes])
 
   const addNote = async (channel="note") => {
     if (!noteText.trim()) return
@@ -638,6 +720,27 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
       <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8, flexWrap:"wrap" }}>
         <ContactActions lead={lead} onRefresh={onRefresh} />
         <LastActionChip lead={lead} />
+        <button 
+          onClick={() => {
+            onClose()
+            onGoToBuildPrice?.(lead)
+          }}
+          disabled={!hasBooking}
+          title={!hasBooking ? "Only available for customers with active vehicle bookings" : "Build and send pricing quote"}
+          style={{ 
+            background: hasBooking ? C.green : "#F3F4F6", 
+            border: "none", 
+            color: hasBooking ? "#fff" : C.ink3, 
+            borderRadius: 8, 
+            padding: "8px 12px", 
+            fontSize: 11, 
+            fontWeight: 700, 
+            cursor: hasBooking ? "pointer" : "not-allowed", 
+            fontFamily: "inherit" 
+          }}
+        >
+          📄 Send Quote
+        </button>
         <button onClick={toggleDND} style={{ marginLeft:"auto", background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:8, padding:"8px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
           {lead.dnd ? "Remove DND" : "🔕 Mark DND"}
         </button>
@@ -679,7 +782,7 @@ function LeadDetailModal({ lead, reps, onClose, onRefresh }) {
   )
 }
 
-function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
+function LeadsSection({ leads, loading, onRefresh, reps=[], bookings=[], quotes=[], onGoToBuildPrice }) {
   const { user: _lsUser } = useAuth()
   // For a rep, flag leads they're only covering (owned by someone else) so
   // they know these belong to a colleague on leave, not to them.
@@ -917,7 +1020,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[] }) {
       </Card>
       )}
 
-      {detailLead && <LeadDetailModal lead={leads.find(l=>l.id===detailLead.id) || detailLead} reps={reps} onClose={()=>setDetailLead(null)} onRefresh={onRefresh} />}
+      {detailLead && <LeadDetailModal lead={leads.find(l=>l.id===detailLead.id) || detailLead} reps={reps} bookings={bookings} quotes={quotes} onClose={()=>setDetailLead(null)} onRefresh={onRefresh} onGoToBuildPrice={onGoToBuildPrice} />}
 
       {lostPrompt && (
         <Modal title="Why was this lead lost?" onClose={()=>setLostPrompt(null)}>
@@ -1770,16 +1873,53 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
 /* ─────────────────────────────────────────────
    BUILDPRICE SECTION — EV Pricing Calculator
 ───────────────────────────────────────────── */
-function BuildPriceSection({ onBuildQuote }) {
-  const isMobile = useIsMobile()
+function BuildPriceSection({ user, prefill, quotes = [], onBuildQuote }) {
   const [pid, setPid] = useState(BP_VEHICLES[0].id)
   const [discounts, setDiscounts] = useState([])
   const [addingDiscount, setAddingDiscount] = useState(false)
   const [newDisc, setNewDisc] = useState({ name:"", amount:"" })
 
+  const [addons, setAddons] = useState([])
+  const [addingAddon, setAddingAddon] = useState(false)
+  const [newAddon, setNewAddon] = useState({ name:"", price:"" })
+
+  const matchedVehicle = useMemo(() => {
+    if (!prefill || !prefill.vehicle) return BP_VEHICLES[0]
+    const vName = prefill.vehicle.toLowerCase()
+    const found = BP_VEHICLES.find(x => vName.includes(x.model.toLowerCase()) || vName.includes(x.brand.toLowerCase()))
+    return found || BP_VEHICLES[0]
+  }, [prefill])
+
+  useEffect(() => {
+    if (prefill) {
+      setPid(matchedVehicle.id)
+    }
+  }, [prefill, matchedVehicle])
+
+  const isRep = user?.role === "rep"
+  const hasAcceptedQuote = useMemo(() => {
+    if (!prefill) return false
+    return quotes.some(q => q.leadId === prefill.id && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded"))
+  }, [prefill, quotes])
+  const isLockedForRep = isRep && hasAcceptedQuote
+
+  function addAddon() {
+    const prc = parseInt(newAddon.price)
+    if (!newAddon.name.trim()) return
+    const addonPrice = isNaN(prc) || prc < 0 ? 0 : prc
+    setAddons(a => [...a, { id: Date.now(), name: newAddon.name.trim(), price: addonPrice }])
+    setNewAddon({ name: "", price: "" })
+    setAddingAddon(false)
+  }
+
+  function removeAddon(id) {
+    setAddons(a => a.filter(x => x.id !== id))
+  }
+
   const p   = BP_VEHICLES.find(x => x.id === pid) || BP_VEHICLES[0]
   const totalDiscounts = discounts.reduce((s, d) => s + d.amount, 0)
-  const net = Math.max(0, p.exShowroom - totalDiscounts)
+  const totalAddons    = addons.reduce((s, a) => s + a.price, 0)
+  const net = Math.max(0, p.exShowroom - totalDiscounts + totalAddons)
   const emi36 = fmt.emi(net, 36)
   const emi48 = fmt.emi(net, 48)
   const emi60 = fmt.emi(net, 60)
@@ -1801,27 +1941,33 @@ function BuildPriceSection({ onBuildQuote }) {
 
   return (
     <div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
-        <div>
-          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>BuildPrice — EV Pricing Calculator</div>
-          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Select vehicle, add discounts or subsidies, and calculate net price with EMI options. Then build a quote in QuotePro.</div>
+      {prefill && (
+        <div style={{ background:`${C.blue}0A`, border:`1px solid ${C.blue}25`, borderRadius:14, padding:18, marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.blue, letterSpacing:"0.5px" }}>PREPARING QUOTE FOR CUSTOMER</div>
+          <div style={{ fontSize:15, fontWeight:800, color:C.ink, marginTop:4 }}>{prefill.name} ({prefill.phone})</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:2 }}>Vehicle Interest: {prefill.vehicle || "General"}</div>
+          {hasAcceptedQuote && (
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", color:"#92400E", padding:"10px 14px", borderRadius:10, fontSize:12, fontWeight:700, marginTop:10, lineHeight:1.5 }}>
+              ⚠️ Customer has already accepted a quote. Pricing is locked and can only be modified/revoked by the Dealer.
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns: (typeof window !== "undefined" && window.innerWidth < 768) ? "1fr" : "1fr 1fr", gap:20 }}>
         {/* Left — Inputs */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.4px", marginBottom:10 }}>SELECT VEHICLE</div>
             {BP_VEHICLES.map(pr => (
-              <button key={pr.id} onClick={() => setPid(pr.id)} style={{
+              <button key={pr.id} onClick={() => !isLockedForRep && setPid(pr.id)} disabled={isLockedForRep} style={{
                 width:"100%", background:pid===pr.id?"#ecfdf5":C.bg,
                 border:`1.5px solid ${pid===pr.id?C.green:C.border}`,
                 color:pid===pr.id?C.green:C.ink2, borderRadius:10,
                 padding:"10px 14px", fontSize:12, fontWeight:pid===pr.id?700:400,
-                cursor:"pointer", textAlign:"left", marginBottom:6,
+                cursor:isLockedForRep?"not-allowed":"pointer", textAlign:"left", marginBottom:6,
                 display:"flex", justifyContent:"space-between", alignItems:"center",
-                fontFamily:"inherit", transition:"all 0.15s"
+                fontFamily:"inherit", transition:"all 0.15s", opacity:isLockedForRep && pid!==pr.id?0.6:1
               }}>
                 <span>{pr.brand} {pr.model} <span style={{ fontSize:10, color:C.ink3, fontWeight:400 }}>({pr.type})</span></span>
                 <span style={{ fontSize:12, fontWeight:800, color:pid===pr.id?C.green:C.ink3 }}>{fmt.currency(pr.exShowroom)}</span>
@@ -1875,28 +2021,70 @@ function BuildPriceSection({ onBuildQuote }) {
             ))}
 
             {/* Add discount / subsidy form */}
-            {addingDiscount ? (
-              <div style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
-                <input value={newDisc.name} onChange={e => setNewDisc(d => ({...d, name:e.target.value}))}
-                  placeholder="e.g. FAME-II Subsidy, State Incentive, Dealer Offer..."
-                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", marginBottom:6, boxSizing:"border-box" }} />
-                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <span style={{ fontSize:12, color:C.green, fontWeight:700, flexShrink:0 }}>−₹</span>
-                  <input type="number" value={newDisc.amount} onChange={e => setNewDisc(d => ({...d, amount:e.target.value}))}
-                    placeholder="Amount" min={0}
-                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", fontVariantNumeric:"tabular-nums" }} />
-                  <button onClick={addDiscount} style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Add</button>
-                  <button onClick={() => { setAddingDiscount(false); setNewDisc({name:"",amount:""}) }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink3, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Cancel</button>
+            {!isLockedForRep && (
+              addingDiscount ? (
+                <div style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <input value={newDisc.name} onChange={e => setNewDisc(d => ({...d, name:e.target.value}))}
+                    placeholder="e.g. FAME-II Subsidy, State Incentive, Dealer Offer..."
+                    style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", marginBottom:6, boxSizing:"border-box" }} />
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <span style={{ fontSize:12, color:C.green, fontWeight:700, flexShrink:0 }}>−₹</span>
+                    <input type="number" value={newDisc.amount} onChange={e => setNewDisc(d => ({...d, amount:e.target.value}))}
+                      placeholder="Amount" min={0}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", fontVariantNumeric:"tabular-nums" }} />
+                    <button onClick={addDiscount} style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Add</button>
+                    <button onClick={() => { setAddingDiscount(false); setNewDisc({name:"",amount:""}) }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink3, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAddingDiscount(true)} style={{
+                  width:"100%", background:"none", border:`1.5px dashed ${C.green}60`, borderRadius:8,
+                  padding:"10px", fontSize:12, fontWeight:600, color:C.green, cursor:"pointer",
+                  fontFamily:"inherit", marginTop:8, marginBottom:4, transition:"all 0.15s"
+                }}>
+                  + Add Discount / Subsidy / Scheme
+                </button>
+              )
+            )}
+
+            {/* Addons list */}
+            {addons.map(a => (
+              <div key={a.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
+                <span style={{ fontSize:12, color:C.blue }}>+ {a.name}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.blue }}>{a.price > 0 ? `+${fmt.currency(a.price)}` : "FREE"}</span>
+                  {!isLockedForRep && (
+                    <button onClick={() => removeAddon(a.id)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:14, fontWeight:700, padding:0, lineHeight:1 }}>✕</button>
+                  )}
                 </div>
               </div>
-            ) : (
-              <button onClick={() => setAddingDiscount(true)} style={{
-                width:"100%", background:"none", border:`1.5px dashed ${C.green}60`, borderRadius:8,
-                padding:"10px", fontSize:12, fontWeight:600, color:C.green, cursor:"pointer",
-                fontFamily:"inherit", marginTop:8, marginBottom:4, transition:"all 0.15s"
-              }}>
-                + Add Discount / Subsidy / Scheme
-              </button>
+            ))}
+
+            {/* Add addon form */}
+            {!isLockedForRep && (
+              addingAddon ? (
+                <div style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                  <input value={newAddon.name} onChange={e => setNewAddon(a => ({...a, name:e.target.value}))}
+                    placeholder="e.g. Extended 5yr Warranty, Free Charger, Helmet..."
+                    style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", marginBottom:6, boxSizing:"border-box" }} />
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <span style={{ fontSize:12, color:C.blue, fontWeight:700, flexShrink:0 }}>+₹</span>
+                    <input type="number" value={newAddon.price} onChange={e => setNewAddon(a => ({...a, price:e.target.value}))}
+                      placeholder="Price (leave blank or 0 for free)" min={0}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:12, color:C.ink, fontFamily:"inherit", outline:"none", fontVariantNumeric:"tabular-nums" }} />
+                    <button onClick={addAddon} style={{ background:C.blue, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Add</button>
+                    <button onClick={() => { setAddingAddon(false); setNewAddon({name:"",price:""}) }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink3, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAddingAddon(true)} style={{
+                  width:"100%", background:"none", border:`1.5px dashed ${C.blue}60`, borderRadius:8,
+                  padding:"10px", fontSize:12, fontWeight:600, color:C.blue, cursor:"pointer",
+                  fontFamily:"inherit", marginTop:8, marginBottom:4, transition:"all 0.15s"
+                }}>
+                  + Add Extra / Add-on (Paid or Free)
+                </button>
+              )
             )}
 
             {/* Net price */}
@@ -1942,10 +2130,18 @@ function BuildPriceSection({ onBuildQuote }) {
             exShowroom: p.exShowroom,
             discounts: discounts,
             totalDiscounts: totalDiscounts,
-          })} style={{
-            width:"100%", background:C.green, color:"#fff", border:"none", borderRadius:12,
-            padding:"14px 20px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
-            boxShadow:`0 4px 14px ${C.green}40`, transition:"all 0.15s"
+            accessories: totalAddons,
+            lead: prefill,
+            offer: [
+              ...discounts.map(d => `${d.name}: −₹${d.amount.toLocaleString("en-IN")}`),
+              ...addons.map(a => `${a.name}: ${a.price > 0 ? "+₹" + a.price.toLocaleString("en-IN") : "FREE"}`)
+            ].join("\n")
+          })} 
+          disabled={isLockedForRep}
+          style={{
+            width:"100%", background:isLockedForRep ? C.ink3 : C.green, color:"#fff", border:"none", borderRadius:12,
+            padding:"14px 20px", fontSize:14, fontWeight:800, cursor:isLockedForRep ? "not-allowed" : "pointer", fontFamily:"inherit",
+            boxShadow:isLockedForRep ? "none" : `0 4px 14px ${C.green}40`, transition:"all 0.15s"
           }}>
             📋 Build Quote with this Price →
           </button>
@@ -2207,27 +2403,43 @@ function QuoteSection({ dealership, dealer, prefill }) {
 
   async function handleSave() {
     if (!form.customerName.trim()) { alert("Enter customer name or select a lead"); return }
+    if (isLockedForRep) { alert("Pricing is locked. You cannot modify an accepted quote."); return }
     setSaving(true)
     try {
-      const r = await authFetch("/api/dealer/quotes", {
-        method:"POST",
+      const isEdit = !!editingQuoteId
+      const url = "/api/dealer/quotes"
+      const method = isEdit ? "PATCH" : "POST"
+      const body = {
+        dealership, leadId:selectedLead?.id||null, quoteId: isEdit ? undefined : quoteId,
+        customerName:form.customerName, customerPhone:form.customerPhone,
+        vehicleName:form.vehicleName, exShowroom:form.exShowroom,
+        fameSubsidy:0, stateSubsidy:0,
+        dealerDiscount:form.dealerDiscount, registration:form.registration,
+        accessories:form.accessories, netPrice, offer:form.offer,
+        validityDays:form.validityDays,
+        receipt: receipt ? { name:receipt.name, type:receipt.type, data:receipt.data } : null,
+        dealerName, dealerPhone, dealerCity,
+      }
+      if (isEdit) body.id = editingQuoteId
+
+      const r = await authFetch(url, {
+        method,
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          dealership, leadId:selectedLead?.id||null, quoteId,
-          customerName:form.customerName, customerPhone:form.customerPhone,
-          vehicleName:form.vehicleName, exShowroom:form.exShowroom,
-          fameSubsidy:0, stateSubsidy:0,
-          dealerDiscount:form.dealerDiscount, registration:form.registration,
-          accessories:form.accessories, netPrice, offer:form.offer,
-          validityDays:form.validityDays,
-          receipt: receipt ? { name:receipt.name, type:receipt.type, data:receipt.data } : null,
-          dealerName, dealerPhone, dealerCity,
-        })
+        body: JSON.stringify(body)
       })
       const d = await r.json()
       if (d.success) {
-        setQuotes(q => [d.quote, ...q])
-        setLastSaved(d.quote)
+        if (isEdit) {
+          setQuotes(q => q.map(item => item.id === editingQuoteId ? d.quote : item))
+          setLastSaved(d.quote)
+          setEditingQuoteId(null)
+        } else {
+          setQuotes(q => [d.quote, ...q])
+          setLastSaved(d.quote)
+        }
+        if (selectedLead) {
+          await authFetch("/api/dealer/leads", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id: selectedLead.id, status: "QUOTED" }) })
+        }
         setSelectedLead(null)
         setForm({ customerName:"", customerPhone:"", vehicleName:"", exShowroom:0, dealerDiscount:0, registration:0, accessories:0, offer:"", validityDays:7 })
         setReceipt(null)
@@ -2310,19 +2522,24 @@ function QuoteSection({ dealership, dealer, prefill }) {
           {/* Lead linker */}
           <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>LINK TO LEAD (OPTIONAL)</div>
-            <select value={selectedLead?.id||""} onChange={e=>{ const l=leads.find(x=>x.id===e.target.value); if(l) pickLead(l) }}
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 13px", fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12 }}>
+            {hasAcceptedQuote && (
+              <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", color:"#92400E", padding:"10px 14px", borderRadius:10, fontSize:12, fontWeight:700, marginBottom:12, lineHeight:1.5 }}>
+                ⚠️ Customer has already accepted a quote. Pricing is locked and can only be modified/revoked by the Dealer.
+              </div>
+            )}
+            <select value={selectedLead?.id||""} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>{ const l=leads.find(x=>x.id===e.target.value); if(l) pickLead(l) }}
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 13px", fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1 }}>
               <option value="">— Select a lead to auto-fill —</option>
               {leads.map(l=><option key={l.id} value={l.id}>{l.name} · {l.vehicle||"No vehicle"} · {STATUS_CONFIG[l.status]?.label||l.status}</option>)}
             </select>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
               <div>
                 <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>CUSTOMER NAME</div>
-                <input value={form.customerName} onChange={e=>setForm(f=>({...f,customerName:e.target.value}))} placeholder="Customer name" style={inputSt} />
+                <input value={form.customerName} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerName:e.target.value}))} placeholder="Customer name" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
               </div>
               <div>
                 <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>PHONE</div>
-                <input value={form.customerPhone} onChange={e=>setForm(f=>({...f,customerPhone:e.target.value}))} placeholder="+91 XXXXX XXXXX" style={inputSt} />
+                <input value={form.customerPhone} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerPhone:e.target.value}))} placeholder="+91 XXXXX XXXXX" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
               </div>
             </div>
           </div>
@@ -2330,19 +2547,19 @@ function QuoteSection({ dealership, dealer, prefill }) {
           {/* Price breakdown */}
           <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>VEHICLE & PRICE BREAKDOWN</div>
-            <input value={form.vehicleName} onChange={e=>setForm(f=>({...f,vehicleName:e.target.value}))} placeholder="Vehicle model name (e.g. Tata Nexon EV Max)"
-              style={{ ...inputSt, marginBottom:12 }} />
+            <input value={form.vehicleName} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,vehicleName:e.target.value}))} placeholder="Vehicle model name (e.g. Tata Nexon EV Max)"
+              style={{ ...inputSt, marginBottom:12, opacity:isLockedForRep?0.6:1 }} />
             {priceRows.map(row=>(
               <div key={row.key||row.label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                 <span style={{ width:16, fontSize:13, fontWeight:800, color:row.sign==="−"?C.green:C.ink2, flexShrink:0, textAlign:"center" }}>{row.sign}</span>
                 <div style={{ flex:1, fontSize:12, color:C.ink2 }}>{row.label}</div>
-                <input type="number" min={0} value={row.value}
+                <input type="number" min={0} value={row.value} disabled={isLockedForRep}
                   onChange={e=>{
                     const keyMap = {"Ex-Showroom Price":"exShowroom","Discounts / Subsidies":"dealerDiscount","Registration + Insurance":"registration","Accessories / Warranty":"accessories"}
                     const k = keyMap[row.label]
                     if(k) setForm(f=>({...f,[k]:numVal(e.target.value)}))
                   }}
-                  style={numSt} />
+                  style={{...numSt, opacity:isLockedForRep?0.6:1}} />
               </div>
             ))}
             <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`2px solid ${C.border}` }}>
@@ -2355,13 +2572,13 @@ function QuoteSection({ dealership, dealer, prefill }) {
           {/* Offer & validity */}
           <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:8 }}>DEALER SPECIAL OFFER / NOTE</div>
-            <textarea value={form.offer} onChange={e=>setForm(f=>({...f,offer:e.target.value}))}
+            <textarea value={form.offer} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,offer:e.target.value}))}
               placeholder="e.g. Free home charger installation + 2 years free service..."
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"inherit", outline:"none", minHeight:60, resize:"none", lineHeight:1.5, boxSizing:"border-box" }} />
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"inherit", outline:"none", minHeight:60, resize:"none", lineHeight:1.5, boxSizing:"border-box", opacity:isLockedForRep?0.6:1 }} />
             <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
               <span style={{ fontSize:11, color:C.ink3 }}>Valid for</span>
-              <select value={form.validityDays} onChange={e=>setForm(f=>({...f,validityDays:parseInt(e.target.value)}))}
-                style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+              <select value={form.validityDays} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,validityDays:parseInt(e.target.value)}))}
+                style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none", opacity:isLockedForRep?0.6:1 }}>
                 {[3,7,14,30].map(d=><option key={d} value={d}>{d} days</option>)}
               </select>
             </div>
@@ -2396,8 +2613,8 @@ function QuoteSection({ dealership, dealer, prefill }) {
             <button onClick={handlePrint} style={{ flex:1, background:C.blue, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               🖨️ Print Bill
             </button>
-            <button onClick={handleSave} disabled={saving} style={{ flex:1, background:saving?C.ink3:C.green, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>
-              {saving?"Saving…":"💾 Save"}
+            <button onClick={handleSave} disabled={saving || isLockedForRep} style={{ flex:1, background:(saving || isLockedForRep)?C.ink3:C.green, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:(saving || isLockedForRep)?"not-allowed":"pointer", fontFamily:"inherit" }}>
+              {saving?"Saving…":editingQuoteId?"💾 Update":"💾 Save"}
             </button>
           </div>
 
@@ -2541,6 +2758,21 @@ function QuoteSection({ dealership, dealer, prefill }) {
                         👁️ Preview
                       </button>
                     </div>
+
+                    <div style={{ display:"flex", gap:8, marginTop:6 }}>
+                      {(!isLockedForRep || !isRep) && (
+                        <button onClick={() => handleRevise(q)} disabled={isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded")}
+                          style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                          ✏️ Revise Quote
+                        </button>
+                      )}
+                      {!isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded") && (
+                        <button onClick={() => handleRevoke(q.id)}
+                          style={{ flex:1, background:"#FFFBEB", border:"1px solid #F59E0B", color:"#B45309", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                          🔓 Revoke Approval
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -2557,10 +2789,19 @@ function QuoteSection({ dealership, dealer, prefill }) {
 ───────────────────────────────────────────── */
 function DealerDashboard() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabParam = searchParams?.get("tab")
   const { user } = useAuth()
   const isMobile = useIsMobile()
 
   const [activeTab,   setActiveTab]   = useState("dashboard")
+
+  // URL tab query synchronization
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
   const [importModal, setImportModal] = useState(false)
   const [quickLead,   setQuickLead]   = useState(null)
   const [creating,    setCreating]    = useState(false)
@@ -2572,8 +2813,10 @@ function DealerDashboard() {
   const [bookings,  setBookings]  = useState([])
   const [inventory, setInventory] = useState([])
   const [tasks,     setTasks]     = useState([])
-  const [loading,   setLoading]   = useState(false)
+  const [quotes,        setQuotes]        = useState([])
+  const [loading,       setLoading]       = useState(true)
   const [error,     setError]     = useState(null)
+  const [buildPricePrefill, setBuildPricePrefill] = useState(null)
 
   const dealership = user?.dealership || DEALER_ID
 
@@ -2596,16 +2839,17 @@ function DealerDashboard() {
     if (isRep && !REP_TAB_IDS.includes(activeTab)) setActiveTab("leads")
   }, [isRep, activeTab])
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
+  const loadAll = useCallback(async (showSpinner = false) => {
+    if (showSpinner === true) setLoading(true)
     try {
-      const [leadsRes, feedRes, repsRes, bookingsRes, inventoryRes, tasksRes] = await Promise.all([
+      const [leadsRes, feedRes, repsRes, bookingsRes, inventoryRes, tasksRes, quotesRes] = await Promise.all([
         authFetch(`/api/dealer/leads?dealership=${dealership}`).then(r=>r.json()),
         authFetch(`/api/dealer/feed?dealership=${dealership}`).then(r=>r.json()),
         authFetch(`/api/dealer/reps?dealership=${dealership}`).then(r=>r.json()),
         authFetch(`/api/dealer/bookings?dealership=${dealership}`).then(r=>r.json()),
         authFetch(`/api/dealer/inventory?dealership=${dealership}`).then(r=>r.json()),
         authFetch(`/api/dealer/tasks?dealership=${dealership}`).then(r=>r.json()),
+        authFetch(`/api/dealer/quotes?dealership=${dealership}`).then(r=>r.json()),
       ])
       if (leadsRes.success)     setLeads(leadsRes.leads)
       if (feedRes.success)      setFeed(feedRes.feed)
@@ -2613,6 +2857,7 @@ function DealerDashboard() {
       if (bookingsRes.success)  setBookings(bookingsRes.bookings)
       if (inventoryRes.success) setInventory(inventoryRes.inventory)
       if (tasksRes.success)     setTasks(tasksRes.tasks)
+      if (quotesRes.success)    setQuotes(quotesRes.quotes)
     } catch (e) {
       setError("Could not connect to CRM. Please refresh.")
     }
@@ -2621,8 +2866,8 @@ function DealerDashboard() {
 
   useEffect(() => {
     if (!user) return
-    loadAll()
-    const t = setInterval(loadAll, 30000)
+    loadAll(true)
+    const t = setInterval(() => loadAll(false), 30000)
     return () => clearInterval(t)
   }, [user, loadAll])
 
@@ -2934,7 +3179,7 @@ function DealerDashboard() {
         </>
       )}
 
-      {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} reps={reps} />}
+      {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} reps={reps} bookings={bookings} quotes={quotes} onGoToBuildPrice={(lead) => { setBuildPricePrefill(lead); setActiveTab("buildprice") }} />}
 
       {activeTab === "inventory" && <InventorySection dealership={dealership} user={user} />}
 
@@ -2945,7 +3190,7 @@ function DealerDashboard() {
       {activeTab === "tasks"     && <TaskSection dealership={dealership} reps={reps} />}
 
       {activeTab === "service"    && <ServiceSection dealership={dealership} />}
-      {activeTab === "buildprice" && <BuildPriceSection onBuildQuote={(data) => { setQuotePrefill(data); setActiveTab("quotepro") }} />}
+      {activeTab === "buildprice" && <BuildPriceSection user={user} prefill={buildPricePrefill} quotes={quotes} onBuildQuote={(data) => { setQuotePrefill(data); setActiveTab("quotepro") }} />}
 
       {activeTab === "quotepro"  && <QuoteSection dealership={dealership} dealer={user} prefill={quotePrefill} />}
 

@@ -1,5 +1,29 @@
 [
   {
+    "id": "feed_1783852485775",
+    "dealership": "volt-hyd",
+    "type": "TEST_DRIVE_BOOKED",
+    "label": "🔥 TEST DRIVE BOOKED",
+    "msg": "Lankalapalli Balaji booked test drive — 450X",
+    "sub": "₹1,000 token · 13 Jul · via Marketplace",
+    "icon": "🚗",
+    "color": "#059669",
+    "actionLabel": "Call",
+    "created_at": "2026-07-12T10:34:45.770Z"
+  },
+  {
+    "id": "feed_1783795233413",
+    "dealership": "volt-hyd",
+    "type": "TEST_DRIVE_BOOKED",
+    "label": "🔥 TEST DRIVE BOOKED",
+    "msg": "Showroom Test Customer booked test drive — 450X",
+    "sub": "₹1,000 token · Date TBD · via Marketplace",
+    "icon": "🚗",
+    "color": "#059669",
+    "actionLabel": "Call",
+    "created_at": "2026-07-11T18:40:33.404Z"
+  },
+  {
     "id": "feed_1783771564216",
     "dealership": "hyd-d01",
     "type": "TEST_DRIVE_BOOKED",
