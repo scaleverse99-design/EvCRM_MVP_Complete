@@ -412,5 +412,32 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-21T18:47:06.267Z",
     "created_at": "2026-07-14T18:47:06.267Z"
+  },
+  {
+    "id": "sess_1784060101479",
+    "user_id": "user_founder_local_1784059051527",
+    "token_hash": "34b58d700f50f3c68a059dd22f394cf2af46d26af03eec5b6426a67b1279f097",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-21T20:15:01.479Z",
+    "created_at": "2026-07-14T20:15:01.479Z"
+  },
+  {
+    "id": "sess_1784060192600",
+    "user_id": "user_founder_local_1784059051527",
+    "token_hash": "161e9de91f3146fb947fe1a798b0dabe6ccfc74c3b737f2b8d85f06949e432c5",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-21T20:16:32.600Z",
+    "created_at": "2026-07-14T20:16:32.600Z"
+  },
+  {
+    "id": "sess_1784061148599",
+    "user_id": "user_founder_local_1784059051527",
+    "token_hash": "dc2fc8595904307b8d30791b343bfada5986ac2d16f0eaa3ba3f8e97ffc87c66",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-21T20:32:28.599Z",
+    "created_at": "2026-07-14T20:32:28.599Z"
   }
 ]

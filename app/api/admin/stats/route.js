@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { extractToken, verifyToken, hashToken, ok, err } from "../../../../lib/auth"
 import { findSession } from "../../../../lib/db"
-import supabaseAdmin from "../../../../lib/db"
+import { readTable } from "../../../../lib/store"
 
 async function requireSuperadmin(req) {
   const token = extractToken(req)
@@ -17,38 +17,27 @@ async function requireSuperadmin(req) {
   return session.evcrm_users
 }
 
+// Same "trial then paid" pricing story as TrialBanner/billing.js.
+const MRR_PER_DEALER = 3000
+
 export async function GET(req) {
   try {
     const admin = await requireSuperadmin(req)
     if (!admin) return err("Unauthorized. Superadmin access required.", 401)
 
-    // Query platform stats
-    const { count: totalDealers } = await supabaseAdmin
-      .from("evcrm_users")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "dealer")
-
-    const { count: totalUsers } = await supabaseAdmin
-      .from("evcrm_users")
-      .select("*", { count: "exact", head: true })
-
-    const { count: activeDealer } = await supabaseAdmin
-      .from("evcrm_users")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "dealer")
-      .eq("is_active", true)
-
-    // Mock MRR for now or calculate from subscriptions if table exists
-    const mrr = totalDealers * 4999 // Assume 4999 MRR per dealer
+    const users = await readTable("users")
+    const dealers = users.filter(u => u.role === "dealer")
+    const activeDealer = dealers.filter(u => u.is_active !== false).length
+    const payingDealers = dealers.filter(u => u.billingStatus && u.billingStatus.startsWith("active")).length
 
     return ok({
       success: true,
-      mrr,
+      mrr: payingDealers * MRR_PER_DEALER,
       stats: {
-        totalDealers: totalDealers || 0,
-        totalUsers: totalUsers || 0,
-        activeDealer: activeDealer || 0
-      }
+        totalDealers: dealers.length,
+        totalUsers: users.length,
+        activeDealer,
+      },
     })
 
   } catch (error) {

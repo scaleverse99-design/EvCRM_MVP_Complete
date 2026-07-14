@@ -1,9 +1,0 @@
-User-Agent: *
-Allow: /
-Disallow: /admin
-Disallow: /api
-Disallow: /dealer
-Disallow: /register
-Disallow: /login
-
-Sitemap: https://evcrm.in/sitemap.xml

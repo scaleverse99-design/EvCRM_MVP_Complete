@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { extractToken, verifyToken, hashToken, ok, err } from "../../../../../lib/auth"
 import { findSession } from "../../../../../lib/db"
-import supabaseAdmin from "../../../../../lib/db"
+import { readTable } from "../../../../../lib/store"
 
 async function requireSuperadmin(req) {
   const token = extractToken(req)
@@ -22,14 +22,11 @@ export async function GET(req) {
     const admin = await requireSuperadmin(req)
     if (!admin) return err("Unauthorized. Superadmin access required.", 401)
 
-    const { data, error } = await supabaseAdmin
-      .from("evcrm_users")
-      .select("id, email, role, name, phone, dealership, city, is_active, last_login, created_at")
-      .order("created_at", { ascending: false })
+    const users = (await readTable("users"))
+      .map(({ password_hash, ...u }) => u) // never ship password hashes to the client
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
 
-    if (error) throw error
-
-    return ok({ success: true, users: data })
+    return ok({ success: true, users })
 
   } catch (error) {
     console.error("[GET /api/admin/users/all]", error.message)
