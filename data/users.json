@@ -49,21 +49,6 @@
     "razorpaySubscriptionId": null
   },
   {
-    "id": "user_1783791736675",
-    "city": null,
-    "name": "Live Test Dealer",
-    "role": "dealer",
-    "email": "livetest_1783791732@demoev.in",
-    "phone": "9876543211",
-    "is_active": true,
-    "created_at": "2026-07-11T17:42:16.675Z",
-    "dealership": "live-demo-ev-8hu3",
-    "billingStatus": "trial",
-    "password_hash": "$2a$12$aAw5c5Jb8weWI7jkckaeveuzCRw9X8g3CHk1xQQ6o4Z7vEy27XSBa",
-    "dealershipName": "Live Demo EV",
-    "trialStartDate": "2026-07-11T17:42:16.652Z"
-  },
-  {
     "id": "user_1783866297134",
     "name": "Balaji",
     "role": "rep",
@@ -119,49 +104,6 @@
     "created_by": "dealer@deccanev.in",
     "created_at": "2026-07-11T11:21:42.746Z",
     "last_login": "2026-07-11T11:27:00.118Z"
-  },
-  {
-    "email": "ramesh@voltmotors.in",
-    "password_hash": "$2a$12$Nx/KqcLkTecwVWEep3tu/evzeKI2oVs9BD3NSxTqOVfyMZUPKlut6",
-    "role": "dealer",
-    "name": "Ramesh Kumar",
-    "phone": "9876511111",
-    "dealership": "volt-hyd",
-    "city": "Hyderabad",
-    "is_active": true,
-    "id": "user_1783769531599",
-    "created_at": "2026-07-11T11:32:11.599Z",
-    "last_login": "2026-07-11T11:41:41.019Z"
-  },
-  {
-    "id": "user_1783769820186",
-    "email": "anjali.rep@voltmotors.in",
-    "name": "Anjali Verma",
-    "phone": "9876522222",
-    "password_hash": "$2a$12$tybKalEQmp1dk.i103/JR.FsvN8KED4UAyFFAnHaZmzI8XiVyHTwO",
-    "role": "rep",
-    "repId": "rep_1783769820186",
-    "dealership": "volt-hyd",
-    "is_active": true,
-    "created_by": "ramesh@voltmotors.in",
-    "created_at": "2026-07-11T11:37:00.186Z",
-    "last_login": null
-  },
-  {
-    "email": "anand_fresh@teste.in",
-    "password_hash": "$2a$12$QCCmhbAF7k6jU4ND7zyJRuAXi4fhfJP2FrzFBrzQ4Vji4T9hPSwG2",
-    "role": "dealer",
-    "name": "Anand Rao",
-    "phone": "9876540000",
-    "dealership": "anand-ev-motors-36gw",
-    "dealershipName": "Anand EV Motors",
-    "city": null,
-    "is_active": true,
-    "trialStartDate": "2026-07-11T17:31:48.105Z",
-    "billingStatus": "trial",
-    "id": "user_1783791108105",
-    "created_at": "2026-07-11T17:31:48.105Z",
-    "last_login": "2026-07-11T17:32:53.378Z"
   },
   {
     "id": "user_founder_local_1784059051527",

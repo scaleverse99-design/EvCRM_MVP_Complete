@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /login
+Allow: /register
+Allow: /showroom
+Disallow: /admin
+Disallow: /dealer
+Disallow: /leads
+Disallow: /queue
+Disallow: /connect
+Disallow: /assign
+Disallow: /attendance
+Disallow: /team
+Disallow: /profile
+Disallow: /vehicles
+Disallow: /buildprice
+Disallow: /quotepro
+Disallow: /command
+Disallow: /market-research
+
+Sitemap: https://evcrm.in/sitemap.xml
