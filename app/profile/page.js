@@ -84,9 +84,10 @@ export default function ProfilePage() {
     try {
       let subscriptionId = user.razorpaySubscriptionId
       let keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      const isAuthorized = user.mandateStatus === "authorized"
 
-      // If no subscription exists yet, create one!
-      if (!subscriptionId) {
+      // If no subscription exists yet, or if it is not yet authorized, create a fresh one!
+      if (!subscriptionId || !isAuthorized) {
         const res = await authFetch("/api/dealer/billing/create-subscription", {
           method: "POST",
           body: JSON.stringify({
@@ -102,21 +103,6 @@ export default function ProfilePage() {
         keyId = data.keyId
       }
 
-      if (!keyId) {
-        const res = await authFetch("/api/dealer/billing/create-subscription", {
-          method: "POST",
-          body: JSON.stringify({
-            dealerId: user.id,
-            dealerName: profile.name || user.name,
-            dealerEmail: user.email,
-            dealerPhone: profile.phone || user.phone,
-          }),
-        })
-        const data = await res.json()
-        subscriptionId = data.subscriptionId
-        keyId = data.keyId
-      }
-
       await loadRazorpayScript()
       const options = {
         key: keyId,
@@ -125,7 +111,7 @@ export default function ProfilePage() {
         description: `₹${MONTHLY_PRICE_INR}/month — subscription billing`,
         prefill: { name: profile.name || user.name, email: user.email, contact: profile.phone || user.phone },
         theme: { color: C.green },
-        subscription_card_change: user.razorpaySubscriptionId ? 1 : 0,
+        subscription_card_change: isAuthorized ? 1 : 0,
       }
       const rzp = new window.Razorpay(options)
       rzp.open()

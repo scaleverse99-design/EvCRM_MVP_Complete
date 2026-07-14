@@ -85,7 +85,7 @@ export async function POST(req) {
     const subscription = await rz.subscriptions.create({
       plan_id: process.env.RAZORPAY_PLAN_ID,
       customer_notify: 1,
-      total_count: 0,
+      total_count: 120, // 10 years ongoing monthly billing (100% UPI compliant)
       start_at: trialEnd,
       notes: { dealerId: dealer.id },
     })
