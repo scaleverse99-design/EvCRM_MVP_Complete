@@ -65,3 +65,7 @@ alter table service_settings disable row level security;
 -- Rep geo-tagged attendance (added Jul 2026, replaces the old Firestore path)
 create table if not exists attendance (id text primary key, data jsonb not null, created_at timestamptz default now());
 create index if not exists idx_attendance_dealership on attendance ((data->>'dealership'));
+
+-- OEM restock requests from dealers (added Jul 2026)
+create table if not exists stock_requests (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_stock_requests_dealership on stock_requests ((data->>'dealership'));

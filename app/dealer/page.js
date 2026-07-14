@@ -313,6 +313,19 @@ function InventorySection({ dealership, user }) {
             style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             📊 Report
           </button>
+          <button onClick={async ()=>{
+              const vehicleModel = window.prompt("Vehicle model to restock (e.g. Tata Nexon EV):")
+              if (!vehicleModel?.trim()) return
+              const quantity = window.prompt("Quantity needed:", "5")
+              if (!quantity || isNaN(quantity) || Number(quantity) < 1) return alert("Enter a valid quantity")
+              const note = window.prompt("Note for the OEM (optional):", "") || ""
+              const res = await authFetch("/api/dealer/stock-requests", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ vehicleModel, quantity, note }) })
+              const data = await res.json()
+              alert(res.ok ? "Restock request sent to your OEM." : (data.error || "Failed to send request"))
+            }}
+            style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            📦 Request Stock
+          </button>
           <Link href="/buy-vehicles" target="_blank"
             style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}25`, color:C.blue, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, textDecoration:"none" }}>
             🌐 View Marketplace
