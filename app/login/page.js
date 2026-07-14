@@ -160,6 +160,19 @@ export default function LoginPage() {
   const [role,     setRole]     = useState("dealer")
   const [loggedUser, setLoggedUser] = useState(null)
 
+  // Founder tile is hidden from the public login screen — it's only revealed
+  // via a private link (?founder=<key>). This is NOT the access control (the
+  // real password still gates every login regardless of which tile is
+  // visible); it just keeps the founder role from being publicly discoverable.
+  const [showFounder, setShowFounder] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("founder") === "evcrm2026") {
+      setShowFounder(true)
+      setRole("superadmin")
+    }
+  }, [])
+
   // Login fields
   const [email,    setEmail]    = useState("")
   const [password, setPassword] = useState("")
@@ -190,6 +203,7 @@ export default function LoginPage() {
     { id:"superadmin", icon:"🔱", label:"Founder",      sub:"System access",  color:C.greenD  },
   ]
   const activeColor = role==="dealer" ? ACCENT : role==="rep" ? C.orange : role==="oem" ? "#8B5CF6" : C.greenD
+  const visibleRoles = showFounder ? ROLES : ROLES.filter(r => r.id !== "superadmin")
 
   // ── Login ─────────────────────────────────────────────────────
   const handleLogin = async () => {
@@ -326,7 +340,7 @@ export default function LoginPage() {
             <form onSubmit={(e)=>{ e.preventDefault(); handleLogin() }}>
               {/* Role tabs */}
               <div style={{ display:"flex", gap:8, marginBottom:24 }}>
-                {ROLES.map(r=>(
+                {visibleRoles.map(r=>(
                   <button key={r.id} type="button" onClick={()=>{ setRole(r.id); setLoginErr("") }}
                     style={{ 
                       flex:1, background:role===r.id?`${r.color}10`:C.bg, 
