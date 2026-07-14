@@ -2334,6 +2334,7 @@ function QuoteSection({ dealership, dealer, prefill }) {
   const [selectedLead,  setSelectedLead]  = useState(null)
   const [receipt,       setReceipt]       = useState(null)
   const [lastSaved,     setLastSaved]     = useState(null)   // {id, quoteId, customerName}
+  const [editingQuoteId, setEditingQuoteId] = useState(null)
 
   const [form, setForm] = useState({
     customerName:"", customerPhone:"", vehicleName:"",
@@ -2341,19 +2342,69 @@ function QuoteSection({ dealership, dealer, prefill }) {
     registration:0, accessories:0, offer:"", validityDays:7,
   })
 
+  const isRep = dealer?.role === "rep"
+
+  const hasAcceptedQuote = useMemo(() => {
+    if (editingQuoteId) {
+      const q = quotes.find(x => x.id === editingQuoteId)
+      return q && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded")
+    }
+    if (!selectedLead) return false
+    return quotes.some(q => q.leadId === selectedLead.id && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded"))
+  }, [selectedLead, editingQuoteId, quotes])
+
+  const isLockedForRep = isRep && hasAcceptedQuote
+
+  function handleRevise(q) {
+    setEditingQuoteId(q.id)
+    setForm({
+      customerName: q.customerName || "",
+      customerPhone: q.customerPhone || "",
+      vehicleName: q.vehicleName || "",
+      exShowroom: q.exShowroom || 0,
+      dealerDiscount: q.dealerDiscount || 0,
+      registration: q.registration || 0,
+      accessories: q.accessories || 0,
+      offer: q.offer || "",
+      validityDays: q.validityDays || 7
+    })
+    setReceipt(q.receipt || null)
+  }
+
+  async function handleRevoke(id) {
+    if (!confirm("Are you sure you want to revoke customer approval for this quote? This will unlock it for edits.")) return
+    try {
+      const res = await authFetch("/api/dealer/quotes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, customerResponse: null, customerFeedback: "Approval revoked by dealer" })
+      })
+      const d = await res.json()
+      if (d.success) {
+        setQuotes(q => q.map(item => item.id === id ? d.quote : item))
+        alert("Customer approval revoked and quote unlocked!")
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     if (prefill) {
       setForm(f => ({
         ...f,
+        customerName: prefill.lead?.name || f.customerName,
+        customerPhone: prefill.lead?.phone || f.customerPhone,
         vehicleName: prefill.vehicleName || f.vehicleName,
         exShowroom: prefill.exShowroom || f.exShowroom,
         dealerDiscount: prefill.totalDiscounts || 0,
-        offer: prefill.discounts?.length
-          ? prefill.discounts.map(d => `${d.name}: −₹${d.amount.toLocaleString("en-IN")}`).join("\n")
-          : f.offer,
+        accessories: prefill.accessories || 0,
+        offer: prefill.offer || f.offer,
       }))
+      if (prefill.lead) {
+        const matchingLead = leads.find(l => l.id === prefill.lead.id)
+        if (matchingLead) setSelectedLead(matchingLead)
+      }
     }
-  }, [prefill])
+  }, [prefill, leads])
 
   const quoteId = useMemo(() => `EV-${Math.random().toString(36).substr(2,4).toUpperCase()}`, [])
   const dealerName = dealer?.name || dealer?.dealerName || dealership || "EV Dealer"
