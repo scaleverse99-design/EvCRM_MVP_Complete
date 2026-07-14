@@ -381,6 +381,16 @@ export default function LoginPage() {
                   </button>
                 </div>
               )}
+
+              {role==="oem" && (
+                <div style={{ textAlign:"center", marginTop:12 }}>
+                  <span style={{ fontSize:12, color:C.ink3 }}>New OEM partner? </span>
+                  <button type="button" onClick={()=>router.push("/oem/register")}
+                    style={{ background:"none", border:"none", color:"#8B5CF6", fontSize:12, cursor:"pointer", fontWeight:800, fontFamily:"inherit" }}>
+                    Register your network →
+                  </button>
+                </div>
+              )}
             </form>
           )}
 

@@ -1,5 +1,12 @@
 [
   {
+    "id": "log_1784056222000_0b0i",
+    "timestamp": "2026-07-14T19:10:22.000Z",
+    "email": "partner@atherenergy.in",
+    "ip": "::1",
+    "success": true
+  },
+  {
     "id": "log_1784054826268_c9bb",
     "timestamp": "2026-07-14T18:47:06.268Z",
     "email": "oem@tatamotors.in",
