@@ -39,6 +39,20 @@ export default function CustomerQuotePage() {
   const [kycDocs,    setKycDocs]    = useState({})
   const [submitting, setSubmitting] = useState(false)
 
+  const [expanded,   setExpanded]   = useState({ base:true, discount:true, reg:true, acc:true, emi:true })
+  const [commentLine, setCommentLine] = useState(null)
+  const [newComment,  setNewComment]  = useState("")
+  const [rejReasons,  setRejReasons]  = useState([])
+
+  const REJ_OPTIONS = [
+    { id:"price",     label:"Vehicle / Net price is too high" },
+    { id:"finance",   label:"Financing / EMI interest or terms unsuitable" },
+    { id:"delivery",  label:"Delivery timeline is delayed" },
+    { id:"variant",   label:"Required variant / color is not available" },
+    { id:"competitor",label:"Better offer from a competitor brand" },
+    { id:"other",     label:"Other concern (please detail below)" }
+  ]
+
   useEffect(() => {
     fetch(`/api/quotes/${id}`)
       .then(r => r.json())
@@ -49,12 +63,64 @@ export default function CustomerQuotePage() {
           const cr = d.quote.customerResponse
           if (cr === "agreed")        setStep("agreed")
           if (cr === "docs_uploaded") { setStep("done_docs"); setKycDocs(d.quote.kycDocs || {}) }
-          if (cr === "not_agreed")    { setStep("done_disagree"); setFeedback(d.quote.customerFeedback || "") }
+          if (cr === "not_agreed")    { setStep("done_disagree"); setFeedback(d.quote.customerFeedback || ""); setRejReasons(d.quote.rejectionReasons || []) }
         } else setError("Quote not found or link expired.")
       })
       .catch(() => setError("Could not load quote. Please check your link."))
       .finally(() => setLoading(false))
   }, [id])
+
+  // Track page opens, scroll depth, and viewed sections
+  useEffect(() => {
+    if (!quote) return
+    let maxScroll = 0
+
+    const handleScroll = () => {
+      const doc = document.documentElement
+      const scrolled = window.scrollY
+      const max = doc.scrollHeight - doc.clientHeight
+      if (max <= 0) return
+      const pct = Math.round((scrolled / max) * 100)
+      if (pct > maxScroll) {
+        maxScroll = pct
+      }
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+
+    const syncScroll = setInterval(() => {
+      if (maxScroll > 0) {
+        fetch(`/api/quotes/${id}/track`, {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ event:"scroll", value:maxScroll })
+        }).catch(()=>{})
+      }
+    }, 5000)
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          fetch(`/api/quotes/${id}/track`, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ event:"section_view", sectionId:e.target.id })
+          }).catch(()=>{})
+        }
+      })
+    }, { threshold: 0.15 })
+
+    const sections = ["sec-base-vehicle", "sec-dealer-adjustments", "sec-registration", "sec-accessories", "sec-financing", "sec-decisions"]
+    sections.forEach(sId => {
+      const el = document.getElementById(sId)
+      if (el) observer.observe(el)
+    })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      clearInterval(syncScroll)
+      observer.disconnect()
+    }
+  }, [quote, id])
 
   async function patch(body) {
     setSubmitting(true)
@@ -70,8 +136,11 @@ export default function CustomerQuotePage() {
   }
 
   async function handleNotAgreed() {
-    if (!feedback.trim()) { alert("Please write your concern before submitting."); return }
-    await patch({ action:"not_agreed", feedback })
+    if (rejReasons.length === 0 && !feedback.trim()) {
+      alert("Please select at least one concern or write your feedback.")
+      return
+    }
+    await patch({ action:"not_agreed", feedback, rejectionReasons: rejReasons })
     setStep("done_disagree")
   }
 
@@ -94,6 +163,45 @@ export default function CustomerQuotePage() {
     await patch({ action:"delete_docs" })
     setKycDocs({})
     setStep("agreed")
+  }
+
+  function toggle(sec) {
+    setExpanded(prev => ({ ...prev, [sec]: !prev[sec] }))
+  }
+
+  function toggleComment(lineId) {
+    setCommentLine(prev => prev === lineId ? null : lineId)
+    setNewComment("")
+  }
+
+  async function postComment(lineId) {
+    if (!newComment.trim()) return
+    const text = newComment
+    setNewComment("")
+
+    const tempComment = {
+      id: `temp_${Date.now()}`,
+      lineId,
+      text,
+      author: "customer",
+      createdAt: new Date().toISOString()
+    }
+    setQuote(prev => ({
+      ...prev,
+      comments: [...(prev.comments || []), tempComment]
+    }))
+
+    try {
+      const r = await fetch(`/api/quotes/${id}/track`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ event:"add_comment", lineId, text, author:"customer" })
+      })
+      const d = await r.json()
+      if (d.success) {
+        setQuote(d.quote)
+      }
+    } catch {}
   }
 
   const fmt = n => n ? `₹${Number(n).toLocaleString("en-IN")}` : "—"
@@ -122,6 +230,58 @@ export default function CustomerQuotePage() {
       </div>
     </div>
   )
+
+  const emi36 = quote?.netPrice > 0
+    ? Math.round((quote.netPrice * 0.085 / 12) / (1 - Math.pow(1 + 0.085/12, -36)))
+    : 0
+
+  const renderRow = (r) => {
+    const lineId = r.label
+    const commentsForLine = (quote.comments || []).filter(c => c.lineId === lineId)
+    return (
+      <div key={lineId} style={{ marginBottom:8 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", alignItems:"center" }}>
+            <span style={{ fontSize:12, color:INK2 }}>{r.sign === "−" ? "✓ " : ""}{r.label}</span>
+            <span onClick={() => toggleComment(lineId)} style={{ cursor:"pointer", display:"inline-flex", alignItems:"center", gap:3, marginLeft:8, fontSize:10, color:commentsForLine.length ? G : INK3, padding:"1px 5px", background:commentsForLine.length ? `${G}15` : "#00000005", borderRadius:6 }}>
+              💬 {commentsForLine.length || ""}
+            </span>
+          </div>
+          <span style={{ fontSize:12, fontWeight:600, color:r.color||INK }}>
+            {r.sign === "−" ? "−" : ""}₹{r.val.toLocaleString("en-IN")}
+          </span>
+        </div>
+        
+        {commentLine === lineId && (
+          <div style={{ background:"#F7FAFC", border:`1px solid ${BORDER}`, borderRadius:10, padding:10, marginTop:6, display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ maxHeight:150, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+              {commentsForLine.length === 0 ? (
+                <div style={{ fontSize:10, color:INK3, fontStyle:"italic" }}>No questions or notes yet. Ask a question below!</div>
+              ) : (
+                commentsForLine.map(c => {
+                  const isCustomer = c.author === "customer"
+                  return (
+                    <div key={c.id} style={{ display:"flex", flexDirection:"column", alignSelf: isCustomer ? "flex-end" : "flex-start", maxWidth:"85%" }}>
+                      <div style={{ background: isCustomer ? `${G}15` : "#EDF2F7", color:INK, padding:"6px 10px", borderRadius:10, fontSize:11, lineHeight:1.4 }}>
+                        {c.text}
+                      </div>
+                      <span style={{ fontSize:8.5, color:INK3, alignSelf: isCustomer ? "flex-end" : "flex-start", marginTop:2 }}>
+                        {isCustomer ? "You" : "Dealer"} · {new Date(c.createdAt).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" })}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            <div style={{ display:"flex", gap:6, borderTop:`1px solid ${BORDER}`, paddingTop:6 }}>
+              <input value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Ask a question..." style={{ flex:1, border:`1px solid ${BORDER}`, borderRadius:6, padding:"4px 8px", fontSize:11, outline:"none", fontFamily:"inherit" }} onKeyDown={e=>{ if(e.key==="Enter") postComment(lineId) }} />
+              <button onClick={() => postComment(lineId)} style={{ background:G, border:"none", color:"#fff", borderRadius:6, padding:"4px 10px", fontSize:10.5, fontWeight:700, cursor:"pointer" }}>Send</button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={wrap}>
@@ -157,24 +317,96 @@ export default function CustomerQuotePage() {
         {quote.customerPhone && <div style={{ fontSize:12, color:INK3, marginBottom:14 }}>{quote.customerPhone}</div>}
 
         {quote.vehicleName && (
-          <div style={{ background:BG, borderRadius:10, padding:14 }}>
-            <div style={{ fontWeight:800, fontSize:14, marginBottom:12 }}>{quote.vehicleName}</div>
-            {[
-              { label:"Ex-Showroom Price",        val:quote.exShowroom,    sign:"+" },
-              { label:"FAME II Subsidy",           val:quote.fameSubsidy,   sign:"−", color:G },
-              { label:"State Subsidy",             val:quote.stateSubsidy,  sign:"−", color:G },
-              { label:"Dealer Discount",           val:quote.dealerDiscount,sign:"−", color:G },
-              { label:"Registration + Insurance", val:quote.registration,  sign:"+" },
-              { label:"Accessories / Warranty",   val:quote.accessories,   sign:"+" },
-            ].filter(r => r.val > 0).map((r,i) => (
-              <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                <span style={{ fontSize:12, color:INK3 }}>{r.sign==="−" ? "✓ " : ""}{r.label}</span>
-                <span style={{ fontSize:12, fontWeight:600, color:r.color||INK }}>{r.sign==="−" ? "−" : ""}₹{r.val.toLocaleString("en-IN")}</span>
+          <div>
+            <div style={{ fontWeight:800, fontSize:15, marginBottom:12, color:INK }}>{quote.vehicleName}</div>
+            
+            {/* Progressive Disclosure Price Breakdown */}
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              
+              {/* Section: Base Vehicle */}
+              <div id="sec-base-vehicle" style={{ borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+                <div onClick={() => toggle("base")} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:INK2 }}>🚗 Base Vehicle & Subsidies</span>
+                  <span style={{ fontSize:11, color:INK3 }}>{expanded.base ? "▲" : "▼"}</span>
+                </div>
+                {expanded.base && (
+                  <div style={{ marginTop:6, paddingLeft:8 }}>
+                    {[
+                      { label:"Ex-Showroom Price", val:quote.exShowroom, sign:"+" },
+                      { label:"FAME II Subsidy", val:quote.fameSubsidy, sign:"−", color:G },
+                      { label:"State Subsidy", val:quote.stateSubsidy, sign:"−", color:G }
+                    ].filter(r => r.val > 0).map(r => renderRow(r))}
+                  </div>
+                )}
               </div>
-            ))}
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${BORDER}` }}>
-              <span style={{ fontWeight:800, fontSize:14 }}>Net Reference Price</span>
-              <span style={{ fontWeight:900, fontSize:22, color:G }}>₹{(quote.netPrice||0).toLocaleString("en-IN")}</span>
+
+              {/* Section: Dealer Adjustments */}
+              <div id="sec-dealer-adjustments" style={{ borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+                <div onClick={() => toggle("discount")} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:INK2 }}>💸 Dealer Adjustments</span>
+                  <span style={{ fontSize:11, color:INK3 }}>{expanded.discount ? "▲" : "▼"}</span>
+                </div>
+                {expanded.discount && (
+                  <div style={{ marginTop:6, paddingLeft:8 }}>
+                    {[
+                      { label:"Dealer Discount", val:quote.dealerDiscount, sign:"−", color:G }
+                    ].filter(r => r.val > 0).map(r => renderRow(r))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Registration */}
+              <div id="sec-registration" style={{ borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+                <div onClick={() => toggle("reg")} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:INK2 }}>📋 Taxes & RTO Registration</span>
+                  <span style={{ fontSize:11, color:INK3 }}>{expanded.reg ? "▲" : "▼"}</span>
+                </div>
+                {expanded.reg && (
+                  <div style={{ marginTop:6, paddingLeft:8 }}>
+                    {[
+                      { label:"Registration + Insurance", val:quote.registration, sign:"+" }
+                    ].filter(r => r.val > 0).map(r => renderRow(r))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Accessories */}
+              <div id="sec-accessories" style={{ borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+                <div onClick={() => toggle("acc")} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:INK2 }}>🛡️ Accessories & Warranty</span>
+                  <span style={{ fontSize:11, color:INK3 }}>{expanded.acc ? "▲" : "▼"}</span>
+                </div>
+                {expanded.acc && (
+                  <div style={{ marginTop:6, paddingLeft:8 }}>
+                    {[
+                      { label:"Accessories / Warranty", val:quote.accessories, sign:"+" }
+                    ].filter(r => r.val > 0).map(r => renderRow(r))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Financing (EMI) */}
+              <div id="sec-financing" style={{ borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+                <div onClick={() => toggle("emi")} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:INK2 }}>🏦 EMI Financing Calculator</span>
+                  <span style={{ fontSize:11, color:INK3 }}>{expanded.emi ? "▲" : "▼"}</span>
+                </div>
+                {expanded.emi && (
+                  <div style={{ marginTop:6, paddingLeft:8, background:BG, borderRadius:8, padding:10 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <span style={{ fontSize:11, color:INK2 }}>Estimated Monthly EMI</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:INK }}>₹{emi36.toLocaleString("en-IN")}</span>
+                    </div>
+                    <div style={{ fontSize:9.5, color:INK3, lineHeight:1.4 }}>Calculated at standard 8.5% interest rate for 36 months. Repayment starts after delivery.</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Net total price */}
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, paddingTop:10, borderTop:`2px solid ${BORDER}` }}>
+                <span style={{ fontWeight:800, fontSize:14 }}>Net Reference Price</span>
+                <span style={{ fontWeight:900, fontSize:20, color:G }}>₹{(quote.netPrice||0).toLocaleString("en-IN")}</span>
+              </div>
             </div>
           </div>
         )}
@@ -182,7 +414,7 @@ export default function CustomerQuotePage() {
         {quote.offer && (
           <div style={{ background:"#ecfdf5", borderRadius:8, padding:12, border:`1px solid ${G}30`, marginTop:12 }}>
             <div style={{ fontSize:9, fontWeight:700, color:G, letterSpacing:"0.5px", marginBottom:4 }}>SPECIAL OFFER</div>
-            <div style={{ fontSize:12, color:INK, lineHeight:1.5 }}>{quote.offer}</div>
+            <div style={{ fontSize:11, color:INK, lineHeight:1.5 }}>{quote.offer}</div>
           </div>
         )}
 
@@ -196,7 +428,7 @@ export default function CustomerQuotePage() {
 
       {/* ── STEP: VIEW — Agree / Not Agree ── */}
       {step === "view" && (
-        <div style={card}>
+        <div id="sec-decisions" style={card}>
           <div style={{ fontWeight:800, fontSize:16, marginBottom:6 }}>Do you agree with this quote?</div>
           <div style={{ fontSize:12, color:INK3, marginBottom:18, lineHeight:1.5 }}>Review the price breakdown above. If you're happy with it, agree below to begin uploading your KYC documents for registration.</div>
           <button onClick={handleAgree} disabled={submitting} style={{ ...btnG, marginBottom:0 }}>
@@ -210,14 +442,27 @@ export default function CustomerQuotePage() {
 
       {/* ── STEP: NOT AGREED — Feedback form ── */}
       {step === "not_agreed" && (
-        <div style={card}>
+        <div id="sec-decisions" style={card}>
           <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>Tell us your concern</div>
-          <div style={{ fontSize:12, color:INK3, marginBottom:14, lineHeight:1.5 }}>Write your concern below. The dealer will reach out to discuss and revise the quote if needed.</div>
+          <div style={{ fontSize:12, color:INK3, marginBottom:14, lineHeight:1.5 }}>Select the areas of concern and describe them. The dealer will reach out to discuss and revise the quote.</div>
+          
+          <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14, background:BG, borderRadius:10, padding:12 }}>
+            {REJ_OPTIONS.map(opt => (
+              <label key={opt.id} style={{ display:"flex", alignItems:"center", gap:8, fontSize:11.5, color:INK2, cursor:"pointer" }}>
+                <input type="checkbox" checked={rejReasons.includes(opt.id)} onChange={e => {
+                  if (e.target.checked) setRejReasons(prev => [...prev, opt.id])
+                  else setRejReasons(prev => prev.filter(x => x !== opt.id))
+                }} />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+
           <textarea
             value={feedback}
             onChange={e => setFeedback(e.target.value)}
-            placeholder="e.g. The price is higher than expected. Can the dealer discount be increased? Or I need more clarity on the EMI options..."
-            style={{ width:"100%", minHeight:100, background:BG, border:`1.5px solid ${BORDER}`, borderRadius:10, padding:"10px 12px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", lineHeight:1.5, boxSizing:"border-box", color:INK }}
+            placeholder="Details of your concerns (e.g., Can you offer a higher dealer discount or clarify the EMI details?)"
+            style={{ width:"100%", minHeight:90, background:BG, border:`1.5px solid ${BORDER}`, borderRadius:10, padding:"10px 12px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", lineHeight:1.5, boxSizing:"border-box", color:INK }}
           />
           <button onClick={handleNotAgreed} disabled={submitting} style={{ ...btnG, marginTop:12, background:"#EF4444" }}>
             {submitting ? "Submitting…" : "Submit My Concern"}
@@ -228,7 +473,7 @@ export default function CustomerQuotePage() {
 
       {/* ── STEP: DONE DISAGREE ── */}
       {step === "done_disagree" && (
-        <div style={{ ...card, textAlign:"center" }}>
+        <div id="sec-decisions" style={{ ...card, textAlign:"center" }}>
           <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
           <div style={{ fontWeight:800, fontSize:16, marginBottom:6 }}>Concern Submitted</div>
           <div style={{ fontSize:12, color:INK3, lineHeight:1.5 }}>Your dealer has been notified. They will review your concern and contact you shortly to discuss a revised quote.</div>

@@ -1,11 +1,11 @@
 "use client"
-import { useState, Suspense } from "react"
+import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Shell from "../../components/layout/Shell"
 import { Card, Btn, Input } from "../../components/ui"
 import { C, fmt } from "../../lib/constants"
 import { db } from "../../lib/firebase-client"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } from "firebase/firestore"
 
 function QuoteProContent() {
   const router   = useRouter()
@@ -20,6 +20,22 @@ function QuoteProContent() {
   const [offer,  setOffer]  = useState("Free home charger installation (worth ₹8,000) + 2 years free service")
   const [sending,setSending]= useState(false)
   const [sent,   setSent]   = useState(false)
+  const [history, setHistory] = useState([])
+
+  useEffect(() => {
+    const colRef = collection(db, "evcrm_quotes")
+    const q = query(colRef, orderBy("created_at", "desc"), limit(10))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = []
+      snapshot.forEach((doc) => {
+        list.push({ id: doc.id, ...doc.data() })
+      })
+      setHistory(list)
+    }, (error) => {
+      console.error("Firestore history subscription error:", error)
+    })
+    return () => unsubscribe()
+  }, [])
 
   const emi36   = fmt.emi(net, 36)
 
@@ -140,6 +156,50 @@ function QuoteProContent() {
             </div>
           )}
           <div style={{ textAlign:"center", fontSize:9.5, color:C.ink3 }}>Prepared by Rahul Sharma · Sharma EV Motors · +91 98765 43210</div>
+        </div>
+
+        {/* Previously Shared Quotes List */}
+        <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:16, padding:18, marginTop:20 }}>
+          <h3 style={{ fontSize:12, fontWeight:800, color:C.ink, marginBottom:12, display:"flex", alignItems:"center", gap:6, letterSpacing:"0.3px", textTransform:"uppercase" }}>
+            📋 Shared Quotes History ({history.length})
+          </h3>
+          {history.length === 0 ? (
+            <div style={{ fontSize:11, color:C.ink3, textAlign:"center", padding:"16px 0" }}>No quotes shared yet. Build one to get started!</div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:8, maxHeight:260, overflowY:"auto", paddingRight:4 }}>
+              {history.map((q) => {
+                const dateStr = q.created_at ? new Date(q.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }) : "Recently"
+                return (
+                  <div key={q.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:10, background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:800, color:C.ink }}>{q.customer || "Unnamed Customer"}</div>
+                      <div style={{ fontSize:10, color:C.ink3, marginTop:1 }}>
+                        {q.vehicle} · <strong style={{ color:C.greenD }}>{fmt.currency(q.price)}</strong>
+                      </div>
+                      <div style={{ fontSize:9, color:C.ink3, marginTop:2 }}>💬 {q.phone}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9.5, color:C.ink3 }}>{dateStr}</div>
+                      <button
+                        onClick={() => {
+                          const lines = [
+                            `*Reference Quote*`,
+                            `Customer: ${q.customer}`,
+                            `Vehicle: ${q.vehicle}`,
+                            `Price: ${fmt.currency(q.price)}`,
+                            q.offer ? `Special Offer: ${q.offer}` : "",
+                          ].filter(Boolean).join("\n")
+                          window.open(`https://wa.me/${(q.phone||"").replace(/\D/g,"")}?text=${encodeURIComponent(lines)}`, "_blank")
+                        }}
+                        style={{ background:"#25D366", color:"#fff", border:"none", borderRadius:6, padding:"4px 8px", fontSize:9.5, fontWeight:700, cursor:"pointer", marginTop:4, fontFamily:"inherit" }}>
+                        💬 Resend
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 

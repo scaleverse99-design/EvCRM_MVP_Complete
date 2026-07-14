@@ -20,6 +20,8 @@ const DEFAULT_SETTINGS = {
   workingHours: { start: "09:00", end: "19:00", daysOff: [] },
   notificationPrefs: { newLead: true, testDriveBooked: true, dealClosed: true, overdueFollowup: true },
   routingRule: "manual", // manual | round_robin | lowest_workload | specialisation
+  marketplaceAutoAssign: "round_robin", // round_robin | specific | off — how paid marketplace leads get assigned
+  marketplaceRepId: "", // when marketplaceAutoAssign === "specific", the rep who receives every marketplace lead
   pipelineStages: ["NEW", "WARM", "HOT", "QUOTED", "CLOSED", "LOST"],
   whatsappTemplates: null, // null = use the built-in WA_REPLY_MAP defaults
   oemIntegrations: {}, // { tata: {enabled:false}, ather: {enabled:false}, mahindra: {enabled:false} } — reserved for OEM phase
@@ -51,6 +53,8 @@ export async function GET(req) {
       workingHours: dealer.workingHours ?? DEFAULT_SETTINGS.workingHours,
       notificationPrefs: dealer.notificationPrefs ?? DEFAULT_SETTINGS.notificationPrefs,
       routingRule: dealer.routingRule ?? DEFAULT_SETTINGS.routingRule,
+      marketplaceAutoAssign: dealer.marketplaceAutoAssign ?? DEFAULT_SETTINGS.marketplaceAutoAssign,
+      marketplaceRepId: dealer.marketplaceRepId ?? DEFAULT_SETTINGS.marketplaceRepId,
       pipelineStages: dealer.pipelineStages ?? DEFAULT_SETTINGS.pipelineStages,
       whatsappTemplates: dealer.whatsappTemplates ?? DEFAULT_SETTINGS.whatsappTemplates,
       oemIntegrations: dealer.oemIntegrations ?? DEFAULT_SETTINGS.oemIntegrations,

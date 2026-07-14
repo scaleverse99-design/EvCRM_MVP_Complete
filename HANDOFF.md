@@ -151,6 +151,27 @@ npm run dev          # http://localhost:3000 — uses data/*.json sandbox
 - Conventions: inline styles w/ `C` constants; client components (`"use client"`); API routes under `app/api/**/route.js` with `export const dynamic = "force-dynamic"`; auth guard pattern = parse Bearer token with `verifyToken`, check role + dealership.
 - Reference docs in repo: `DEPLOYMENT.md` (Supabase/Cloud Run setup + troubleshooting), `stack_details.md`, `scripts/supabase-schema.sql`.
 
+### Backup & handoff rules (MANDATORY for every agent — Claude, Antigravity, or human)
+
+The `../evcrm-backups/` folder (outside the repo, next to the project) is the append-only
+archive ("Handoff Memory"). Files there are NEVER modified or deleted — only added.
+
+1. **Snapshot before danger.** Run `sh scripts/snapshot.sh "label"` BEFORE any destructive
+   git command (`checkout -- .`, `reset --hard`, `revert`, branch switches with dirty tree).
+   A `git checkout -- .` accident already destroyed the dealer dashboard once (commit 76a343c);
+   snapshots are the only protection for uncommitted work.
+2. **Commit before handoff.** Never end a work session leaving changes uncommitted. The next
+   agent starts from a clean tree and a readable diff, or not at all.
+3. **Every deploy self-archives.** `deploy_on_windows.bat` auto-runs the snapshot and tags the
+   commit. Don't remove that step.
+4. **Recovering old code:** committed versions → `git log -- <file>` then
+   `git show <commit>:<file>` (nothing in git history is ever erased by new pushes).
+   Uncommitted/lost work → unzip the newest `tree-*.tgz` in `../evcrm-backups/`.
+   Total repo loss (GitHub gone) → `git clone ../evcrm-backups/evcrm-<date>.bundle restored/`.
+5. **`.env.local` is the local-dev isolation file** (git-ignored, Supabase keys blanked so
+   local dev uses `data/*.json` instead of production). If it's missing but `.env.local.tmp`
+   exists, a deploy was interrupted — rename it back. Never put real Supabase keys in it.
+
 ## 10. Suggested Roadmap (in priority order)
 
 1. Fix the login/reset stuck-button bug (#8.1) — it blocks real users.

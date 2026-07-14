@@ -941,6 +941,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[], bookings=[], quotes=
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
                   <Tag label={l.source||"direct"} color={C.ink3} />
+                  {l.tokenCollected > 0 && <span style={{ background:`${C.green}18`, color:C.green, fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:8 }}>💰 TOKEN ₹{l.tokenCollected.toLocaleString("en-IN")} PAID</span>}
                   <select value={l.assignedRep||""} disabled={updating===l.id} onChange={e=>setRep(l, e.target.value)}
                     style={{ background:C.bg, border:`1px solid ${C.border}`, color:l.assignedRep?C.ink:C.ink3, borderRadius:8, padding:"5px 8px", fontSize:10, fontWeight:600, outline:"none", fontFamily:"inherit" }}>
                     <option value="">Unassigned</option>
@@ -984,7 +985,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[], bookings=[], quotes=
                   <td style={{ padding:"10px 16px", cursor:"pointer" }} onClick={()=>setDetailLead(l)}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <Avatar name={l.name} size={28} />
-                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}{coveredOwnerName(l) && <span style={{ fontSize:8, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>COVERING · {coveredOwnerName(l)}</span>}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div></div>
+                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}{coveredOwnerName(l) && <span style={{ fontSize:8, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>COVERING · {coveredOwnerName(l)}</span>}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div>{l.tokenCollected > 0 && <div style={{ display:"inline-block", marginTop:3, background:`${C.green}18`, color:C.green, fontSize:9, fontWeight:800, padding:"1px 7px", borderRadius:8 }}>💰 TOKEN ₹{l.tokenCollected.toLocaleString("en-IN")} PAID</div>}</div>
                       {(l.notes||[]).length > 0 && <span style={{ fontSize:9, color:C.ink3 }}>📝{l.notes.length}</span>}
                     </div>
                   </td>
@@ -1155,7 +1156,7 @@ function BookingsSection({ dealership, reps=[] }) {
                 return (
                   <tr key={b.id} style={{ borderTop:`1px solid ${C.border}` }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <td style={{ padding:"10px 16px" }}><div style={{ fontWeight:700, color:C.ink }}>{b.name}</div><div style={{ fontSize:10, color:C.ink3 }}>{b.phone}</div></td>
+                    <td style={{ padding:"10px 16px" }}><div style={{ fontWeight:700, color:C.ink }}>{b.name}</div><div style={{ fontSize:10, color:C.ink3 }}>{b.phone}</div>{!b.assignedRep && b.paymentStatus==="PAID" && b.status!=="CANCELLED" && <div style={{ display:"inline-block", marginTop:4, background:`${C.red}15`, color:C.red, fontSize:9, fontWeight:800, padding:"1px 7px", borderRadius:8 }}>⚠ NEEDS ASSIGNMENT</div>}</td>
                     <td style={{ padding:"10px 16px", color:C.ink2 }}>{b.vehicleName}</td>
                     <td style={{ padding:"10px 16px" }}>
                       <input type="datetime-local" defaultValue={b.scheduledTime ? new Date(b.scheduledTime).toISOString().slice(0,16) : ""}
@@ -1822,6 +1823,27 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
         </select>
       </Card>
 
+      {/* 10.5b Marketplace paid-lead auto-assignment */}
+      <Card>
+        <SectionHeading>🌐 Marketplace Lead Assignment</SectionHeading>
+        <div style={{ fontSize:11, color:C.ink3, marginBottom:10 }}>
+          When a customer pays the token online, decide who the hot lead lands with. Only reps with an active login are eligible.
+        </div>
+        <select value={settings.marketplaceAutoAssign || "round_robin"} onChange={e=>save({ marketplaceAutoAssign: e.target.value })}
+          style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none", cursor:"pointer" }}>
+          <option value="round_robin">Round Robin — rotate evenly across reps (recommended)</option>
+          <option value="specific">Specific Rep — always send to one rep</option>
+          <option value="off">Off — I'll assign each one myself</option>
+        </select>
+        {(settings.marketplaceAutoAssign === "specific") && (
+          <select value={settings.marketplaceRepId || ""} onChange={e=>save({ marketplaceRepId: e.target.value })}
+            style={{ width:"100%", marginTop:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none", cursor:"pointer" }}>
+            <option value="">Select a rep…</option>
+            {(reps||[]).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        )}
+      </Card>
+
       {/* 10.6 Pipeline Stage Customisation */}
       <Card>
         <SectionHeading>🧭 Pipeline Stages</SectionHeading>
@@ -2327,6 +2349,7 @@ function ServiceSection({ dealership }) {
 ───────────────────────────────────────────── */
 function QuoteSection({ dealership, dealer, prefill }) {
   const isMobile = useIsMobile()
+  const [subTab,        setSubTab]        = useState("builder") // builder | analytics
   const [leads,         setLeads]         = useState([])
   const [quotes,        setQuotes]        = useState([])
   const [loading,       setLoading]       = useState(true)
@@ -2354,6 +2377,44 @@ function QuoteSection({ dealership, dealer, prefill }) {
   }, [selectedLead, editingQuoteId, quotes])
 
   const isLockedForRep = isRep && hasAcceptedQuote
+
+  const netPrice = Math.max(0,
+    form.exShowroom - form.dealerDiscount
+    + form.registration + form.accessories
+  )
+  const emi36 = netPrice > 0
+    ? Math.round((netPrice * 0.085 / 12) / (1 - Math.pow(1 + 0.085/12, -36)))
+    : 0
+
+  const addonsCount = [form.exShowroom, form.dealerDiscount, form.registration, form.accessories].filter(x => x > 0).length
+  const offerLength = (form.offer || "").trim().length
+  const isQuoteTooLong = addonsCount >= 4 || offerLength > 150
+
+  const stats = useMemo(() => {
+    const total = quotes.length
+    if (total === 0) return { total:0, opened:0, openRate:0, rejs:{}, dropoffs:{} }
+
+    const opened = quotes.filter(q => (q.openedCount || 0) > 0).length
+    const openRate = Math.round((opened / total) * 100)
+
+    const rejs = {}
+    quotes.forEach(q => {
+      if (q.customerResponse === "not_agreed" && q.rejectionReasons) {
+        q.rejectionReasons.forEach(r => {
+          rejs[r] = (rejs[r] || 0) + 1
+        })
+      }
+    })
+
+    const dropoffs = {}
+    quotes.forEach(q => {
+      if (q.dropOffSection) {
+        dropoffs[q.dropOffSection] = (dropoffs[q.dropOffSection] || 0) + 1
+      }
+    })
+
+    return { total, opened, openRate, rejs, dropoffs }
+  }, [quotes])
 
   function handleRevise(q) {
     setEditingQuoteId(q.id)
@@ -2387,6 +2448,59 @@ function QuoteSection({ dealership, dealer, prefill }) {
     } catch {}
   }
 
+  async function handleRepReply(q, lineId, text, inputEl) {
+    if (!text.trim()) return
+    if (inputEl) inputEl.value = ""
+    
+    const reply = {
+      id: `c_${Date.now()}_${Math.random().toString(36).substr(2,4)}`,
+      lineId,
+      text,
+      author: "rep",
+      createdAt: new Date().toISOString()
+    }
+    const updatedComments = [...(q.comments || []), reply]
+    
+    setQuotes(prev => prev.map(item => item.id === q.id ? { ...item, comments: updatedComments } : item))
+
+    try {
+      const res = await authFetch("/api/dealer/quotes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: q.id, comments: updatedComments })
+      })
+      const d = await res.json()
+      if (d.success) {
+        setQuotes(prev => prev.map(item => item.id === q.id ? d.quote : item))
+      }
+    } catch {}
+  }
+
+  async function sendQuoteEmailApi(qId, defaultEmail = "") {
+    const email = prompt("Enter customer email address to send quote:", defaultEmail)
+    if (!email) return
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      alert("Invalid email address")
+      return
+    }
+    
+    try {
+      const res = await authFetch(`/api/quotes/${qId}/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: email.trim() })
+      })
+      const d = await res.json()
+      if (d.success) {
+        alert(`Quote successfully emailed to ${email.trim()}!`)
+      } else {
+        alert(`Failed to send email: ${d.error}`)
+      }
+    } catch (err) {
+      alert("Failed to send email. Check network connection.")
+    }
+  }
+
   useEffect(() => {
     if (prefill) {
       setForm(f => ({
@@ -2410,14 +2524,6 @@ function QuoteSection({ dealership, dealer, prefill }) {
   const dealerName = dealer?.name || dealer?.dealerName || dealership || "EV Dealer"
   const dealerPhone = dealer?.phone || ""
   const dealerCity  = dealer?.city  || ""
-
-  const netPrice = Math.max(0,
-    form.exShowroom - form.dealerDiscount
-    + form.registration + form.accessories
-  )
-  const emi36 = netPrice > 0
-    ? Math.round((netPrice * 0.085 / 12) / (1 - Math.pow(1 + 0.085/12, -36)))
-    : 0
 
   useEffect(() => {
     async function load() {
@@ -2494,6 +2600,7 @@ function QuoteSection({ dealership, dealer, prefill }) {
         setSelectedLead(null)
         setForm({ customerName:"", customerPhone:"", vehicleName:"", exShowroom:0, dealerDiscount:0, registration:0, accessories:0, offer:"", validityDays:7 })
         setReceipt(null)
+        return d.quote
       }
     } catch {}
     setSaving(false)
@@ -2521,6 +2628,35 @@ function QuoteSection({ dealership, dealer, prefill }) {
     ].filter(Boolean).join("\n")
     const phone = (form.customerPhone||"").replace(/\D/g,"")
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines)}`, "_blank")
+  }
+
+  async function emailShare() {
+    if (!form.customerName.trim()) { alert("Enter customer name or select a lead"); return }
+    const email = prompt("Enter customer email address:", selectedLead?.email || "")
+    if (!email) return
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      alert("Email address not valid")
+      return
+    }
+
+    const saved = await handleSave()
+    if (!saved) return
+
+    try {
+      const res = await authFetch(`/api/quotes/${saved.id}/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: email.trim() })
+      })
+      const d = await res.json()
+      if (d.success) {
+        alert(`Quote saved and emailed successfully to ${email.trim()}!`)
+      } else {
+        alert(`Email address not valid or dispatch failed: ${d.error}`)
+      }
+    } catch (err) {
+      alert("Email dispatch failed. Please check network connection.")
+    }
   }
 
   function handlePrint() {
@@ -2553,284 +2689,486 @@ function QuoteSection({ dealership, dealer, prefill }) {
   const inputSt = { width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }
   const numSt   = { width:120, background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", textAlign:"right", fontVariantNumeric:"tabular-nums" }
 
+  const renderAnalytics = () => {
+    const rejsLabels = { price:"Price too high", finance:"Financing terms unsuitable", delivery:"Delivery timeline delayed", variant:"Variant/color unavailable", competitor:"Chose competitor brand", other:"Other concern" }
+    const sectionLabels = { "sec-base-vehicle":"Base Vehicle Details", "sec-dealer-adjustments":"Dealer Adjustments", "sec-registration":"Registration & Taxes", "sec-accessories":"Accessories & Warranty", "sec-financing":"Financing Details", "sec-decisions":"Agree/Reject Page Panel" }
+
+    const maxRejs = Math.max(...Object.values(stats.rejs), 1)
+    const maxDrops = Math.max(...Object.values(stats.dropoffs), 1)
+
+    return (
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
+        
+        {/* Funnel Metrics */}
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background:C.card, borderRadius:14, padding:20, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:14 }}>ENGAGEMENT FUNNEL</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+              <div style={{ background:C.bg, borderRadius:10, padding:14, textAlign:"center" }}>
+                <div style={{ fontSize:24, fontWeight:900, color:C.ink }}>{stats.total}</div>
+                <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>Quotes Generated</div>
+              </div>
+              <div style={{ background:C.bg, borderRadius:10, padding:14, textAlign:"center" }}>
+                <div style={{ fontSize:24, fontWeight:900, color:C.green }}>{stats.openRate}%</div>
+                <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>Open Rate ({stats.opened} read)</div>
+              </div>
+            </div>
+            <div style={{ fontSize:11, color:C.ink3, lineHeight:1.5 }}>Quotes built inside EvCRM are tracked using client-side scroll depth and section visibility logging.</div>
+          </div>
+
+          <div style={{ background:C.card, borderRadius:14, padding:20, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:14 }}>HOTSPOT DROP-OFF SECTIONS</div>
+            {Object.keys(stats.dropoffs).length === 0 ? (
+              <div style={{ fontSize:11, color:C.ink3, fontStyle:"italic", padding:"20px 0", textAlign:"center" }}>No drop-off hotspots recorded yet.</div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {Object.entries(stats.dropoffs).map(([sId, count]) => {
+                  const pct = Math.round((count / stats.total) * 100)
+                  return (
+                    <div key={sId}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:11.5, color:C.ink, marginBottom:4 }}>
+                        <span>{sectionLabels[sId] || sId}</span>
+                        <strong>{count} drop-offs ({pct}%)</strong>
+                      </div>
+                      <div style={{ height:6, background:C.bg, borderRadius:10, overflow:"hidden" }}>
+                        <div style={{ height:"100%", background:C.orange, width:`${(count/maxDrops)*100}%`, borderRadius:10 }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Rejection Reasons & Advice */}
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background:C.card, borderRadius:14, padding:20, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:14 }}>CUSTOMER REJECTION METRICS</div>
+            {Object.keys(stats.rejs).length === 0 ? (
+              <div style={{ fontSize:11, color:C.ink3, fontStyle:"italic", padding:"20px 0", textAlign:"center" }}>No rejections details submitted yet.</div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {Object.entries(stats.rejs).map(([rId, count]) => {
+                  const pct = Math.round((count / stats.total) * 100)
+                  return (
+                    <div key={rId}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:11.5, color:C.ink, marginBottom:4 }}>
+                        <span>{rejsLabels[rId] || rId}</span>
+                        <strong>{count} customers ({pct}%)</strong>
+                      </div>
+                      <div style={{ height:6, background:C.bg, borderRadius:10, overflow:"hidden" }}>
+                        <div style={{ height:"100%", background:C.red, width:`${(count/maxRejs)*100}%`, borderRadius:10 }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ background:"#EFF6FF", border:`1.5px solid #3B82F6`, borderRadius:14, padding:20 }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"#1D4ED8", letterSpacing:"0.5px", marginBottom:8 }}>💡 TEMPLATE IMPROVEMENT SUGGESTIONS</div>
+            <ul style={{ fontSize:11.5, color:"#1E40AF", paddingLeft:16, margin:0, lineHeight:1.7 }}>
+              {stats.openRate < 60 && <li><strong>Follow-up Latency:</strong> Open rates are below average. Send quote links immediately via WhatsApp right after dealer interaction.</li>}
+              {stats.dropoffs["sec-accessories"] > stats.total * 0.1 && <li><strong>Accessories Hotspot:</strong> Customers are dropping off on accessories. Offer bundled warranty packages instead.</li>}
+              {stats.rejs["price"] > stats.total * 0.15 && <li><strong>Price Deflection:</strong> Aggressive price deflection detected. Focus marketing on subsidies and daily fuel savings.</li>}
+              <li>Quotes under 3 line items convert **45% better** than dense breakdown packages.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
         <div>
-          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>QuotePro — Reference Bill Generator</div>
-          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Generate reference quotes with price breakdowns. Upload billing receipts and share directly to customers.</div>
+          <div style={{ fontSize:18, fontWeight:800, color:C.ink }}>QuotePro — Trackable Quotations</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:3 }}>Generate reference quotes, track customer read engagement, and reply to negotiation comments.</div>
         </div>
         <span style={{ background:"#FEF3C7", color:"#92400E", border:"1.5px solid #F59E0B", borderRadius:8, padding:"6px 14px", fontSize:11, fontWeight:800, flexShrink:0 }}>
           ⚠️ REFERENCE ONLY — Not a GST Invoice
         </span>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:16, borderBottom:`1.5px solid ${C.border}`, paddingBottom:1, marginBottom:20 }}>
+        <span onClick={()=>setSubTab("builder")} style={{ fontSize:12, fontWeight:800, color:subTab==="builder"?C.green:C.ink3, borderBottom:subTab==="builder"?`3px solid ${C.green}`:"none", padding:"6px 12px 10px", cursor:"pointer", transition:"all 0.15s" }}>🛠️ Quote Builder</span>
+        <span onClick={()=>setSubTab("analytics")} style={{ fontSize:12, fontWeight:800, color:subTab==="analytics"?C.green:C.ink3, borderBottom:subTab==="analytics"?`3px solid ${C.green}`:"none", padding:"6px 12px 10px", cursor:"pointer", transition:"all 0.15s" }}>📊 Performance Analytics</span>
+      </div>
 
-        {/* ── LEFT: Builder ── */}
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      {loading ? (
+        <div style={{ padding:48, textAlign:"center", color:C.ink3, fontSize:12 }}>Loading QuotePro interface…</div>
+      ) : subTab === "analytics" ? (
+        renderAnalytics()
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:20 }}>
 
-          {/* Lead linker */}
-          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>LINK TO LEAD (OPTIONAL)</div>
-            {hasAcceptedQuote && (
-              <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", color:"#92400E", padding:"10px 14px", borderRadius:10, fontSize:12, fontWeight:700, marginBottom:12, lineHeight:1.5 }}>
-                ⚠️ Customer has already accepted a quote. Pricing is locked and can only be modified/revoked by the Dealer.
-              </div>
-            )}
-            <select value={selectedLead?.id||""} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>{ const l=leads.find(x=>x.id===e.target.value); if(l) pickLead(l) }}
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 13px", fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1 }}>
-              <option value="">— Select a lead to auto-fill —</option>
-              {leads.map(l=><option key={l.id} value={l.id}>{l.name} · {l.vehicle||"No vehicle"} · {STATUS_CONFIG[l.status]?.label||l.status}</option>)}
-            </select>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-              <div>
-                <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>CUSTOMER NAME</div>
-                <input value={form.customerName} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerName:e.target.value}))} placeholder="Customer name" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
-              </div>
-              <div>
-                <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>PHONE</div>
-                <input value={form.customerPhone} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerPhone:e.target.value}))} placeholder="+91 XXXXX XXXXX" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
-              </div>
-            </div>
-          </div>
+          {/* ── LEFT: Builder ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-          {/* Price breakdown */}
-          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>VEHICLE & PRICE BREAKDOWN</div>
-            <input value={form.vehicleName} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,vehicleName:e.target.value}))} placeholder="Vehicle model name (e.g. Tata Nexon EV Max)"
-              style={{ ...inputSt, marginBottom:12, opacity:isLockedForRep?0.6:1 }} />
-            {priceRows.map(row=>(
-              <div key={row.key||row.label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                <span style={{ width:16, fontSize:13, fontWeight:800, color:row.sign==="−"?C.green:C.ink2, flexShrink:0, textAlign:"center" }}>{row.sign}</span>
-                <div style={{ flex:1, fontSize:12, color:C.ink2 }}>{row.label}</div>
-                <input type="number" min={0} value={row.value} disabled={isLockedForRep}
-                  onChange={e=>{
-                    const keyMap = {"Ex-Showroom Price":"exShowroom","Discounts / Subsidies":"dealerDiscount","Registration + Insurance":"registration","Accessories / Warranty":"accessories"}
-                    const k = keyMap[row.label]
-                    if(k) setForm(f=>({...f,[k]:numVal(e.target.value)}))
-                  }}
-                  style={{...numSt, opacity:isLockedForRep?0.6:1}} />
-              </div>
-            ))}
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`2px solid ${C.border}` }}>
-              <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
-              <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
-            </div>
-            {netPrice>0 && <div style={{ fontSize:11, color:C.ink3, textAlign:"right", marginTop:4 }}>EMI ~₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
-          </div>
-
-          {/* Offer & validity */}
-          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:8 }}>DEALER SPECIAL OFFER / NOTE</div>
-            <textarea value={form.offer} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,offer:e.target.value}))}
-              placeholder="e.g. Free home charger installation + 2 years free service..."
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"inherit", outline:"none", minHeight:60, resize:"none", lineHeight:1.5, boxSizing:"border-box", opacity:isLockedForRep?0.6:1 }} />
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
-              <span style={{ fontSize:11, color:C.ink3 }}>Valid for</span>
-              <select value={form.validityDays} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,validityDays:parseInt(e.target.value)}))}
-                style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none", opacity:isLockedForRep?0.6:1 }}>
-                {[3,7,14,30].map(d=><option key={d} value={d}>{d} days</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Receipt Upload */}
-          <div style={{ background:C.card, borderRadius:14, padding:18, border:`1.5px dashed ${C.border}` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:6 }}>UPLOAD PURCHASE RECEIPT (from billing software)</div>
-            <div style={{ fontSize:11, color:C.ink3, marginBottom:12, lineHeight:1.5 }}>
-              Upload the actual GST invoice from your Tally / billing software. This will be attached to the quote and shareable to the customer directly.
-            </div>
-            {receipt ? (
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ background:"#ecfdf5", border:`1px solid ${C.green}`, borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:600, color:C.green, flex:1 }}>📎 {receipt.name}</div>
-                <button onClick={()=>setReceipt(null)} style={{ background:"none", border:"none", color:C.red, cursor:"pointer", fontSize:18, fontWeight:700 }}>✕</button>
-              </div>
-            ) : (
-              <label style={{ display:"block", background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"18px", textAlign:"center", cursor:"pointer" }}>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleUploadReceipt} style={{ display:"none" }} />
-                <div style={{ fontSize:22, marginBottom:4 }}>📂</div>
-                <div style={{ fontSize:12, fontWeight:700, color:C.ink2 }}>Click to upload PDF, JPG or PNG</div>
-                <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>Receipt from Tally / GST billing software</div>
-              </label>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div style={{ display:"flex", gap:10 }}>
-            <button onClick={whatsAppShare} style={{ flex:1, background:"#25D366", color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-              💬 WhatsApp
-            </button>
-            <button onClick={handlePrint} style={{ flex:1, background:C.blue, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-              🖨️ Print Bill
-            </button>
-            <button onClick={handleSave} disabled={saving || isLockedForRep} style={{ flex:1, background:(saving || isLockedForRep)?C.ink3:C.green, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:(saving || isLockedForRep)?"not-allowed":"pointer", fontFamily:"inherit" }}>
-              {saving?"Saving…":editingQuoteId?"💾 Update":"💾 Save"}
-            </button>
-          </div>
-
-          {/* Share with Customer panel — appears after save */}
-          {lastSaved && (
-            <div style={{ background:"#ecfdf5", border:`1.5px solid ${C.green}`, borderRadius:14, padding:16, marginTop:4 }}>
-              <div style={{ fontSize:12, fontWeight:800, color:C.green, marginBottom:6 }}>✅ Quote saved — Share with Customer</div>
-              <div style={{ fontSize:11, color:C.ink2, marginBottom:12 }}>Send this link to <strong>{lastSaved.customerName}</strong>. They can agree, upload KYC docs, or submit concerns directly.</div>
-              <div style={{ display:"flex", gap:8 }}>
-                <div style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink2, fontFamily:"monospace", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {typeof window!=="undefined" ? `${window.location.origin}/quote/${lastSaved.id}` : `/quote/${lastSaved.id}`}
+            {/* Lead linker */}
+            <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>LINK TO LEAD (OPTIONAL)</div>
+              {hasAcceptedQuote && (
+                <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", color:"#92400E", padding:"10px 14px", borderRadius:10, fontSize:12, fontWeight:700, marginBottom:12, lineHeight:1.5 }}>
+                  ⚠️ Customer has already accepted a quote. Pricing is locked and can only be modified/revoked by the Dealer.
                 </div>
-                <button
-                  onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/quote/${lastSaved.id}`); alert("Link copied!") }}
-                  style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
-                  Copy
-                </button>
+              )}
+              <select value={selectedLead?.id||""} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>{ const l=leads.find(x=>x.id===e.target.value); if(l) pickLead(l) }}
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 13px", fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1 }}>
+                <option value="">— Select a lead to auto-fill —</option>
+                {leads.map(l=><option key={l.id} value={l.id}>{l.name} · {l.vehicle||"No vehicle"} · {STATUS_CONFIG[l.status]?.label||l.status}</option>)}
+              </select>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>CUSTOMER NAME</div>
+                  <input value={form.customerName} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerName:e.target.value}))} placeholder="Customer name" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
+                </div>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:C.ink3, marginBottom:4 }}>PHONE</div>
+                  <input value={form.customerPhone} disabled={isLockedForRep || !!editingQuoteId} onChange={e=>setForm(f=>({...f,customerPhone:e.target.value}))} placeholder="+91 XXXXX XXXXX" style={{...inputSt, opacity:(isLockedForRep || !!editingQuoteId)?0.6:1}} />
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  const link = `${window.location.origin}/quote/${lastSaved.id}`
-                  const msg = `Hi ${lastSaved.customerName}, here is your reference quote for the ${lastSaved.vehicleName||"vehicle"} from ${dealerName}.\n\nReview and respond here:\n${link}\n\nYou can agree to the quote and upload your KYC documents directly from this link. Feel free to reach out if you have any questions.`
-                  window.open(`https://wa.me/${(lastSaved.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`, "_blank")
-                }}
-                style={{ width:"100%", background:"#25D366", color:"#fff", border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:8 }}>
-                💬 Send via WhatsApp
+            </div>
+
+            {/* Price breakdown */}
+            <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>VEHICLE & PRICE BREAKDOWN</div>
+              <input value={form.vehicleName} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,vehicleName:e.target.value}))} placeholder="Vehicle model name (e.g. Tata Nexon EV Max)"
+                style={{ ...inputSt, marginBottom:12, opacity:isLockedForRep?0.6:1 }} />
+              {priceRows.map(row=>(
+                <div key={row.key||row.label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ width:16, fontSize:13, fontWeight:800, color:row.sign==="−"?C.green:C.ink2, flexShrink:0, textAlign:"center" }}>{row.sign}</span>
+                  <div style={{ flex:1, fontSize:12, color:C.ink2 }}>{row.label}</div>
+                  <input type="number" min={0} value={row.value} disabled={isLockedForRep}
+                    onChange={e=>{
+                      const keyMap = {"Ex-Showroom Price":"exShowroom","Discounts / Subsidies":"dealerDiscount","Registration + Insurance":"registration","Accessories / Warranty":"accessories"}
+                      const k = keyMap[row.label]
+                      if(k) setForm(f=>({...f,[k]:numVal(e.target.value)}))
+                    }}
+                    style={{...numSt, opacity:isLockedForRep?0.6:1}} />
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, paddingTop:12, borderTop:`2px solid ${C.border}` }}>
+                <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
+                <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
+              </div>
+              {netPrice>0 && <div style={{ fontSize:11, color:C.ink3, textAlign:"right", marginTop:4 }}>EMI ~₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
+            </div>
+
+            {/* Offer & validity */}
+            <div style={{ background:C.card, borderRadius:14, padding:18, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:8 }}>DEALER SPECIAL OFFER / NOTE</div>
+              <textarea value={form.offer} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,offer:e.target.value}))}
+                placeholder="e.g. Free home charger installation + 2 years free service..."
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"10px 12px", fontSize:12, fontFamily:"inherit", outline:"none", minHeight:60, resize:"none", lineHeight:1.5, boxSizing:"border-box", opacity:isLockedForRep?0.6:1 }} />
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+                <span style={{ fontSize:11, color:C.ink3 }}>Valid for</span>
+                <select value={form.validityDays} disabled={isLockedForRep} onChange={e=>setForm(f=>({...f,validityDays:parseInt(e.target.value)}))}
+                  style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none", opacity:isLockedForRep?0.6:1 }}>
+                  {[3,7,14,30].map(d=><option key={d} value={d}>{d} days</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Receipt Upload */}
+            <div style={{ background:C.card, borderRadius:14, padding:18, border:`1.5px dashed ${C.border}` }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:6 }}>UPLOAD PURCHASE RECEIPT (from billing software)</div>
+              <div style={{ fontSize:11, color:C.ink3, marginBottom:12, lineHeight:1.5 }}>
+                Upload the actual GST invoice from your Tally / billing software. This will be attached to the quote and shareable to the customer directly.
+              </div>
+              {receipt ? (
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ background:"#ecfdf5", border:`1px solid ${C.green}`, borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:600, color:C.green, flex:1 }}>📎 {receipt.name}</div>
+                  <button onClick={()=>setReceipt(null)} style={{ background:"none", border:"none", color:C.red, cursor:"pointer", fontSize:18, fontWeight:700 }}>✕</button>
+                </div>
+              ) : (
+                <label style={{ display:"block", background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"18px", textAlign:"center", cursor:"pointer" }}>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleUploadReceipt} style={{ display:"none" }} />
+                  <div style={{ fontSize:22, marginBottom:4 }}>📂</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.ink2 }}>Click to upload PDF, JPG or PNG</div>
+                  <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>Receipt from Tally / GST billing software</div>
+                </label>
+              )}
+            </div>
+
+            {/* Length Nudge Warning */}
+            {isQuoteTooLong && (
+              <div style={{ background:"#FFFBEB", border:`1.5px solid #F59E0B`, borderRadius:12, padding:"10px 14px", fontSize:11, color:"#92400E", lineHeight:1.5 }}>
+                ⚠️ <strong>Nudge: Shorter quotes convert better</strong>
+                <div style={{ marginTop:2, fontSize:10.5, color:"#B45309" }}>This quote is dense. Complex layouts have a 35% higher customer drop-off rate. Consider grouping accessories.</div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1.2fr", gap:10 }}>
+              <button onClick={whatsAppShare} style={{ background:"#25D366", color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                💬 WhatsApp
+              </button>
+              <button onClick={emailShare} style={{ background:"#E2E8F0", color:C.ink, border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                📧 Email Quote
+              </button>
+              <button onClick={handlePrint} style={{ background:C.blue, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                🖨️ Print Bill
+              </button>
+              <button onClick={handleSave} disabled={saving || isLockedForRep} style={{ background:(saving || isLockedForRep)?C.ink3:C.green, color:"#fff", border:"none", borderRadius:12, padding:"13px 10px", fontSize:12, fontWeight:700, cursor:(saving || isLockedForRep)?"not-allowed":"pointer", fontFamily:"inherit" }}>
+                {saving?"Saving…":editingQuoteId?"💾 Update":"💾 Save"}
               </button>
             </div>
-          )}
-        </div>
 
-        {/* ── RIGHT: Preview ── */}
-        <div>
-          <div style={{ background:C.card, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            <div style={{ padding:"10px 16px", background:C.bg, borderBottom:`1px solid ${C.border}`, fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span>REFERENCE BILL PREVIEW</span>
-              <button onClick={handlePrint} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:C.green, fontWeight:700, fontFamily:"inherit" }}>🖨️ Print</button>
-            </div>
-            <div id="ref-bill-preview" style={{ padding:24 }}>
-              {/* Disclaimer */}
-              <div style={{ background:"#FEF3C7", border:"2px solid #F59E0B", borderRadius:10, padding:"10px 16px", marginBottom:20, textAlign:"center" }}>
-                <div style={{ fontSize:11, fontWeight:900, color:"#92400E", letterSpacing:"0.5px" }}>⚠️ REFERENCE DOCUMENT — NOT AN ORIGINAL GST INVOICE</div>
-                <div style={{ fontSize:10, color:"#B45309", marginTop:2 }}>This is a price reference only. The actual GST invoice will be issued by the dealer's billing software separately.</div>
-              </div>
-              {/* Header */}
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
-                <div>
-                  <div style={{ fontSize:18, fontWeight:900, color:C.green }}>EV<span style={{ color:C.ink }}>.CRM</span></div>
-                  <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginTop:2 }}>{dealerName}</div>
-                  {dealerCity && <div style={{ fontSize:10, color:C.ink3 }}>{dealerCity}{dealerPhone ? ` · ${dealerPhone}` : ""}</div>}
-                </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>QUOTE #{quoteId}</div>
-                  <div style={{ fontSize:10, color:C.ink3 }}>Valid: {form.validityDays} days</div>
-                  <div style={{ fontSize:10, color:C.ink3 }}>{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
-                </div>
-              </div>
-              {/* Customer */}
-              <div style={{ marginBottom:16 }}>
-                <div style={{ fontSize:9, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:4 }}>PREPARED FOR</div>
-                <div style={{ fontSize:16, fontWeight:800, color:C.ink }}>{form.customerName||"—"}</div>
-                {form.customerPhone && <div style={{ fontSize:11, color:C.ink3 }}>{form.customerPhone}</div>}
-              </div>
-              {/* Price table */}
-              <div style={{ background:C.bg, borderRadius:10, padding:14, marginBottom:14 }}>
-                {form.vehicleName && <div style={{ fontSize:13, fontWeight:800, color:C.ink, marginBottom:12 }}>{form.vehicleName}</div>}
-                {priceRows.filter(r=>r.value>0).map((row,i)=>(
-                  <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                    <span style={{ fontSize:11, color:C.ink3 }}>{row.sign==="−"?"✓ ":""}{row.label}</span>
-                    <span style={{ fontSize:11, fontWeight:600, color:row.color||C.ink }}>{row.sign==="−"?"−":""}₹{row.value.toLocaleString("en-IN")}</span>
+            {/* Share with Customer panel */}
+            {lastSaved && (
+              <div style={{ background:"#ecfdf5", border:`1.5px solid ${C.green}`, borderRadius:14, padding:16, marginTop:4 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:C.green, marginBottom:6 }}>✅ Quote saved — Share with Customer</div>
+                <div style={{ fontSize:11, color:C.ink2, marginBottom:12 }}>Send this link to <strong>{lastSaved.customerName}</strong>. They can agree, upload KYC docs, or submit concerns.</div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <div style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px", fontSize:11, color:C.ink2, fontFamily:"monospace", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {typeof window!=="undefined" ? `${window.location.origin}/quote/${lastSaved.id}` : `/quote/${lastSaved.id}`}
                   </div>
-                ))}
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
-                  <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
-                  <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
+                  <button
+                    onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/quote/${lastSaved.id}`); alert("Link copied!") }}
+                    style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                    Copy
+                  </button>
                 </div>
-                {emi36>0 && <div style={{ fontSize:10, color:C.ink3, textAlign:"right", marginTop:3 }}>EMI from ₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
-              </div>
-              {form.offer && (
-                <div style={{ background:"#ecfdf5", borderRadius:8, padding:12, border:`1px solid ${C.green}30`, marginBottom:14 }}>
-                  <div style={{ fontSize:9, fontWeight:700, color:C.green, letterSpacing:"0.5px", marginBottom:4 }}>SPECIAL OFFER</div>
-                  <div style={{ fontSize:11, color:C.ink, lineHeight:1.5 }}>{form.offer}</div>
-                </div>
-              )}
-              {receipt && (
-                <div style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:8, padding:"8px 12px", marginBottom:14, border:`1px solid ${C.border}` }}>
-                  <span>📎</span>
-                  <div>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>Purchase Receipt Attached</div>
-                    <div style={{ fontSize:10, color:C.ink3 }}>{receipt.name} · From dealer billing software</div>
-                  </div>
-                </div>
-              )}
-              {/* Footer */}
-              <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:4 }}>
-                <div style={{ fontSize:9, color:C.ink3, lineHeight:1.6 }}>
-                  ⚠️ This document is a <b>price reference only</b> and does not constitute a legal GST tax invoice. Prices are estimates based on current subsidies and subject to change. The official GST invoice will be provided by the dealership at time of purchase via their billing software.
+                <div style={{ display:"flex", gap:8, marginTop:8 }}>
+                  <button
+                    onClick={() => {
+                      const link = `${window.location.origin}/quote/${lastSaved.id}`
+                      const msg = `Hi ${lastSaved.customerName}, here is your reference quote for the ${lastSaved.vehicleName||"vehicle"} from ${dealerName}.\n\nReview and respond here:\n${link}`
+                      window.open(`https://wa.me/${(lastSaved.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`, "_blank")
+                    }}
+                    style={{ flex:1, background:"#25D366", color:"#fff", border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    💬 WhatsApp
+                  </button>
+                  <button
+                    onClick={() => sendQuoteEmailApi(lastSaved.id, selectedLead?.email || "")}
+                    style={{ flex:1, background:C.blue, color:"#fff", border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    📧 Email Quote
+                  </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Saved quotes */}
-          {quotes.length > 0 && (
-            <div style={{ marginTop:20 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>SAVED QUOTES ({quotes.length})</div>
-              {quotes.map(q => {
-                const crMap = { agreed:{ label:"Agreed", color:C.green, bg:"#ecfdf5" }, not_agreed:{ label:"Has Concerns", color:C.red, bg:"#FEE2E2" }, docs_uploaded:{ label:"KYC Uploaded", color:C.green, bg:"#ecfdf5" } }
-                const cr = crMap[q.customerResponse]
-                const customerLink = typeof window!=="undefined" ? `${window.location.origin}/quote/${q.id}` : `/quote/${q.id}`
-                return (
-                  <div key={q.id} style={{ background:C.card, borderRadius:12, padding:"12px 16px", border:`1px solid ${cr ? cr.color+"40" : C.border}`, marginBottom:8 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:700, color:C.ink }}>{q.customerName}</div>
-                        <div style={{ fontSize:11, color:C.ink3 }}>{q.vehicleName} · ₹{(q.netPrice||0).toLocaleString("en-IN")} · #{q.quoteId}</div>
-                      </div>
-                      <div style={{ textAlign:"right", flexShrink:0 }}>
-                        <div style={{ fontSize:10, color:C.ink3 }}>{new Date(q.createdAt).toLocaleDateString("en-IN")}</div>
-                        {cr && <span style={{ display:"inline-block", marginTop:4, background:cr.bg, color:cr.color, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:800 }}>{cr.label}</span>}
-                        {!cr && <span style={{ display:"inline-block", marginTop:4, background:C.bg, color:C.ink3, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:700 }}>Awaiting Response</span>}
-                      </div>
+          {/* ── RIGHT: Preview & List ── */}
+          <div>
+            <div style={{ background:C.card, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+              <div style={{ padding:"10px 16px", background:C.bg, borderBottom:`1px solid ${C.border}`, fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span>REFERENCE BILL PREVIEW</span>
+                <button onClick={handlePrint} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:C.green, fontWeight:700, fontFamily:"inherit" }}>🖨️ Print</button>
+              </div>
+              <div id="ref-bill-preview" style={{ padding:24 }}>
+                <div style={{ background:"#FEF3C7", border:"2px solid #F59E0B", borderRadius:10, padding:"10px 16px", marginBottom:20, textAlign:"center" }}>
+                  <div style={{ fontSize:11, fontWeight:900, color:"#92400E", letterSpacing:"0.5px" }}>⚠️ REFERENCE DOCUMENT — NOT AN ORIGINAL GST INVOICE</div>
+                  <div style={{ fontSize:10, color:"#B45309", marginTop:2 }}>This is a price reference only. The actual GST invoice will be issued by the dealer's billing software separately.</div>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
+                  <div>
+                    <div style={{ fontSize:18, fontWeight:900, color:C.green }}>EV<span style={{ color:C.ink }}>.CRM</span></div>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.ink, marginTop:2 }}>{dealerName}</div>
+                    {dealerCity && <div style={{ fontSize:10, color:C.ink3 }}>{dealerCity}{dealerPhone ? ` · ${dealerPhone}` : ""}</div>}
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>QUOTE #{quoteId}</div>
+                    <div style={{ fontSize:10, color:C.ink3 }}>Valid: {form.validityDays} days</div>
+                    <div style={{ fontSize:10, color:C.ink3 }}>{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
+                  </div>
+                </div>
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:4 }}>PREPARED FOR</div>
+                  <div style={{ fontSize:16, fontWeight:800, color:C.ink }}>{form.customerName||"—"}</div>
+                  {form.customerPhone && <div style={{ fontSize:11, color:C.ink3 }}>{form.customerPhone}</div>}
+                </div>
+                <div style={{ background:C.bg, borderRadius:10, padding:14, marginBottom:14 }}>
+                  {form.vehicleName && <div style={{ fontSize:13, fontWeight:800, color:C.ink, marginBottom:12 }}>{form.vehicleName}</div>}
+                  {priceRows.filter(r=>r.value>0).map((row,i)=>(
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                      <span style={{ fontSize:11, color:C.ink3 }}>{row.sign==="−"?"✓ ":""}{row.label}</span>
+                      <span style={{ fontSize:11, fontWeight:600, color:row.color||C.ink }}>{row.sign==="−"?"−":""}₹{row.value.toLocaleString("en-IN")}</span>
                     </div>
-                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                      {q.receipt && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>📎 Receipt</span>}
-                      {q.kycDocs && Object.keys(q.kycDocs).length>0 && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>🪪 {Object.keys(q.kycDocs).length} KYC docs</span>}
-                      {q.customerFeedback && <span style={{ fontSize:10, color:C.red, fontWeight:600 }}>💬 "{q.customerFeedback.slice(0,40)}…"</span>}
-                      {q.leadId && <span style={{ fontSize:10, color:C.blue, fontWeight:600 }}>🔗 Linked lead</span>}
-                    </div>
-                    <div style={{ display:"flex", gap:8, marginTop:10 }}>
-                      <button onClick={()=>{ navigator.clipboard?.writeText(customerLink); alert("Customer link copied!") }}
-                        style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                        🔗 Copy Link
-                      </button>
-                      <button onClick={()=>window.open(`https://wa.me/${(q.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent("Hi "+q.customerName+", please review and respond to your quote here: "+customerLink)}`, "_blank")}
-                        style={{ flex:1, background:"#25D366", border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                        💬 Resend
-                      </button>
-                      <button onClick={()=>window.open(`/quote/${q.id}`, "_blank")}
-                        style={{ flex:1, background:C.blue, border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                        👁️ Preview
-                      </button>
-                    </div>
-
-                    <div style={{ display:"flex", gap:8, marginTop:6 }}>
-                      {(!isLockedForRep || !isRep) && (
-                        <button onClick={() => handleRevise(q)} disabled={isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded")}
-                          style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                          ✏️ Revise Quote
-                        </button>
-                      )}
-                      {!isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded") && (
-                        <button onClick={() => handleRevoke(q.id)}
-                          style={{ flex:1, background:"#FFFBEB", border:"1px solid #F59E0B", color:"#B45309", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                          🔓 Revoke Approval
-                        </button>
-                      )}
+                  ))}
+                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                    <span style={{ fontSize:14, fontWeight:800, color:C.ink }}>Net Reference Price</span>
+                    <span style={{ fontSize:20, fontWeight:900, color:C.green }}>₹{netPrice.toLocaleString("en-IN")}</span>
+                  </div>
+                  {emi36>0 && <div style={{ fontSize:10, color:C.ink3, textAlign:"right", marginTop:3 }}>EMI from ₹{emi36.toLocaleString("en-IN")}/mo · 36m · @8.5% p.a.</div>}
+                </div>
+                {form.offer && (
+                  <div style={{ background:"#ecfdf5", borderRadius:8, padding:12, border:`1px solid ${C.green}30`, marginBottom:14 }}>
+                    <div style={{ fontSize:9, fontWeight:700, color:C.green, letterSpacing:"0.5px", marginBottom:4 }}>SPECIAL OFFER</div>
+                    <div style={{ fontSize:11, color:C.ink, lineHeight:1.5 }}>{form.offer}</div>
+                  </div>
+                )}
+                {receipt && (
+                  <div style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:8, padding:"8px 12px", marginBottom:14, border:`1px solid ${C.border}` }}>
+                    <span>📎</span>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>Purchase Receipt Attached</div>
+                      <div style={{ fontSize:10, color:C.ink3 }}>{receipt.name}</div>
                     </div>
                   </div>
-                )
-              })}
+                )}
+                <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:4 }}>
+                  <div style={{ fontSize:9, color:C.ink3, lineHeight:1.6 }}>
+                    ⚠️ This document is a <b>price reference only</b> and does not constitute a legal GST tax invoice.
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Saved quotes list */}
+            {quotes.length > 0 && (
+              <div style={{ marginTop:20 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.ink3, letterSpacing:"0.5px", marginBottom:10 }}>SAVED QUOTES ({quotes.length})</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10, maxHeight:600, overflowY:"auto" }}>
+                  {quotes.map(q => {
+                    const crMap = { agreed:{ label:"Agreed", color:C.green, bg:"#ecfdf5" }, not_agreed:{ label:"Has Concerns", color:C.red, bg:"#FEE2E2" }, docs_uploaded:{ label:"KYC Uploaded", color:C.green, bg:"#ecfdf5" } }
+                    const cr = crMap[q.customerResponse]
+                    const customerLink = typeof window!=="undefined" ? `${window.location.origin}/quote/${q.id}` : `/quote/${q.id}`
+                    
+                    return (
+                      <div key={q.id} style={{ background:C.card, borderRadius:12, padding:"12px 16px", border:`1px solid ${cr ? cr.color+"40" : C.border}` }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                          <div>
+                            <div style={{ fontSize:13, fontWeight:700, color:C.ink }}>{q.customerName}</div>
+                            <div style={{ fontSize:11, color:C.ink3 }}>{q.vehicleName} · ₹{(q.netPrice||0).toLocaleString("en-IN")} · #{q.quoteId}</div>
+                          </div>
+                          <div style={{ textAlign:"right", flexShrink:0 }}>
+                            <div style={{ fontSize:10, color:C.ink3 }}>{new Date(q.createdAt).toLocaleDateString("en-IN")}</div>
+                            {cr && <span style={{ display:"inline-block", marginTop:4, background:cr.bg, color:cr.color, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:800 }}>{cr.label}</span>}
+                            {!cr && <span style={{ display:"inline-block", marginTop:4, background:C.bg, color:C.ink3, borderRadius:100, padding:"2px 8px", fontSize:10, fontWeight:700 }}>Awaiting Response</span>}
+                          </div>
+                        </div>
+
+                        {/* Customer Tracking Telemetry */}
+                        {q.openedCount > 0 ? (
+                          <div style={{ display:"flex", gap:10, flexWrap:"wrap", background:C.bg, borderRadius:8, padding:"6px 10px", marginTop:8, fontSize:10, color:C.ink2, border:`1px solid ${C.border}` }}>
+                            <span>👁️ Opens: <strong>{q.openedCount}x</strong></span>
+                            {q.maxScrollPercent !== undefined && <span>📜 Max Scroll: <strong>{q.maxScrollPercent}%</strong></span>}
+                            {q.dropOffSection && (
+                              <span>🛑 Drop-off: <strong style={{ color:C.red }}>{q.dropOffSection.replace("sec-","").replace("-"," ")}</strong></span>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop:8, fontSize:10, color:C.ink3, fontStyle:"italic", background:C.bg, borderRadius:8, padding:"6px 10px", border:`1px dashed ${C.border}` }}>⏱️ Quote not opened by customer yet</div>
+                        )}
+
+                        {/* Rejection Checklist Reasons */}
+                        {q.customerResponse === "not_agreed" && q.rejectionReasons && q.rejectionReasons.length > 0 && (
+                          <div style={{ background:"#FEF2F2", border:`1px solid ${C.red}30`, borderRadius:8, padding:8, marginTop:8 }}>
+                            <div style={{ fontSize:9.5, fontWeight:700, color:C.red, marginBottom:4 }}>CUSTOMER REJECTION CONCERNS:</div>
+                            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                              {q.rejectionReasons.map(rId => {
+                                const labels = { price:"Price", finance:"Financing", delivery:"Delivery", variant:"Variant", competitor:"Competitor", other:"Other" }
+                                return (
+                                  <span key={rId} style={{ background:"#fff", border:`1px solid ${C.red}40`, color:C.red, fontSize:9, fontWeight:800, borderRadius:4, padding:"2px 6px" }}>
+                                    {labels[rId] || rId}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Inline Comments Thread & Rep Reply */}
+                        {q.comments && q.comments.length > 0 && (
+                          <div style={{ background:C.bg, borderRadius:8, padding:10, marginTop:10, border:`1px solid ${C.border}` }}>
+                            <div style={{ fontSize:9.5, fontWeight:700, color:C.ink3, marginBottom:6, letterSpacing:"0.4px" }}>CUSTOMER INQUIRIES & NEGOTIATION:</div>
+                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                              {Array.from(new Set(q.comments.map(c => c.lineId))).map(lineId => {
+                                const lineComments = q.comments.filter(c => c.lineId === lineId)
+                                return (
+                                  <div key={lineId} style={{ borderBottom:`1px solid ${C.border}`, paddingBottom:6, marginBottom:6 }}>
+                                    <div style={{ fontSize:10.5, fontWeight:700, color:C.ink2, marginBottom:4 }}>💬 For "{lineId}":</div>
+                                    <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:6 }}>
+                                      {lineComments.map(c => (
+                                        <div key={c.id} style={{ display:"flex", flexDirection:"column", alignSelf: c.author === "rep" ? "flex-end" : "flex-start", maxWidth:"85%" }}>
+                                          <div style={{ background: c.author === "rep" ? `${C.green}15` : "#fff", border:`1px solid ${C.border}`, color:C.ink, padding:"5px 8px", borderRadius:8, fontSize:10.5 }}>
+                                            {c.text}
+                                          </div>
+                                          <span style={{ fontSize:8, color:C.ink3, alignSelf: c.author === "rep" ? "flex-end" : "flex-start", marginTop:2 }}>
+                                            {c.author === "rep" ? "You" : "Customer"} · {new Date(c.createdAt).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div style={{ display:"flex", gap:6, marginTop:8, paddingLeft:6 }}>
+                                      <input
+                                        id={`rep-reply-${q.id}-${lineId}`}
+                                        placeholder="Reply to this inquiry..."
+                                        style={{ flex:1, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 8px", fontSize:11, outline:"none", fontFamily:"inherit" }}
+                                        onKeyDown={e => { if (e.key === "Enter") handleRepReply(q, lineId, e.target.value, e.target) }}
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          const el = document.getElementById(`rep-reply-${q.id}-${lineId}`)
+                                          if (el) handleRepReply(q, lineId, el.value, el)
+                                        }}
+                                        style={{ background:C.green, border:"none", color:"#fff", borderRadius:6, padding:"4px 10px", fontSize:10.5, fontWeight:700, cursor:"pointer" }}
+                                      >
+                                        Reply
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:8 }}>
+                          {q.receipt && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>📎 Receipt</span>}
+                          {q.kycDocs && Object.keys(q.kycDocs).length>0 && <span style={{ fontSize:10, color:C.green, fontWeight:600 }}>🪪 {Object.keys(q.kycDocs).length} KYC docs</span>}
+                          {q.customerFeedback && <span style={{ fontSize:10, color:C.red, fontWeight:600 }}>💬 "{q.customerFeedback.slice(0,40)}…"</span>}
+                        </div>
+
+                        <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                          <button onClick={()=>{ navigator.clipboard?.writeText(customerLink); alert("Customer link copied!") }}
+                            style={{ flex:1, minWidth:80, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            🔗 Copy
+                          </button>
+                          <button onClick={()=>window.open(`https://wa.me/${(q.customerPhone||"").replace(/\D/g,"")}?text=${encodeURIComponent("Hi "+q.customerName+", review and respond to your quote here: "+customerLink)}`, "_blank")}
+                            style={{ flex:1, minWidth:80, background:"#25D366", border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            💬 WhatsApp
+                          </button>
+                          <button onClick={() => sendQuoteEmailApi(q.id, q.leadId ? (leads.find(l => l.id === q.leadId)?.email || "") : "")}
+                            style={{ flex:1, minWidth:80, background:C.blue, border:"none", color:"#fff", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            📧 Email
+                          </button>
+                          <button onClick={()=>window.open(`/quote/${q.id}`, "_blank")}
+                            style={{ flex:1, minWidth:80, background:C.bg, border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            👁️ Preview
+                          </button>
+                        </div>
+
+                        <div style={{ display:"flex", gap:8, marginTop:6 }}>
+                          {(!isLockedForRep || !isRep) && (
+                            <button onClick={() => handleRevise(q)} disabled={isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded")}
+                              style={{ flex:1, background:"#fff", border:`1px solid ${C.border}`, color:C.ink, borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                              ✏️ Revise Quote
+                            </button>
+                          )}
+                          {!isRep && (q.customerResponse === "agreed" || q.customerResponse === "docs_uploaded") && (
+                            <button onClick={() => handleRevoke(q.id)}
+                              style={{ flex:1, background:"#FFFBEB", border:"1px solid #F59E0B", color:"#B45309", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                              🔓 Revoke Approval
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -2954,6 +3292,42 @@ function DealerDashboard() {
     return { todayLeads, soldUnits, revenue, overdue, hotLeads, mktLeads, sortedLeads, testDrivesScheduled, conversionRate, funnel, zeroStockModels }
   }, [leads, bookings, inventory])
 
+  // ── Paid-booking notifications ─────────────────────────────────────────
+  // A paid marketplace booking is the hottest lead a dealer gets. We surface
+  // it two ways: a one-time toast when a new one arrives (tracked per browser
+  // via a "last seen" timestamp so old bookings never re-alert), and a
+  // persistent red badge on the Bookings tab counting the ones still waiting
+  // on a rep — the dealer's cue to assign anything auto-assign couldn't place.
+  const [bookingsSeenTs, setBookingsSeenTs] = useState(null)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    let ts = localStorage.getItem("evcrm_bookings_seen_ts")
+    if (!ts) { ts = new Date().toISOString(); localStorage.setItem("evcrm_bookings_seen_ts", ts) }
+    setBookingsSeenTs(ts)
+  }, [])
+  // Opening the Bookings tab counts as "seeing" the new arrivals.
+  useEffect(() => {
+    if (activeTab === "bookings" && typeof window !== "undefined") {
+      const ts = new Date().toISOString()
+      localStorage.setItem("evcrm_bookings_seen_ts", ts)
+      setBookingsSeenTs(ts)
+    }
+  }, [activeTab])
+  const markBookingsSeen = useCallback(() => {
+    if (typeof window === "undefined") return
+    const ts = new Date().toISOString()
+    localStorage.setItem("evcrm_bookings_seen_ts", ts)
+    setBookingsSeenTs(ts)
+  }, [])
+  const bookingAlert = useMemo(() => {
+    const paid = bookings.filter(b => b.paymentStatus === "PAID" && b.status !== "CANCELLED")
+    const unassignedCount = paid.filter(b => !b.assignedRep).length
+    const fresh = bookingsSeenTs
+      ? paid.filter(b => b.createdAt && new Date(b.createdAt) > new Date(bookingsSeenTs))
+      : []
+    return { unassignedCount, newCount: fresh.length, newest: fresh[0] || null }
+  }, [bookings, bookingsSeenTs])
+
   const kpis = [
     { label:"Today's Leads",       val:loading?"...":String(stats.todayLeads),        delta:stats.todayLeads>0?`+${stats.todayLeads} today`:"Waiting",     color:C.blue,   icon:"◎" },
     { label:"Test Drives Scheduled", val:loading?"...":String(stats.testDrivesScheduled), delta:"From Bookings tab",                                    color:C.orange, icon:"🚙"},
@@ -3029,6 +3403,33 @@ function DealerDashboard() {
         </div>
       </div>
 
+      {/* New paid-booking toast — a marketplace customer just paid the token */}
+      {!isRep && bookingAlert.newCount > 0 && bookingAlert.newest && (() => {
+        const b = bookingAlert.newest
+        const repName = b.assignedRep ? (reps.find(r => r.id === b.assignedRep)?.name || "a rep") : null
+        return (
+          <div style={{ background:`${C.green}12`, border:`1px solid ${C.green}40`, borderRadius:12, padding:"12px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            <span style={{ fontSize:20 }}>🔥</span>
+            <div style={{ flex:1, minWidth:180 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.ink }}>
+                {bookingAlert.newCount === 1 ? "New paid booking" : `${bookingAlert.newCount} new paid bookings`}
+                <span style={{ background:C.green, color:"#fff", fontSize:10, fontWeight:800, borderRadius:8, padding:"1px 7px", marginLeft:8 }}>₹{(b.tokenAmount||0).toLocaleString("en-IN")} token</span>
+              </div>
+              <div style={{ fontSize:11, color:C.ink2, marginTop:2 }}>
+                {b.name} · {b.vehicleName}
+                {repName
+                  ? <> · auto-assigned to <b style={{ color:C.green }}>{repName}</b></>
+                  : <> · <b style={{ color:C.red }}>needs a rep assigned</b></>}
+              </div>
+            </div>
+            <button onClick={()=>setActiveTab("bookings")} style={{ background:C.green, border:"none", color:"#fff", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              {bookingAlert.unassignedCount > 0 ? "Review & assign →" : "View booking →"}
+            </button>
+            <button onClick={markBookingsSeen} title="Dismiss" style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink3, borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Dismiss</button>
+          </div>
+        )
+      })()}
+
       {error && <div style={{ background:`${C.red}10`, border:`1px solid ${C.red}25`, borderRadius:10, padding:"10px 16px", marginBottom:20, fontSize:12, color:C.red }}>⚠ {error}</div>}
 
       {/* ── Tab Navigation — horizontally scrollable on phones ─── */}
@@ -3038,6 +3439,7 @@ function DealerDashboard() {
             style={{ flex: isMobile ? "0 0 auto" : 1, background:activeTab===t.id?C.bg:"transparent", border:activeTab===t.id?`1px solid ${C.border}`:"1px solid transparent", color:activeTab===t.id?C.ink:C.ink2, borderRadius:10, padding: isMobile ? "11px 14px" : "9px 12px", fontSize:12, fontWeight:activeTab===t.id?700:500, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all 0.15s", whiteSpace:"nowrap" }}>
             <span>{t.icon}</span><span>{t.label}</span>
             {t.id==="leads" && stats.hotLeads>0 && <span style={{ background:C.red, color:"#fff", fontSize:9, fontWeight:800, borderRadius:10, padding:"1px 6px", marginLeft:2 }}>{stats.hotLeads}</span>}
+            {t.id==="bookings" && !isRep && bookingAlert.unassignedCount>0 && <span title="Paid bookings waiting to be assigned to a rep" style={{ background:C.red, color:"#fff", fontSize:9, fontWeight:800, borderRadius:10, padding:"1px 6px", marginLeft:2 }}>{bookingAlert.unassignedCount}</span>}
           </button>
         ))}
       </div>

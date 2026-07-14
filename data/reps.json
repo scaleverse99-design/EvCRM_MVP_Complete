@@ -1,35 +1,5 @@
 [
   {
-    "id": "rep_001",
-    "dealership": "hyd-d01",
-    "name": "Vikram Shetty",
-    "rate": 28,
-    "leads": 12,
-    "closed": 3,
-    "status": "online",
-    "color": "#059669"
-  },
-  {
-    "id": "rep_002",
-    "dealership": "hyd-d01",
-    "name": "Ananya Rao",
-    "rate": 22,
-    "leads": 9,
-    "closed": 2,
-    "status": "busy",
-    "color": "#2563EB"
-  },
-  {
-    "id": "rep_003",
-    "dealership": "hyd-d01",
-    "name": "Karan Mehta",
-    "rate": 15,
-    "leads": 7,
-    "closed": 1,
-    "status": "offline",
-    "color": "#7C3AED"
-  },
-  {
     "id": "rep_1783754669851",
     "dealership": "hyd-d01",
     "name": "Ravi Kiran",
@@ -84,34 +54,6 @@
     "active": true,
     "color": "#059669",
     "createdAt": "2026-07-11T11:37:00.186Z"
-  },
-  {
-    "id": "rep_1783771867736",
-    "dealership": "hyd-d01",
-    "name": "Test Rep One",
-    "phone": "9800000001",
-    "email": "testrep1@deccanev.in",
-    "rate": 0,
-    "leads": 0,
-    "closed": 0,
-    "status": "offline",
-    "active": true,
-    "color": "#059669",
-    "createdAt": "2026-07-11T12:11:07.736Z"
-  },
-  {
-    "id": "rep_1783771980735",
-    "dealership": "hyd-d01",
-    "name": "Name Only Rep",
-    "phone": "9800000009",
-    "email": "",
-    "rate": 0,
-    "leads": 0,
-    "closed": 0,
-    "status": "offline",
-    "active": true,
-    "color": "#2563EB",
-    "createdAt": "2026-07-11T12:13:00.735Z"
   },
   {
     "id": "rep_1783772693068",
