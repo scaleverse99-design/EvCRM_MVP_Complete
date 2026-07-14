@@ -1,32 +1,34 @@
 "use client"
 export const dynamic = "force-dynamic"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Shell from "../../../components/layout/Shell"
 import { Card, Avatar, Btn, StatusPill } from "../../../components/ui"
 import { C } from "../../../lib/constants"
-import { db } from "../../../lib/firebase-client"
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore"
+import { authFetch } from "../../../lib/token-storage"
 
 export default function DealerAttendancePage() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
   const [filterDate, setFilterDate] = useState(new Date().toISOString().slice(0, 10))
 
-  useEffect(() => {
-    // For MVP, fetch recent attendance globally or for the specific dealership if saved.
-    // Currently, `evcrm_attendance` just has repId, repName, date, lat, lng.
-    // We will query ordered by date descending.
-    const q = query(collection(db, "evcrm_attendance"), orderBy("date", "desc"))
-    
-    const unsub = onSnapshot(q, snap => {
-      const recs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      setRecords(recs)
-      setLoading(false)
-    })
-    
-    return () => unsub()
+  // Dealer view: the API scopes records to this dealership server-side.
+  const load = useCallback(async () => {
+    try {
+      const res = await authFetch("/api/dealer/attendance")
+      const data = await res.json()
+      if (data.success) { setRecords(data.records); setError(null) }
+      else setError(data.error || "Could not load attendance")
+    } catch { setError("Could not load attendance") }
+    finally { setLoading(false) }
   }, [])
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 30000) // live-ish refresh, same cadence as the dashboard
+    return () => clearInterval(t)
+  }, [load])
 
   const filteredRecords = records.filter(r => r.date === filterDate)
 
@@ -54,15 +56,19 @@ export default function DealerAttendancePage() {
           <p style={{ fontSize: 13, color: C.ink3 }}>Monitor live geo-tagged attendance records for your sales team.</p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <input 
-            type="date" 
-            value={filterDate} 
-            onChange={e => setFilterDate(e.target.value)} 
+          <input
+            type="date"
+            value={filterDate}
+            onChange={e => setFilterDate(e.target.value)}
             style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.card, fontFamily: "inherit", color: C.ink, fontSize: 13, fontWeight: 700 }}
           />
           <Btn variant="secondary" onClick={handleExportCSV}>⬇ Export CSV</Btn>
         </div>
       </div>
+
+      {error && (
+        <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 12, color: C.red }}>⚠ {error}</div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <Card style={{ padding: "16px 20px" }}>

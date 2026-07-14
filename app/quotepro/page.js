@@ -22,15 +22,34 @@ function QuoteProContent() {
   const [sent,   setSent]   = useState(false)
   const [history, setHistory] = useState([])
 
+  const getTime = (val) => {
+    if (!val) return 0
+    if (typeof val.toDate === "function") return val.toDate().getTime()
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? 0 : d.getTime()
+  }
+
+  const parseSafeDate = (val) => {
+    if (!val) return "Recently"
+    let d
+    if (typeof val.toDate === "function") {
+      d = val.toDate()
+    } else {
+      d = new Date(val)
+    }
+    if (isNaN(d.getTime())) return "Recently"
+    return d.toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })
+  }
+
   useEffect(() => {
     const colRef = collection(db, "evcrm_quotes")
-    const q = query(colRef, orderBy("created_at", "desc"), limit(10))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const list = []
       snapshot.forEach((doc) => {
         list.push({ id: doc.id, ...doc.data() })
       })
-      setHistory(list)
+      list.sort((a, b) => getTime(b.created_at) - getTime(a.created_at))
+      setHistory(list.slice(0, 10))
     }, (error) => {
       console.error("Firestore history subscription error:", error)
     })
@@ -168,13 +187,13 @@ function QuoteProContent() {
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:8, maxHeight:260, overflowY:"auto", paddingRight:4 }}>
               {history.map((q) => {
-                const dateStr = q.created_at ? new Date(q.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }) : "Recently"
+                const dateStr = parseSafeDate(q.created_at)
                 return (
                   <div key={q.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:10, background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
                     <div>
                       <div style={{ fontSize:11, fontWeight:800, color:C.ink }}>{q.customer || "Unnamed Customer"}</div>
                       <div style={{ fontSize:10, color:C.ink3, marginTop:1 }}>
-                        {q.vehicle} · <strong style={{ color:C.greenD }}>{fmt.currency(q.price)}</strong>
+                        {q.vehicle} · <strong style={{ color:C.greenD }}>{fmt.currency(Number(q.price || 0))}</strong>
                       </div>
                       <div style={{ fontSize:9, color:C.ink3, marginTop:2 }}>💬 {q.phone}</div>
                     </div>
@@ -186,7 +205,7 @@ function QuoteProContent() {
                             `*Reference Quote*`,
                             `Customer: ${q.customer}`,
                             `Vehicle: ${q.vehicle}`,
-                            `Price: ${fmt.currency(q.price)}`,
+                            `Price: ${fmt.currency(Number(q.price || 0))}`,
                             q.offer ? `Special Offer: ${q.offer}` : "",
                           ].filter(Boolean).join("\n")
                           window.open(`https://wa.me/${(q.phone||"").replace(/\D/g,"")}?text=${encodeURIComponent(lines)}`, "_blank")

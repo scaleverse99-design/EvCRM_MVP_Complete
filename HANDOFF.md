@@ -168,9 +168,11 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
    `git show <commit>:<file>` (nothing in git history is ever erased by new pushes).
    Uncommitted/lost work → unzip the newest `tree-*.tgz` in `../evcrm-backups/`.
    Total repo loss (GitHub gone) → `git clone ../evcrm-backups/evcrm-<date>.bundle restored/`.
-5. **`.env.local` is the local-dev isolation file** (git-ignored, Supabase keys blanked so
-   local dev uses `data/*.json` instead of production). If it's missing but `.env.local.tmp`
-   exists, a deploy was interrupted — rename it back. Never put real Supabase keys in it.
+5. **Local-dev isolation lives in `.env.development.local`** (git-ignored; Supabase keys
+   blanked so `next dev` uses the `data/*.json` sandbox instead of production). Production
+   builds ignore this file by design, so it needs NO special handling at deploy time.
+   NEVER create a plain `.env.local` — `next build` loads it, and the old hide/rename
+   workaround twice left local dev silently pointed at production Supabase.
 
 ## 10. Suggested Roadmap (in priority order)
 

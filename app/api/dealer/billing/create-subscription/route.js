@@ -50,12 +50,30 @@ export async function POST(req) {
     const rz = getRazorpay()
 
     // 1. Ensure a Razorpay customer exists for this dealer
-    const customer = await rz.customers.create({
-      name: dealerName || dealer.name,
-      email: dealerEmail || dealer.email,
-      contact: dealerPhone || dealer.phone,
-      notes: { dealerId: dealer.id },
-    })
+    let customerId = dealer.razorpayCustomerId
+    if (!customerId) {
+      try {
+        const customer = await rz.customers.create({
+          name: dealerName || dealer.name,
+          email: dealerEmail || dealer.email,
+          contact: dealerPhone || dealer.phone,
+          notes: { dealerId: dealer.id },
+        })
+        customerId = customer.id
+      } catch (err) {
+        // If customer already exists, fetch their details from Razorpay
+        if (err.error?.description?.toLowerCase().includes("already exists") || err.message?.toLowerCase().includes("already exists")) {
+          const existing = await rz.customers.all({ email: dealerEmail || dealer.email })
+          if (existing.items && existing.items.length > 0) {
+            customerId = existing.items[0].id
+          } else {
+            throw err
+          }
+        } else {
+          throw err
+        }
+      }
+    }
 
     // 2. Create the subscription. total_count: 0 = no fixed end (auto-recurs
     //    until cancelled). start_at is the dealer's actual trial end date —
@@ -74,7 +92,7 @@ export async function POST(req) {
 
     users[idx] = {
       ...dealer,
-      razorpayCustomerId: customer.id,
+      razorpayCustomerId: customerId,
       razorpaySubscriptionId: subscription.id,
       mandateStatus: "pending",
     }
@@ -82,7 +100,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      customerId: customer.id,
+      customerId: customerId,
       keyId: getPublicKeyId(),
     })
   } catch (err) {

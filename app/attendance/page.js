@@ -1,17 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Shell from "../../components/layout/Shell"
 import { Card, Btn } from "../../components/ui"
 import { C } from "../../lib/constants"
-import { db } from "../../lib/firebase-client"
-import {
-  collection, addDoc, query, where, onSnapshot,
-  updateDoc, doc, orderBy, serverTimestamp
-} from "firebase/firestore"
+import { authFetch } from "../../lib/token-storage"
 
 // ── Helpers ────────────────────────────────────────────────────────────
 const today       = () => new Date().toISOString().slice(0, 10)
-const now12       = () => new Date().toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", hour12:true })
 const monthDates  = () => {
   const d = new Date(), year = d.getFullYear(), month = d.getMonth()
   const days = new Date(year, month+1, 0).getDate()
@@ -24,35 +19,24 @@ const MONTHS_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oc
 const DAYS          = ["Su","Mo","Tu","We","Th","Fr","Sa"]
 
 export default function AttendancePage() {
-  const [user,      setUser]      = useState(null)
-  const [todayRec,  setTodayRec]  = useState(null)
   const [allRecs,   setAllRecs]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [punching,  setPunching]  = useState(false)
   const [geoError,  setGeoError]  = useState(null)
   const [tab,       setTab]       = useState(0) // 0=Punch 1=Calendar
 
-  // Fetch logged-in user
-  useEffect(() => {
-    fetch("/api/auth/me").then(r=>r.json()).then(d => setUser(d.user))
+  const load = useCallback(async () => {
+    try {
+      const res = await authFetch("/api/dealer/attendance")
+      const data = await res.json()
+      if (data.success) setAllRecs(data.records)
+      else setGeoError(data.error || "Could not load attendance")
+    } catch { setGeoError("Could not load attendance") }
+    finally { setLoading(false) }
   }, [])
+  useEffect(() => { load() }, [load])
 
-  // Listen to attendance records for this user
-  useEffect(() => {
-    if (!user?.id) return
-    const q = query(
-      collection(db, "evcrm_attendance"),
-      where("repId","==",user.id),
-      orderBy("date","desc")
-    )
-    const unsub = onSnapshot(q, snap => {
-      const recs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
-      setAllRecs(recs)
-      setTodayRec(recs.find(r => r.date === today()) || null)
-      setLoading(false)
-    })
-    return () => unsub()
-  }, [user?.id])
+  const todayRec = allRecs.find(r => r.date === today()) || null
 
   const getLocation = () => new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject("Geolocation not supported"); return }
@@ -63,34 +47,18 @@ export default function AttendancePage() {
     )
   })
 
-  const punchIn = async () => {
+  const punch = async (action) => {
     setGeoError(null); setPunching(true)
     try {
       const { lat, lng, accuracy } = await getLocation()
-      await addDoc(collection(db, "evcrm_attendance"), {
-        repId:    user.id,
-        repName:  user.name,
-        date:     today(),
-        punchIn:  now12(),
-        punchOut: null,
-        lat, lng, accuracy,
-        punchInAt:  serverTimestamp(),
-        punchOutAt: null,
+      const res = await authFetch("/api/dealer/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, lat, lng, accuracy }),
       })
-    } catch(e) { setGeoError(String(e)) }
-    finally { setPunching(false) }
-  }
-
-  const punchOut = async () => {
-    if (!todayRec) return
-    setGeoError(null); setPunching(true)
-    try {
-      const { lat, lng, accuracy } = await getLocation()
-      await updateDoc(doc(db, "evcrm_attendance", todayRec.id), {
-        punchOut:  now12(),
-        punchOutLat: lat, punchOutLng: lng,
-        punchOutAt: serverTimestamp(),
-      })
+      const data = await res.json()
+      if (!res.ok) throw data.error || "Punch failed"
+      await load()
     } catch(e) { setGeoError(String(e)) }
     finally { setPunching(false) }
   }
@@ -151,7 +119,10 @@ export default function AttendancePage() {
 
             {/* Live status */}
             <div style={{ background: todayRec?.punchIn ? (todayRec?.punchOut ? C.greenL : C.orangeL) : C.bg, border:`1px solid ${todayRec?.punchIn ? (todayRec?.punchOut ? C.green : C.orange) : C.border}30`, borderRadius:12, padding:"14px 18px", marginBottom:16, textAlign:"center" }}>
-              {!todayRec?.punchIn && (
+              {loading && (
+                <div style={{ color:C.ink3, fontSize:12 }}>Loading…</div>
+              )}
+              {!loading && !todayRec?.punchIn && (
                 <div style={{ color:C.ink3, fontSize:12 }}>You have not punched in yet today.</div>
               )}
               {todayRec?.punchIn && !todayRec?.punchOut && (
@@ -174,18 +145,18 @@ export default function AttendancePage() {
 
             {geoError && (
               <div style={{ background:C.redL, border:`1px solid ${C.red}30`, borderRadius:10, padding:"10px 14px", fontSize:11, color:C.red, marginBottom:12 }}>
-                ⚠ Location error: {geoError}
+                ⚠ {geoError}
               </div>
             )}
 
             {/* Action button */}
-            {!todayRec?.punchIn && (
-              <Btn onClick={punchIn} loading={punching} style={{ width:"100%", background:C.green }}>
+            {!loading && !todayRec?.punchIn && (
+              <Btn onClick={() => punch("punch_in")} loading={punching} style={{ width:"100%", background:C.green }}>
                 📍 Punch In — Geo-tag My Location
               </Btn>
             )}
             {todayRec?.punchIn && !todayRec?.punchOut && (
-              <button onClick={punchOut} disabled={punching} style={{ width:"100%", background:C.orange, color:"#fff", border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity:punching?0.7:1 }}>
+              <button onClick={() => punch("punch_out")} disabled={punching} style={{ width:"100%", background:C.orange, color:"#fff", border:"none", borderRadius:12, padding:"14px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity:punching?0.7:1 }}>
                 {punching ? "Getting location…" : "📍 Punch Out — Geo-tag Exit"}
               </button>
             )}
@@ -198,7 +169,7 @@ export default function AttendancePage() {
 
           {/* Recent history */}
           <h3 style={{ fontSize:13, fontWeight:700, color:C.ink, marginBottom:10 }}>Recent History</h3>
-          {allRecs.slice(0,7).map((r,i) => (
+          {allRecs.slice(0,7).map((r) => (
             <div key={r.id} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:11, padding:"10px 14px", marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{r.date}</div>

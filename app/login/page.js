@@ -62,10 +62,10 @@ function OTPBoxes({ value, onChange, error, disabled }) {
 }
 
 // ── Button ────────────────────────────────────────────────────────
-function PBtn({ children, onClick, loading, disabled, color=ACCENT }) {
+function PBtn({ children, onClick, loading, disabled, color=ACCENT, type="submit" }) {
   const off = disabled||loading
   return (
-    <button onClick={onClick} disabled={off}
+    <button type={type} onClick={onClick} disabled={off}
       style={{ width:"100%", background:off?C.bg:color, border:"none", color:"#fff", borderRadius:12, padding:"14px", fontSize:13, fontWeight:900, cursor:off?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow:off?"none":`0 4px 16px ${color}33`, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
       onMouseEnter={e=>{ if(!off) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.opacity="0.9" } }}
       onMouseLeave={e=>{ if(!off) { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.opacity="1" } }}
@@ -222,7 +222,7 @@ export default function LoginPage() {
   // ── Forgot: Send OTP ──────────────────────────────────────────
   const handleSendOTP = async () => {
     setFpErrors({}); setFpMsg({})
-    const emailClean = fpEmail.trim()
+    const emailClean = (fpEmail.trim() || document.querySelector('input[type=email]')?.value?.trim() || "")
     if (!emailClean || !/\S+@\S+\.\S+/.test(emailClean)) {
       setFpErrors({ email:"Enter a valid email address" }); return
     }
@@ -248,10 +248,17 @@ export default function LoginPage() {
   // ── Forgot: Verify OTP ────────────────────────────────────────
   const handleVerifyOTP = async () => {
     setFpMsg({})
-    if (fpOTP.length!==6) return
+    const inputs = document.querySelectorAll('input[inputMode="numeric"]')
+    let otpVal = ""
+    inputs.forEach(i => { otpVal += i.value })
+    const finalOtp = fpOTP.length === 6 ? fpOTP : otpVal
+    if (finalOtp.length!==6) {
+      setFpMsg({ type:"error", text:"Please enter the 6-digit OTP" })
+      return
+    }
     setFpLoad(true)
     try {
-      const res  = await fetch("/api/auth/verify-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:fpEmail.trim(), otp:fpOTP }) })
+      const res  = await fetch("/api/auth/verify-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:fpEmail.trim() || document.querySelector('input[type=email]')?.value?.trim() || "", otp:finalOtp }) })
       const data = await res.json()
       if (!res.ok) { setFpMsg({ type:"error", text:data.error||"Incorrect OTP. Please try again." }); setFpOTP(""); return }
       setFpMsg({ type:"success", text:"OTP verified! Set your new password." })
@@ -315,11 +322,11 @@ export default function LoginPage() {
 
           {/* ── LOGIN ── */}
           {screen==="login" && (
-            <>
+            <form onSubmit={(e)=>{ e.preventDefault(); handleLogin() }}>
               {/* Role tabs */}
               <div style={{ display:"flex", gap:8, marginBottom:24 }}>
                 {ROLES.map(r=>(
-                  <button key={r.id} onClick={()=>{ setRole(r.id); setLoginErr("") }}
+                  <button key={r.id} type="button" onClick={()=>{ setRole(r.id); setLoginErr("") }}
                     style={{ 
                       flex:1, background:role===r.id?`${r.color}10`:C.bg, 
                       border:`1.5px solid ${role===r.id?r.color:C.border}`, 
@@ -353,12 +360,12 @@ export default function LoginPage() {
                 onChange={e=>{ setPassword(e.target.value); setLoginErr("") }}
               />
 
-              <PBtn onClick={handleLogin} loading={logging} color={activeColor}>
+              <PBtn type="submit" loading={logging} color={activeColor}>
                 Sign In →
               </PBtn>
 
               <div style={{ textAlign:"center", marginTop:18 }}>
-                <button onClick={()=>{ setScreen("forgot-email"); setFpEmail(email); setFpMsg({}) }}
+                <button type="button" onClick={()=>{ setScreen("forgot-email"); setFpEmail(email); setFpMsg({}) }}
                   style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit", fontWeight: 600 }}>
                   Forgot password?
                 </button>
@@ -367,18 +374,18 @@ export default function LoginPage() {
               {role==="dealer" && (
                 <div style={{ textAlign:"center", marginTop:12 }}>
                   <span style={{ fontSize:12, color:C.ink3 }}>New to Ev.CRM? </span>
-                  <button onClick={()=>router.push("/register")}
+                  <button type="button" onClick={()=>router.push("/register")}
                     style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:800, fontFamily:"inherit" }}>
                     Create dealer account →
                   </button>
                 </div>
               )}
-            </>
+            </form>
           )}
 
           {/* ── FORGOT: STEP 1 — Enter email ── */}
           {screen==="forgot-email" && (
-            <>
+            <form onSubmit={(e)=>{ e.preventDefault(); handleSendOTP() }}>
               <div style={{ marginBottom:20 }}>
                 <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Reset Password</h1>
                 <p style={{ fontSize:12, color:C.ink3 }}>Enter your registered email — we'll send a 6-digit OTP</p>
@@ -392,19 +399,19 @@ export default function LoginPage() {
                 error={fpErrors.email}
               />
 
-              <PBtn onClick={handleSendOTP} loading={fpLoad} disabled={!fpEmail.trim()}>
+              <PBtn type="submit" loading={fpLoad}>
                 Send OTP →
               </PBtn>
 
               <div style={{ textAlign:"center", marginTop:12 }}>
-                <button onClick={backToLogin} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Back to sign in</button>
+                <button type="button" onClick={backToLogin} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Back to sign in</button>
               </div>
-            </>
+            </form>
           )}
 
           {/* ── FORGOT: STEP 2 — Verify OTP ── */}
           {screen==="forgot-otp" && (
-            <>
+            <form onSubmit={(e)=>{ e.preventDefault(); handleVerifyOTP() }}>
               <div style={{ marginBottom:20 }}>
                 <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Enter OTP</h1>
                 <p style={{ fontSize:12, color:C.ink3 }}>6-digit code sent to <strong>{fpEmail}</strong></p>
@@ -416,27 +423,27 @@ export default function LoginPage() {
               <OTPBoxes value={fpOTP} onChange={v=>{setFpOTP(v);setFpMsg({})}} error={fpMsg.type==="error"} disabled={fpLoad} />
               <div style={{ height:16 }}/>
 
-              <PBtn onClick={handleVerifyOTP} loading={fpLoad} disabled={fpOTP.length!==6}>
+              <PBtn type="submit" loading={fpLoad}>
                 Verify OTP →
               </PBtn>
 
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:14, fontSize:12 }}>
-                <button onClick={()=>setScreen("forgot-email")} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Change email</button>
+              <div style={{ display:"flex", justifyContext:"space-between", alignItems:"center", marginTop:14, fontSize:12 }}>
+                <button type="button" onClick={()=>setScreen("forgot-email")} style={{ background:"none", border:"none", color:C.ink3, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Change email</button>
                 <span style={{ color:C.ink3 }}>
                   {cd>0 ? <>Resend in <strong style={{ color:ACCENT }}>{cd}s</strong></> :
-                    <button onClick={()=>{ setFpOTP(""); setFpMsg({}); handleSendOTP() }} style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Resend OTP</button>}
+                    <button type="button" onClick={()=>{ setFpOTP(""); setFpMsg({}); handleSendOTP() }} style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Resend OTP</button>}
                 </span>
               </div>
 
               <div style={{ marginTop:14, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 14px" }}>
                 <p style={{ fontSize:11, color:C.ink3, lineHeight:1.6, margin:0 }}>📧 Check your inbox and spam folder. OTP expires in <strong>15 minutes</strong>.</p>
               </div>
-            </>
+            </form>
           )}
 
           {/* ── FORGOT: STEP 3 — New password ── */}
           {screen==="forgot-reset" && (
-            <>
+            <form onSubmit={(e)=>{ e.preventDefault(); handleReset() }}>
               <div style={{ marginBottom:20 }}>
                 <h1 style={{ fontSize:18, fontWeight:800, color:C.ink, marginBottom:4 }}>Set New Password</h1>
                 <p style={{ fontSize:12, color:C.ink3 }}>Choose a strong password for <strong>{fpEmail}</strong></p>
@@ -455,10 +462,10 @@ export default function LoginPage() {
                 error={fpErrors.confirm}
               />
 
-              <PBtn onClick={handleReset} loading={fpLoad}>
+              <PBtn type="submit" loading={fpLoad}>
                 Reset Password →
               </PBtn>
-            </>
+            </form>
           )}
 
           {/* Footer */}

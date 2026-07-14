@@ -5,8 +5,8 @@ import Shell from "../../components/layout/Shell"
 import { Card, Btn, Input, Avatar } from "../../components/ui"
 import { C } from "../../lib/constants"
 import { authFetch, clearToken } from "../../lib/token-storage"
-import { db } from "../../lib/firebase-client"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { getBillingState, MONTHLY_PRICE_INR } from "../../lib/billing"
+import { loadRazorpayScript } from "../../lib/payments/razorpayScript"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -14,6 +14,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState({ name: "", phone: "", dealership: "", location: "" })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [billingLoading, setBillingLoading] = useState(false)
   const [message, setMessage] = useState("")
 
   useEffect(() => {
@@ -30,13 +31,10 @@ export default function ProfilePage() {
         }
         setUser(d.user)
         try {
-          const { doc, getDoc } = await import("firebase/firestore")
-          const { db } = await import("../../lib/firebase-client")
-          const docRef = doc(db, "evcrm_users", d.user.id)
-          const docSnap = await getDoc(docRef)
-          if (docSnap.exists()) {
-            const data = docSnap.data()
-            setProfile({ name: data.name||"", phone: data.phone||"", dealership: data.dealership||"", location: data.location||"" })
+          const profileRes = await authFetch("/api/profile")
+          const profileData = await profileRes.json()
+          if (profileData.success) {
+            setProfile(profileData.profile)
           }
         } catch(err) { console.error("Profile load error:", err) }
         finally { setLoading(false) }
@@ -58,18 +56,84 @@ export default function ProfilePage() {
     setSaving(true)
     setMessage("")
     try {
-      const docRef = doc(db, "evcrm_users", user.id)
-      await updateDoc(docRef, {
-        name: profile.name,
-        phone: profile.phone,
-        ...(user.role === "dealer" ? { dealership: profile.dealership, location: profile.location } : {}),
+      const res = await authFetch("/api/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: profile.name,
+          phone: profile.phone,
+          dealership: profile.dealership,
+          location: profile.location,
+        })
       })
-      setMessage("Profile updated successfully!")
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setMessage("Profile updated successfully!")
+      } else {
+        setMessage(data.error || "Error updating profile.")
+      }
     } catch(err) {
       console.error(err)
       setMessage("Error updating profile.")
     }
     setSaving(false)
+  }
+
+  const handleManageBilling = async () => {
+    if (!user) return
+    setBillingLoading(true)
+    try {
+      let subscriptionId = user.razorpaySubscriptionId
+      let keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+
+      // If no subscription exists yet, create one!
+      if (!subscriptionId) {
+        const res = await authFetch("/api/dealer/billing/create-subscription", {
+          method: "POST",
+          body: JSON.stringify({
+            dealerId: user.id,
+            dealerName: profile.name || user.name,
+            dealerEmail: user.email,
+            dealerPhone: profile.phone || user.phone,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to initialize billing")
+        subscriptionId = data.subscriptionId
+        keyId = data.keyId
+      }
+
+      if (!keyId) {
+        const res = await authFetch("/api/dealer/billing/create-subscription", {
+          method: "POST",
+          body: JSON.stringify({
+            dealerId: user.id,
+            dealerName: profile.name || user.name,
+            dealerEmail: user.email,
+            dealerPhone: profile.phone || user.phone,
+          }),
+        })
+        const data = await res.json()
+        subscriptionId = data.subscriptionId
+        keyId = data.keyId
+      }
+
+      await loadRazorpayScript()
+      const options = {
+        key: keyId,
+        subscription_id: subscriptionId,
+        name: "Ev.CRM",
+        description: `₹${MONTHLY_PRICE_INR}/month — subscription billing`,
+        prefill: { name: profile.name || user.name, email: user.email, contact: profile.phone || user.phone },
+        theme: { color: C.green },
+        subscription_card_change: user.razorpaySubscriptionId ? 1 : 0,
+      }
+      const rzp = new window.Razorpay(options)
+      rzp.open()
+    } catch (err) {
+      alert(err.message || "Failed to load billing portal.")
+    } finally {
+      setBillingLoading(false)
+    }
   }
 
   if (loading) return (
@@ -167,25 +231,39 @@ export default function ProfilePage() {
         </Card>
 
         {/* Subscription details for Dealer */}
-        {isDealer && (
-          <Card>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Subscription & Billing</h2>
-                <p style={{ fontSize: 12, color: C.ink3, marginBottom: 16 }}>Manage your Ev.CRM plan.</p>
+        {isDealer && user && (() => {
+          const billingInfo = getBillingState(user)
+          const stateColors = {
+            active: { bg: C.greenL, text: C.greenD, label: "ACTIVE" },
+            past_due: { bg: "#FEE2E2", text: "#B91C1C", label: "PAST DUE" },
+            trial: { bg: "#EDE9FE", text: "#6D28D9", label: "FREE TRIAL" },
+            trial_expired: { bg: "#FEE2E2", text: "#B91C1C", label: "EXPIRED" },
+            cancelled: { bg: "#F3F4F6", text: "#374151", label: "CANCELLED" },
+          }
+          const theme = stateColors[billingInfo.state] || { bg: C.bg, text: C.ink3, label: billingInfo.state?.toUpperCase() }
+          
+          return (
+            <Card>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 4 }}>Subscription & Billing</h2>
+                  <p style={{ fontSize: 12, color: C.ink3, marginBottom: 16 }}>Manage your Ev.CRM plan.</p>
+                </div>
+                <div style={{ background: theme.bg, color: theme.text, fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 12 }}>
+                  {theme.label}
+                </div>
               </div>
-              <div style={{ background: C.greenL, color: C.greenD, fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 12 }}>ACTIVE</div>
-            </div>
-            
-            <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: C.ink, marginBottom: 4 }}>Ev.CRM Pro Plan</div>
-                <div style={{ fontSize: 12, color: C.ink2 }}>Your next billing date is Dec 1, 2026.</div>
+              
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: C.ink, marginBottom: 4 }}>Ev.CRM Pro Plan</div>
+                  <div style={{ fontSize: 12, color: C.ink2 }}>{billingInfo.message}</div>
+                </div>
+                <Btn variant="secondary" onClick={handleManageBilling} loading={billingLoading}>Manage Billing</Btn>
               </div>
-              <Btn variant="secondary">Manage Billing</Btn>
-            </div>
-          </Card>
-        )}
+            </Card>
+          )
+        })()}
 
       </div>
     </Shell>

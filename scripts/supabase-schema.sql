@@ -61,3 +61,7 @@ create table if not exists service_settings (id text primary key, data jsonb not
 alter table quotes           disable row level security;
 alter table service_requests disable row level security;
 alter table service_settings disable row level security;
+
+-- Rep geo-tagged attendance (added Jul 2026, replaces the old Firestore path)
+create table if not exists attendance (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_attendance_dealership on attendance ((data->>'dealership'));
