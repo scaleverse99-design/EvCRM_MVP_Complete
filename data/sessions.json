@@ -403,5 +403,14 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-21T17:44:52.317Z",
     "created_at": "2026-07-14T17:44:52.317Z"
+  },
+  {
+    "id": "sess_1784054826267",
+    "user_id": "user_oem_001",
+    "token_hash": "b74b9dd222070f8330dc83f93e2e10b574bda24b97c40e5c17bf807defb49f5c",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-21T18:47:06.267Z",
+    "created_at": "2026-07-14T18:47:06.267Z"
   }
 ]

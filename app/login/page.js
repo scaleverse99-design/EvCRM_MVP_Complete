@@ -116,14 +116,14 @@ function SuccessScreen({ role, name }) {
 
   return (
     <div style={{ textAlign:"center", padding:"20px 0" }}>
-      <div style={{ 
-        width:72, height:72, borderRadius: 20, 
-        background: ACCENT, 
-        display:"flex", alignItems:"center", justifyContent:"center", 
+      <div style={{
+        width:72, height:72, borderRadius: 20,
+        background: ACCENT,
+        display:"flex", alignItems:"center", justifyContent:"center",
         fontSize:32, color: "#fff", margin:"0 auto 20px",
         boxShadow: `0 10px 30px ${ACCENT}33`
       }}>
-        {role==="dealer"?"🏪":"⚡"}
+        {role==="dealer"?"🏪":role==="oem"?"🏭":"⚡"}
       </div>
       <p style={{ fontSize:22, fontWeight:900, color:C.ink, marginBottom:6, letterSpacing:"-0.5px" }}>Welcome Back{name?`, ${name.split(" ")[0]}`:""}!</p>
       <p style={{ fontSize:12, color:C.ink3, marginBottom:24 }}>{msg}</p>
@@ -184,11 +184,12 @@ export default function LoginPage() {
   }, [cd, screen])
 
   const ROLES = [
-    { id:"dealer",     icon:"🏪", label:"Dealer Owner", sub:"Admin access",  color:ACCENT },
-    { id:"rep",        icon:"⚡", label:"Sales Rep",    sub:"Team access",   color:C.orange },
-    { id:"superadmin", icon:"🔱", label:"Founder",     sub:"System access", color:C.greenD  },
+    { id:"dealer",     icon:"🏪", label:"Dealer Owner", sub:"Admin access",   color:ACCENT },
+    { id:"rep",        icon:"⚡", label:"Sales Rep",    sub:"Team access",    color:C.orange },
+    { id:"oem",        icon:"🏭", label:"OEM",          sub:"Network access", color:"#8B5CF6" },
+    { id:"superadmin", icon:"🔱", label:"Founder",      sub:"System access",  color:C.greenD  },
   ]
-  const activeColor = role==="dealer" ? ACCENT : (role==="rep" ? C.orange : C.greenD)
+  const activeColor = role==="dealer" ? ACCENT : role==="rep" ? C.orange : role==="oem" ? "#8B5CF6" : C.greenD
 
   // ── Login ─────────────────────────────────────────────────────
   const handleLogin = async () => {
@@ -342,10 +343,10 @@ export default function LoginPage() {
 
               <div style={{ marginBottom:24 }}>
                 <h1 style={{ fontSize:20, fontWeight:900, color:C.ink, marginBottom:6, letterSpacing:"-0.5px" }}>
-                  {role==="dealer" ? "Dealer Sign In" : role==="rep" ? "Sales Rep Sign In" : "Founder Sign In"}
+                  {role==="dealer" ? "Dealer Sign In" : role==="rep" ? "Sales Rep Sign In" : role==="oem" ? "OEM Partner Sign In" : "Founder Sign In"}
                 </h1>
                 <p style={{ fontSize:13, color:C.ink3, lineHeight:1.5 }}>
-                  {role==="dealer" ? "Access your dealer command centre" : role==="rep" ? "Access your AI sales queue" : "Manage the platform and cloud oversight"}
+                  {role==="dealer" ? "Access your dealer command centre" : role==="rep" ? "Access your AI sales queue" : role==="oem" ? "Access your dealer network console" : "Manage the platform and cloud oversight"}
                 </p>
               </div>
 
