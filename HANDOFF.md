@@ -119,7 +119,7 @@ npx firebase-tools deploy --only hosting --project ev-crm-realtime --non-interac
 
 **Dealer CRM**: 10-module dashboard; leads with contact triggers (📞call auto-dial / 💬WhatsApp / 📱SMS / ✉️email with stage-based auto-filled editable templates, DND respect, every action logged w/ author+channel+timestamp, lastAction chip); booking/test-drive panel inside lead detail (preferred date, ref, token, customer note); mobile-responsive (cards <768px via `useIsMobile`); BuildPrice (custom discounts editor — NO hardcoded subsidies by design) → prefills QuotePro; Service tab (SLA created→responded timer, respond/resolve/escalate-to-OEM, 48h auto-escalate toggle); rep logins (dealer-provisioned only, no public rep signup; deactivate=instant revoke; reset password); leave **coverage** (rep temporarily sees a teammate's leads WITHOUT ownership transfer — `covers[]`); `/team` page with per-rep performance (assigned/worked/converted/conv%/calls/messages, computed from logged note authors) + click-through scorecard.
 
-**OEM console**: two-tier access (oemDistributed=auto full; self-registered=locked until "Sponsor subscription" click), network dealer grid w/ stats, escalation queue, assign service agent (visible on the customer's MyGarage timeline).
+**OEM console**: **DEPLOYMENT STATUS UNCLEAR** (2026-07-15). All 5 areas verified locally (My Network, Onboard Dealer, Feedback, Stock Requests, Reports) but **none are clearly visible/functional on production** (evcrm.in/oem). Page shows pre-existing sections (Dealer Network grid, Service Escalations) but not the new features. **Need to verify**: (1) Did deploy include the code? (2) Are features on different routes? (3) Did build/commit fail? Two-tier access (oemDistributed=auto full; self-registered=locked until "Sponsor subscription" click) remains.
 
 **Auth/infra**: login w/ role redirects (rep/dealer→/dealer, oem→/oem, founder→/admin) — post-login uses **`window.location.assign` full navigation** (soft router.replace caused an infinite loop; don't regress this); forgot-password email OTP flow (WORKS in prod via Resend); Supabase persistence; seed script; production guard in store.js.
 
@@ -134,9 +134,11 @@ npx firebase-tools deploy --only hosting --project ev-crm-realtime --non-interac
 5. **Base64 attachments stored in DB rows** (service requests, KYC docs) — move to Supabase Storage before volume.
 6. **Query-level filtering** — APIs read whole tables then filter in JS; push filters into Supabase queries as data grows.
 7. **Two marketplaces exist**: `/` (showroom, canonical, light) and `/buy-vehicles` (dark). Dealer-dashboard "View Marketplace" links still point to `/buy-vehicles`. Consider consolidating to one.
-8. **OEM "sponsor" flips billing flags only** — no real Razorpay charge to the OEM yet.
-9. **Legacy mock pages remain** (e.g., `/queue`, parts of `/admin`, older content pages using `lib/data.js` fake data). `/api/admin/users` is a legacy path — rep creation must use `/api/dealer/reps` (creates rep record + linked login).
-10. Local `data/*.json` contains test junk from development; prod Supabase is the clean source of truth.
+8. **OEM "sponsor" flips billing flags only** — no real Razorpay charge to the OEM yet. (Note: Separate from new Onboard Dealer flow which distributes CRM instantly without sponsor step.)
+9. **Admin panel incomplete** — Global Platform Hub shows basic metrics (total revenue, active dealers, platform users) but main content area is mostly empty. User Ops section exists but lacks full functionality (dealer management, detailed analytics, system oversight tools).
+
+10. **Legacy mock pages remain** (e.g., `/queue`, parts of `/admin`, older content pages using `lib/data.js` fake data). `/api/admin/users` is a legacy path — rep creation must use `/api/dealer/reps` (creates rep record + linked login).
+11. Local `data/*.json` contains test junk from development; prod Supabase is the clean source of truth.
 
 ---
 
@@ -182,5 +184,5 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
 4. SMS gateway for MyGarage OTP.
 5. Supabase Storage for attachments.
 6. Consolidate the two marketplaces; clean legacy pages (`/queue`, mock admin panels).
-7. Founder/admin panel completion (dealer oversight, platform metrics).
+7. Founder/admin panel completion — **PARTIAL** (metrics dashboard shows revenue/dealers/users; User Ops section exists but mostly empty; needs dealer management, detailed analytics, system oversight tools).
 8. Notifications (email on new lead/booking/service; WhatsApp templates via BSP later).
