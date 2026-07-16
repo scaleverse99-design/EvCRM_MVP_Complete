@@ -243,9 +243,30 @@
 
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero-h1 { font-size: 44px; }
+  .hero-h1 { font-size: 40px; letter-spacing: -1.5px; }
   .mock-grid { grid-template-columns: 1fr; }
   .lp-nav-links { display: none; }
+  .cta-gradient-box { padding: 48px 24px; }
+  .cta-gradient-box h2 { font-size: 28px; }
+  .footer-flex { flex-direction: column; gap: 16px; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+@media (max-width: 600px) {
+  .hero-h1 { font-size: 30px; letter-spacing: -1px; }
+  .hero-p { font-size: 15px; }
+  .hero-ctas { flex-direction: column; gap: 12px; }
+  .lp-hero { padding: 48px 0 60px; }
+  .hero-content { margin-bottom: 32px; }
+  .sect-h2 { font-size: 26px; }
+  .sect-p { font-size: 14px; }
+  .lp-features-sect { padding: 60px 0; }
+  .lp-cta-area { padding: 40px 0 80px; }
+  .cta-gradient-box { padding: 36px 20px; border-radius: 20px; }
+  .cta-gradient-box h2 { font-size: 24px; }
+  .lp-footer { padding: 40px 0 48px; }
+  .features-grid { grid-template-columns: 1fr; gap: 16px; }
+  .lp-feat-card { padding: 24px !important; }
 }
 
 /* ── Animations (Mirroring Shell) ─────────────────────────────────── */

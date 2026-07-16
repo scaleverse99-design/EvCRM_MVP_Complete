@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../lib/auth"
 import { readTable, writeTable } from "../../../lib/store"
+import { sendOEMSponsorshipEmail } from "../../../lib/email"
 
 function getOEM(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "").trim()
@@ -98,6 +99,21 @@ export async function GET(req) {
     .filter(r => r.oemId === oem.oemId)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
+  // Leads across accessible dealers — the OEM's inside sales team calls these
+  // to verify genuine interest before routing the customer to the dealer showroom.
+  const oemLeads = leads
+    .filter(l => accessible.has(l.dealership))
+    .map(l => ({
+      id: l.id, dealership: l.dealership,
+      dealerName: (() => { const d = network.find(d => d.dealership === l.dealership); return d?.dealershipName || d?.name || l.dealership })(),
+      name: l.name, phone: l.phone, vehicle: l.vehicle, status: l.status,
+      insideSalesAgent: l.insideSalesAgent || null, insideSalesAssignedAt: l.insideSalesAssignedAt || null,
+      oemVerified: !!l.oemVerified, oemVerifiedAt: l.oemVerifiedAt || null,
+      createdAt: l.createdAt,
+    }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 100)
+
   // Location trends — vehicle demand by state, from accessible dealers' bookings
   const invById = new Map(inventory.map(v => [v.id, v]))
   const trendMap = {}
@@ -113,7 +129,7 @@ export async function GET(req) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 30)
 
-  return ok({ oemId: oem.oemId, dealers, escalations, quoteRejections, repComments, stockRequests: myStockRequests, locationTrends })
+  return ok({ oemId: oem.oemId, dealers, escalations, quoteRejections, repComments, stockRequests: myStockRequests, locationTrends, leads: oemLeads })
 }
 
 // ── PATCH /api/oem ──────────────────────────────────────────────────
@@ -138,6 +154,23 @@ export async function PATCH(req) {
     users[idx].sponsoredAt = at
     users[idx].billingStatus = "active_oem_sponsored"
     await writeTable("users", users)
+
+    // Informational email — doesn't block sponsorship if it fails
+    try {
+      const oemUser = users.find(u => u.role === "oem" && u.dealership === oem.oemId)
+      const dealer = users[idx]
+      const joinedAt = new Date(dealer.trialStartDate || dealer.createdAt || at)
+      const daysUsingCRM = Math.max(0, Math.floor((new Date(at) - joinedAt) / (1000 * 60 * 60 * 24)))
+      await sendOEMSponsorshipEmail({
+        to: dealer.email,
+        dealerName: dealer.name,
+        oemName: oemUser?.oemName || oemUser?.name || "your OEM partner",
+        daysUsingCRM,
+      })
+    } catch (emailErr) {
+      console.error("[oem/sponsor] sponsorship email failed:", emailErr.message)
+    }
+
     return ok({ sponsored: body.dealership })
   }
 
@@ -156,6 +189,35 @@ export async function PATCH(req) {
     requests[idx].timeline.push({ at, event: `OEM assigned service agent: ${body.agent.trim()}`, by: oem.email || oem.sub })
     await writeTable("service_requests", requests)
     return ok({ request: requests[idx] })
+  }
+
+  if (body.action === "assign_inside_sales") {
+    if (!body.agent?.trim()) return err("Agent name required", 400)
+    const users = await readTable("users")
+    const leads = await readTable("leads")
+    const idx = leads.findIndex(l => l.id === body.leadId)
+    if (idx === -1) return err("Lead not found", 404)
+    const dealer = users.find(u => u.role === "dealer" && u.dealership === leads[idx].dealership)
+    if (!oemCanAccess(dealer, oem.oemId)) return err("No access to this dealer's leads", 403)
+
+    leads[idx].insideSalesAgent = body.agent.trim()
+    leads[idx].insideSalesAssignedAt = at
+    await writeTable("leads", leads)
+    return ok({ lead: leads[idx] })
+  }
+
+  if (body.action === "verify_lead") {
+    const users = await readTable("users")
+    const leads = await readTable("leads")
+    const idx = leads.findIndex(l => l.id === body.leadId)
+    if (idx === -1) return err("Lead not found", 404)
+    const dealer = users.find(u => u.role === "dealer" && u.dealership === leads[idx].dealership)
+    if (!oemCanAccess(dealer, oem.oemId)) return err("No access to this dealer's leads", 403)
+
+    leads[idx].oemVerified = !!body.verified
+    leads[idx].oemVerifiedAt = body.verified ? at : null
+    await writeTable("leads", leads)
+    return ok({ lead: leads[idx] })
   }
 
   if (body.action === "update_stock_request") {

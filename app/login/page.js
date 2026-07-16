@@ -141,20 +141,12 @@ function SuccessScreen({ role, name }) {
 export default function LoginPage() {
   const router = useRouter()
 
-  // Check already logged in (Accelerated Pre-flight)
-  useEffect(()=>{
-    import("../../lib/token-storage").then(({ getToken, authFetch }) => {
-      const token = getToken()
-      if (!token) return
-
-      authFetch("/api/auth/me").then(r=>r.json()).then(d=>{
-        if (d.success) {
-          const route = (d.user.role === "superadmin" || d.user.role === "founder") ? "/admin" : (d.user.role === "oem" ? "/oem" : (d.user.role === "rep" ? "/queue" : "/dealer"))
-          window.location.assign(route) // full nav so AuthProvider re-reads the token
-        }
-      }).catch(()=>{})
-    })
-  }, [])
+  // NOTE: deliberately no "already logged in? redirect away" pre-flight here.
+  // /login must always show the form — a user with a valid session for one
+  // role (e.g. dealer) needs to be able to sign in as a different role (e.g.
+  // OEM/rep) without being silently bounced back to their old dashboard first.
+  // handleLogin() below already saves the new token and routes correctly once
+  // they actually submit credentials, which is the only time this should happen.
 
   const [screen,   setScreen]   = useState("login")
   const [role,     setRole]     = useState("dealer")

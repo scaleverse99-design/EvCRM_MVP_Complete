@@ -6,6 +6,31 @@ import { bookTestDrive } from "../../lib/payments/tokenBooking"
 import TopBar from "../../components/home/TopBar"
 import Footer from "../../components/home/Footer"
 
+/* ── Responsive styles injected once ──────────────────────────────── */
+const MOBILE_STYLES = `
+  .showroom-hero-title { font-size: 48px; font-weight: 900; letter-spacing: -1.5px; margin-bottom: 12px; }
+  .showroom-hero-subtitle { font-size: 16px; opacity: 0.6; max-width: 600px; margin: 0 auto; }
+  .showroom-filter-bar { max-width: 1200px; margin: 0 auto; padding: 16px 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .showroom-vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; }
+  .showroom-detail-grid { max-width: 1000px; margin: 0 auto; padding: 40px; display: grid; grid-template-columns: 1fr 400px; gap: 40px; }
+  .showroom-detail-specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .showroom-detail-hero-name { font-size: 40px; }
+  @media (max-width: 768px) {
+    .showroom-hero-title { font-size: 28px; letter-spacing: -0.8px; }
+    .showroom-hero-subtitle { font-size: 14px; padding: 0 16px; }
+    .showroom-filter-bar { padding: 12px 16px; gap: 10px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .showroom-filter-bar::-webkit-scrollbar { display: none; }
+    .showroom-vehicle-grid { grid-template-columns: 1fr; gap: 20px; }
+    .showroom-detail-grid { grid-template-columns: 1fr; padding: 20px 16px; gap: 24px; }
+    .showroom-detail-specs { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .showroom-detail-hero-name { font-size: 26px; }
+  }
+  @media (max-width: 480px) {
+    .showroom-hero-title { font-size: 24px; }
+    .showroom-filter-bar select { font-size: 12px; padding: 7px 10px; min-width: 100px; }
+  }
+`
+
 const TYPE_ICON = { "2W": "🛵", "4W": "🚗", "3W": "🛺" }
 
 /* ── Vehicle card (light theme) ──────────────────────────────────── */
@@ -13,7 +38,7 @@ function VehicleCard({ v, onView, onBook }) {
   const hasPhoto = v.images && v.images.length > 0 && v.images[0] && v.images[0] !== "🚗" && v.images[0] !== "🛵" && v.images[0] !== "🛺"
 
   return (
-    <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 24, overflow: "hidden", display: "flex", flexDirection: "column", transition: "box-shadow 0.2s" }}>
+    <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", display: "flex", flexDirection: "column", transition: "box-shadow 0.2s" }}>
       <div onClick={() => onView(v)} style={{ cursor: "pointer", position: "relative", background: "linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)", height: 160, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         {hasPhoto ? (
           <img src={v.images[0]} alt={`${v.brand} ${v.model}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -21,21 +46,21 @@ function VehicleCard({ v, onView, onBook }) {
           <div style={{ fontSize: 64 }}>{TYPE_ICON[v.type] || "🚗"}</div>
         )}
         {(v.tags || [])[0] && (
-          <span style={{ position: "absolute", top: 12, left: 12, background: C.green, color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, textTransform: "uppercase" }}>{v.tags[0]}</span>
+          <span style={{ position: "absolute", top: 10, left: 10, background: C.green, color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 20, textTransform: "uppercase" }}>{v.tags[0]}</span>
         )}
-        <span style={{ position: "absolute", top: 12, right: 12, background: v.condition === "new" ? "#D1FAE5" : "#FEF3C7", color: v.condition === "new" ? "#065F46" : "#92400E", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>
+        <span style={{ position: "absolute", top: 10, right: 10, background: v.condition === "new" ? "#D1FAE5" : "#FEF3C7", color: v.condition === "new" ? "#065F46" : "#92400E", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>
           {v.condition === "new" ? "NEW" : `${v.km?.toLocaleString()} km`}
         </span>
       </div>
-      <div style={{ padding: "18px 20px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "14px 16px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ fontSize: 11, color: C.ink3, marginBottom: 4 }}>{v.brand} · {v.bodyType}</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 10, cursor: "pointer" }} onClick={() => onView(v)}>{v.model}</div>
-        <div style={{ display: "flex", gap: 16, fontSize: 11, color: C.ink3, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 12, fontSize: 11, color: C.ink3, marginBottom: 14, flexWrap: "wrap" }}>
           <span>🔋 {v.range} km</span>
           <span>⚡ {v.topSpeed} km/h</span>
           {v.rating ? <span>⭐ {v.rating}</span> : null}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 2 }}>
+        <div style={{ fontSize: 20, fontWeight: 900, color: C.ink, marginBottom: 2 }}>
           {fmt.currency(v.exShowroom || v.price)}
           {v.onRoadPrice ? (
             <span style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginLeft: 8 }}>
@@ -219,84 +244,416 @@ function BookingModal({ vehicle, mode = "testdrive", onClose }) {
   )
 }
 
-/* ── Product detail panel ─────────────────────────────────────────── */
-function ProductDetail({ v, onBack, onBook }) {
-  const [activeImg, setActiveImg] = useState(0)
-  const validImages = Array.isArray(v.images) ? v.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
-  const hasPhotos = validImages.length > 0
+/* ── EMI calculator — pure client-side, standard reducing-balance formula ── */
+function EMICalculator({ price }) {
+  const [downPayment, setDownPayment] = useState(Math.round(price * 0.2))
+  const [months, setMonths] = useState(36)
+  const rate = 0.105 // 10.5% p.a., matches typical EV loan rates — illustrative only
+  const principal = Math.max(price - downPayment, 0)
+  const r = rate / 12
+  const emi = principal > 0 ? Math.round((principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1)) : 0
+  const totalPayable = emi * months
+  const totalInterest = Math.max(totalPayable - principal, 0)
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#FAFAFA" }}>
-      <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
-        <button onClick={onBack} style={{ background: "#F3F4F6", border: "none", color: C.ink, borderRadius: 12, padding: "8px 16px", cursor: "pointer", fontSize: 12, fontWeight: 800, fontFamily: "inherit" }}>← BACK</button>
-        <div style={{ fontSize: 16, fontWeight: 900, color: C.ink }}>EV<span style={{ color: C.green }}>.CRM</span> Marketplace</div>
-        <div style={{ width: 70 }} />
+    <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 24, padding: 24 }}>
+      <div style={{ fontSize: 14, fontWeight: 900, color: C.ink, marginBottom: 18 }}>💳 EMI Calculator</div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.ink3, marginBottom: 6 }}>
+          <span>Down Payment</span><span style={{ fontWeight: 800, color: C.ink }}>{fmt.currency(downPayment)}</span>
+        </div>
+        <input type="range" min={0} max={price} step={5000} value={downPayment} onChange={e => setDownPayment(Number(e.target.value))} style={{ width: "100%", accentColor: C.green }} />
       </div>
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: 40, display: "grid", gridTemplateColumns: "1fr 400px", gap: 40 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.ink3, marginBottom: 6 }}>
+          <span>Loan Duration</span><span style={{ fontWeight: 800, color: C.ink }}>{months} months</span>
+        </div>
+        <input type="range" min={12} max={84} step={6} value={months} onChange={e => setMonths(Number(e.target.value))} style={{ width: "100%", accentColor: C.green }} />
+      </div>
+      <div style={{ background: C.bg, borderRadius: 16, padding: 18, textAlign: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: 0.5 }}>Estimated EMI</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: C.green, marginTop: 4 }}>{fmt.currency(emi)}<span style={{ fontSize: 13, color: C.ink3, fontWeight: 700 }}>/mo</span></div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.ink3, padding: "6px 0" }}>
+        <span>Principal</span><span style={{ fontWeight: 700, color: C.ink }}>{fmt.currency(principal)}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.ink3, padding: "6px 0" }}>
+        <span>Total Interest</span><span style={{ fontWeight: 700, color: C.ink }}>{fmt.currency(totalInterest)}</span>
+      </div>
+      <p style={{ fontSize: 9.5, color: C.ink3, marginTop: 10, lineHeight: 1.5 }}>Illustrative at ~10.5% p.a. Actual rate depends on your credit profile and lender.</p>
+    </div>
+  )
+}
+
+/* ── Product detail panel — Cars24 style ─────────────────────────── */
+const DETAIL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
+  .sd-page { font-family: 'DM Sans','Segoe UI',sans-serif; background: #F5F5F5; min-height: 100vh; }
+  .sd-nav { background: #fff; border-bottom: 1px solid #E5E7EB; padding: 0 24px; position: sticky; top: 0; z-index: 200; display: flex; align-items: center; gap: 16px; height: 56px; }
+  .sd-body { max-width: 1160px; margin: 0 auto; padding: 24px 20px 80px; display: grid; grid-template-columns: 1fr 380px; gap: 28px; align-items: start; }
+  .sd-img-main { width: 100%; height: 380px; object-fit: cover; border-radius: 0; display: block; }
+  .sd-img-emoji { height: 380px; display: flex; align-items: center; justify-content: center; font-size: 130px; background: linear-gradient(135deg,#F3F4F6,#E5E7EB); }
+  .sd-thumb-row { display: flex; gap: 0; background: #1a1a1a; }
+  .sd-thumb { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 6px; cursor: pointer; border-right: 1px solid #333; transition: background 0.15s; gap: 5px; border-bottom: 3px solid transparent; }
+  .sd-thumb:last-child { border-right: none; }
+  .sd-thumb.active { border-bottom-color: #22C55E; }
+  .sd-thumb img { width: 44px; height: 32px; object-fit: cover; border-radius: 4px; }
+  .sd-thumb-label { font-size: 10px; color: #aaa; font-weight: 600; }
+  .sd-thumb.active .sd-thumb-label { color: #22C55E; }
+  .sd-panel { background: #fff; border-radius: 16px; border: 1px solid #E5E7EB; overflow: hidden; position: sticky; top: 72px; }
+  .sd-tag { display: inline-flex; align-items: center; gap: 5px; background: #F3F4F6; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #374151; white-space: nowrap; }
+  .sd-trust-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: #F0FDF4; border-top: 1px solid #BBF7D0; border-bottom: 1px solid #BBF7D0; flex-wrap: wrap; }
+  .sd-trust-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #166534; }
+  .sd-trust-sep { width: 1px; height: 14px; background: #86EFAC; }
+  .sd-highlights { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .sd-highlight-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 14px; padding: 18px 16px; }
+  .sd-tab { padding: 12px 0; border-bottom: 3px solid transparent; font-size: 14px; font-weight: 600; color: #6B7280; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; transition: color 0.15s; }
+  .sd-tab.active { color: #111; border-bottom-color: #22C55E; }
+  .sd-overview-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+  .sd-ov-cell { display: flex; flex-direction: column; gap: 4px; padding: 16px 0; border-right: 1px solid #E5E7EB; padding-right: 20px; margin-right: 20px; }
+  .sd-ov-cell:last-child { border-right: none; }
+  .sd-feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .sd-specs-tbl { width: 100%; border-collapse: collapse; }
+  .sd-specs-tbl td { padding: 10px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px; }
+  .sd-specs-tbl td:first-child { color: #6B7280; width: 50%; }
+  .sd-specs-tbl td:last-child { font-weight: 700; color: #111; }
+  .sd-book-btn { width: 100%; background: #22C55E; color: #fff; border: none; border-radius: 14px; padding: 16px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .sd-book-btn:hover { background: #16A34A; }
+  .sd-reserve-btn { width: 100%; background: #fff; color: #111; border: 1.5px solid #E5E7EB; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 10px; transition: border-color 0.15s; }
+  .sd-reserve-btn:hover { border-color: #22C55E; color: #16A34A; }
+  .sd-similar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 16px; }
+  @media (max-width: 900px) {
+    .sd-body { grid-template-columns: 1fr; }
+    .sd-panel { position: static; }
+    .sd-img-main { height: 260px; }
+    .sd-img-emoji { height: 260px; }
+    .sd-highlights { grid-template-columns: 1fr 1fr; }
+    .sd-overview-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .sd-body { padding: 12px 12px 80px; gap: 16px; }
+    .sd-highlights { grid-template-columns: 1fr; }
+    .sd-overview-row { grid-template-columns: 1fr; }
+    .sd-feat-grid { grid-template-columns: 1fr; }
+    .sd-thumb-label { display: none; }
+  }
+`
+
+function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
+  const [activeImg, setActiveImg] = useState(0)
+  const [activeTab, setActiveTab] = useState("overview")
+  const [showBreakup, setShowBreakup] = useState(false)
+  const validImages = Array.isArray(v.images) ? v.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
+  const hasPhotos = validImages.length > 0
+  const featureList = Array.isArray(v.features) ? v.features.filter(Boolean) : []
+  const similar = vehicles.filter(x => x.id !== v.id && x.type === v.type).slice(0, 4)
+
+  const imgCategories = hasPhotos
+    ? validImages.map((url, i) => ({ label: ["Exterior","Interior","Features","Highlights","Tyres"][i] || `View ${i+1}`, url }))
+    : []
+
+  // "Great things" highlights based on vehicle data
+  const highlights = [
+    v.range      && { icon: "🔋", title: `${v.range} km real-world range`, sub: "ARAI certified range, real-world tested" },
+    v.condition === "new" && { icon: "✨", title: "Brand new vehicle", sub: "Direct from showroom, zero km" },
+    v.condition !== "new" && v.km && { icon: "📍", title: `${v.km?.toLocaleString()} km driven`, sub: v.km < 25000 ? "Lightly used, high value" : "Well maintained" },
+    v.batteryCapacity && { icon: "⚡", title: v.batteryCapacity + " battery", sub: "Efficient energy storage" },
+    v.warrantyYears   && { icon: "🛡️", title: `${v.warrantyYears}-year warranty`, sub: "Manufacturer backed coverage" },
+    v.chargingTime    && { icon: "🔌", title: v.chargingTime + " charge", sub: "Fast charge compatible" },
+    featureList.length > 0 && { icon: "🎯", title: "Premium features", sub: featureList.slice(0,2).join(", ") },
+  ].filter(Boolean).slice(0, 6)
+
+  const emiApprox = v.exShowroom ? Math.round((v.exShowroom * 0.8 * 0.00875 * Math.pow(1.00875,36))/(Math.pow(1.00875,36)-1)) : null
+
+  return (
+    <div className="sd-page">
+      <style>{DETAIL_STYLES}</style>
+
+      {/* ── Top Nav ── */}
+      <nav className="sd-nav">
+        <button onClick={onBack} style={{ background: "none", border: "1px solid #E5E7EB", color: "#374151", borderRadius: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>← Back</button>
+        <div style={{ flex: 1 }} />
+        <div style={{ fontSize: 16, fontWeight: 900, color: "#111" }}>EV<span style={{ color: "#22C55E" }}>.CRM</span> <span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>Marketplace</span></div>
+      </nav>
+
+      <div className="sd-body">
+        {/* ── LEFT: Image + Content ── */}
         <div>
-          <div style={{ background: "#fff", borderRadius: 32, border: `1px solid ${C.border}`, padding: 40, textAlign: "center", marginBottom: 32, overflow: "hidden" }}>
+          {/* Image Block */}
+          <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid #E5E7EB", marginBottom: 20 }}>
             {hasPhotos ? (
-              <div>
-                <div style={{ width: "100%", height: 260, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
-                  <img src={validImages[activeImg] || validImages[0]} alt={`${v.brand} ${v.model}`} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              <>
+                <div style={{ position: "relative" }}>
+                  <img src={validImages[activeImg]} alt={`${v.brand} ${v.model}`} className="sd-img-main" />
+                  {(v.tags||[])[0] && (
+                    <span style={{ position: "absolute", top: 14, left: 14, background: "#22C55E", color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 12px", borderRadius: 20 }}>{v.tags[0]}</span>
+                  )}
+                  <span style={{ position: "absolute", top: 14, right: 14, background: v.condition === "new" ? "#DCFCE7" : "#FEF3C7", color: v.condition === "new" ? "#166534" : "#92400E", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 20 }}>
+                    {v.condition === "new" ? "NEW" : `${v.km?.toLocaleString()} km`}
+                  </span>
                 </div>
-                {validImages.length > 1 && (
-                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
-                    {validImages.map((imgUrl, i) => (
-                      <button key={i} onClick={() => setActiveImg(i)} style={{ width: 60, height: 45, borderRadius: 8, border: i === activeImg ? `2px solid ${C.green}` : `1px solid ${C.border}`, overflow: "hidden", padding: 0, cursor: "pointer", background: "none" }}>
-                        <img src={imgUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {imgCategories.length > 1 && (
+                  <div className="sd-thumb-row">
+                    {imgCategories.map((cat, i) => (
+                      <button key={i} className={`sd-thumb${activeImg === i ? " active" : ""}`} onClick={() => setActiveImg(i)}>
+                        <img src={cat.url} alt={cat.label} />
+                        <span className="sd-thumb-label">{cat.label}</span>
                       </button>
                     ))}
                   </div>
                 )}
-              </div>
+              </>
             ) : (
-              <div style={{ fontSize: 120, margin: "20px 0" }}>{TYPE_ICON[v.type] || "🚗"}</div>
+              <div className="sd-img-emoji">{TYPE_ICON[v.type] || "🚗"}</div>
             )}
-            <h1 style={{ fontSize: 40, fontWeight: 900, color: C.ink, margin: 0 }}>{v.brand} {v.model}</h1>
-            <p style={{ fontSize: 16, color: C.ink3, marginTop: 8 }}>{v.variant} · {v.bodyType}</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {[{ l: "REAL RANGE", v: `${v.range}km`, i: "🔋" }, { l: "TOP SPEED", v: `${v.topSpeed}km/h`, i: "⚡" }, { l: "BATTERY", v: v.batteryCapacity || "—", i: "🔌" }].map((s, i) => (
-              <div key={i} style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 24, padding: 24, textAlign: "center" }}>
-                <div style={{ fontSize: 20, marginBottom: 10 }}>{s.i}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: C.ink }}>{s.v}</div>
-                <div style={{ fontSize: 10, fontWeight: 800, color: C.ink3, marginTop: 4 }}>{s.l}</div>
+
+          {/* Title + Tags */}
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: "20px 20px 0", marginBottom: 20 }}>
+            <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, marginBottom: 6 }}>EV.CRM CERTIFIED STOCK</div>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: "#111", margin: "0 0 10px", letterSpacing: "-0.5px" }}>
+              {v.year && <span style={{ fontWeight: 500 }}>{v.year} </span>}{v.brand} {v.model} <span style={{ fontWeight: 500, color: "#6B7280" }}>{v.variant}</span>
+            </h1>
+            {/* Pill tags */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {v.range      && <span className="sd-tag">⚡ {v.range} km</span>}
+              {v.condition !== "new" && v.km && <span className="sd-tag">📍 {v.km?.toLocaleString()} km</span>}
+              {v.condition === "new"  && <span className="sd-tag">✨ New</span>}
+              {v.bodyType   && <span className="sd-tag">{v.bodyType}</span>}
+              {v.color      && <span className="sd-tag">🎨 {v.color}</span>}
+              {v.topSpeed   && <span className="sd-tag">🏎 {v.topSpeed} km/h</span>}
+            </div>
+            {/* Location */}
+            <div style={{ fontSize: 13, color: "#6B7280", paddingBottom: 16, borderBottom: "1px solid #F3F4F6" }}>
+              📍 {[v.dealerName, v.district, v.state].filter(Boolean).join(", ")}
+            </div>
+            {/* Trust badges */}
+            <div className="sd-trust-row">
+              <span className="sd-trust-badge">✅ EV.CRM Certified</span>
+              <span className="sd-trust-sep" />
+              <span className="sd-trust-badge">🛡️ Warranty Covered</span>
+              <span className="sd-trust-sep" />
+              <span className="sd-trust-badge">🗓 Free Test Drive</span>
+              {v.warrantyYears && <><span className="sd-trust-sep" /><span className="sd-trust-badge">📋 {v.warrantyYears}yr Warranty</span></>}
+            </div>
+          </div>
+
+          {/* ── Great Things About This EV ── */}
+          {highlights.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: 20, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>Great things about this EV</h2>
+              <div className="sd-highlights">
+                {highlights.map((h, i) => (
+                  <div key={i} className="sd-highlight-card">
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>{h.icon}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 4 }}>{h.title}</div>
+                    <div style={{ fontSize: 12, color: "#22C55E", fontWeight: 600 }}>{h.sub}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* ── Tabs ── */}
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", overflow: "hidden", marginBottom: 20 }}>
+            <div style={{ display: "flex", gap: 24, padding: "0 20px", borderBottom: "1px solid #F3F4F6" }}>
+              {[["overview","Overview"],["specs","Specs & Details"],["features","Features"]].map(([id,label]) => (
+                <button key={id} className={`sd-tab${activeTab===id?" active":""}`} onClick={() => setActiveTab(id)}>{label}</button>
+              ))}
+            </div>
+
+            <div style={{ padding: 20 }}>
+              {activeTab === "overview" && (
+                <>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 0.5 }}>Car Overview</h3>
+                  <div className="sd-overview-row">
+                    {[
+                      { icon: "📅", label: "Reg. Year", val: v.year },
+                      { icon: "⚡", label: "EV Type", val: v.type === "4W" ? "Electric Car" : v.type === "2W" ? "Electric 2W" : "Electric 3W" },
+                      { icon: "📍", label: "KM Driven", val: v.condition === "new" ? "0 km (New)" : `${v.km?.toLocaleString()} km` },
+                      { icon: "🎨", label: "Colour", val: v.color || "—" },
+                      { icon: "🚘", label: "Body Type", val: v.bodyType || "—" },
+                      { icon: "🏙", label: "Location", val: [v.district, v.state].filter(Boolean).join(", ") || "—" },
+                    ].filter(r => r.val).map((r, i) => (
+                      <div key={i} className="sd-ov-cell">
+                        <div style={{ fontSize: 20 }}>{r.icon}</div>
+                        <div style={{ fontSize: 10, color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{r.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>{r.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {activeTab === "specs" && (
+                <>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 0.5 }}>Technical Specifications</h3>
+                  <table className="sd-specs-tbl">
+                    <tbody>
+                      {[
+                        ["Real-World Range", v.range ? `${v.range} km` : null],
+                        ["Battery Capacity", v.batteryCapacity],
+                        ["Top Speed", v.topSpeed ? `${v.topSpeed} km/h` : null],
+                        ["Charging Time", v.chargingTime],
+                        ["Seating Capacity", v.seatingCapacity ? `${v.seatingCapacity} seats` : null],
+                        ["Boot Space", v.bootSpace],
+                        ["Ground Clearance", v.groundClearance],
+                        ["Warranty", v.warrantyYears ? `${v.warrantyYears} years` : null],
+                        ["Year", v.year],
+                        ["Body Type", v.bodyType],
+                        ["Variant", v.variant],
+                        ["Colour", v.color],
+                        ["Condition", v.condition === "new" ? "Brand New" : `Used · ${v.km?.toLocaleString()} km`],
+                      ].filter(([, val]) => val).map(([label, val]) => (
+                        <tr key={label}>
+                          <td>{label}</td>
+                          <td>{val}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {activeTab === "features" && (
+                <>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 0.5 }}>Key Features</h3>
+                  {featureList.length > 0 ? (
+                    <div className="sd-feat-grid">
+                      {featureList.map((feat, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#374151", padding: "6px 0" }}>
+                          <span style={{ color: "#22C55E", fontWeight: 900, flexShrink: 0, marginTop: 1 }}>✓</span>
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: "#9CA3AF", fontSize: 13 }}>No features listed for this vehicle.</div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* EMI Calculator */}
+          <div id="sd-emi-calc" style={{ marginTop: 0 }}>
+            <EMICalculator price={v.exShowroom || v.price || 0} />
           </div>
         </div>
+
+        {/* ── RIGHT: Sticky Booking Panel ── */}
         <aside>
-          <div style={{ background: C.ink, borderRadius: 32, padding: 32, color: "#fff", position: "sticky", top: 100 }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#6EE7B7", textTransform: "uppercase", letterSpacing: 1, marginBottom: 24 }}>Price</div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0" }}>
-              <span style={{ fontSize: 14, opacity: 0.6 }}>Ex-showroom</span>
-              <span style={{ fontSize: 28, fontWeight: 900, color: "#6EE7B7" }}>{fmt.currency(v.exShowroom || v.price)}</span>
-            </div>
-            {v.onRoadPrice ? (
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: "1px dashed rgba(255,255,255,0.15)" }}>
-                <span style={{ fontSize: 14, opacity: 0.6 }}>On-Road</span>
-                <span style={{ fontSize: 28, fontWeight: 900, color: "#6EE7B7" }}>{fmt.currency(v.onRoadPrice)}</span>
+          <div className="sd-panel">
+            {/* Price section */}
+            <div style={{ padding: "20px 20px 16px" }}>
+              {emiApprox && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600 }}>EMI starts at</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "#111" }}>₹{emiApprox.toLocaleString("en-IN")}<span style={{ fontSize: 14, fontWeight: 600, color: "#6B7280" }}>/mo</span></div>
+                    <button onClick={() => {
+                      // Instant scroll on purpose: smooth-behavior scrolling silently
+                      // no-ops on this page (verified — smooth lands at 0, auto lands
+                      // correctly), so don't "upgrade" this back to behavior:"smooth".
+                      const el = document.getElementById("sd-emi-calc")
+                      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 120, behavior: "auto" })
+                    }} style={{ background: "none", border: "none", color: "#22C55E", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Check EMI →</button>
+                  </div>
+                </div>
+              )}
+              <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600 }}>Ex-showroom</div>
+                    <div style={{ fontSize: 26, fontWeight: 900, color: "#111", letterSpacing: "-0.5px" }}>{fmt.currency(v.exShowroom || v.price)}</div>
+                  </div>
+                  {v.onRoadPrice && (
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, color: "#6B7280" }}>On-Road (est.)</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#374151" }}>{fmt.currency(v.onRoadPrice)}</div>
+                    </div>
+                  )}
+                </div>
+                {v.onRoadPrice && (
+                  <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
+                    + {fmt.currency(v.onRoadPrice - (v.exShowroom || v.price))} other charges
+                    <button onClick={() => setShowBreakup(s => !s)} style={{ background: "none", border: "none", color: "#22C55E", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
+                      {showBreakup ? "Hide breakup ↑" : "Price breakup →"}
+                    </button>
+                  </div>
+                )}
+                {showBreakup && v.onRoadPrice && (
+                  <div style={{ background: "#F9FAFB", border: "1px solid #F3F4F6", borderRadius: 10, padding: "10px 14px", marginTop: 10 }}>
+                    {[
+                      ["Ex-showroom price", v.exShowroom || v.price],
+                      ["RTO, insurance & other charges", v.onRoadPrice - (v.exShowroom || v.price)],
+                    ].map(([label, amt]) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280", padding: "4px 0" }}>
+                        <span>{label}</span><span style={{ fontWeight: 700, color: "#374151" }}>{fmt.currency(amt)}</span>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, padding: "6px 0 2px", borderTop: "1px solid #E5E7EB", marginTop: 4 }}>
+                      <span style={{ fontWeight: 700, color: "#111" }}>On-road total (est.)</span>
+                      <span style={{ fontWeight: 900, color: "#111" }}>{fmt.currency(v.onRoadPrice)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : null}
-            {v.emi ? (
-              <div style={{ fontSize: 12, opacity: 0.6, marginTop: 4 }}>EMI from {fmt.currency(v.emi)}/mo</div>
-            ) : null}
-            <div style={{ fontSize: 12, opacity: 0.6, marginTop: 16 }}>🏪 {v.dealerName} · {v.district}</div>
-            <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 12 }}>
-              <button onClick={() => onBook({ vehicle: v, mode: "testdrive" })} style={{ width: "100%", background: "#fff", color: C.ink, border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 16, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-                🗓 BOOK FREE TEST DRIVE
+            </div>
+
+            {/* Trust */}
+            <div style={{ background: "#F0FDF4", borderTop: "1px solid #BBF7D0", borderBottom: "1px solid #BBF7D0", padding: "10px 20px", display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>✅ Certified EV</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>🔒 Safe Booking</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>↩ Refundable Token</span>
+            </div>
+
+            {/* Dealer */}
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6" }}>
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 2 }}>DEALER</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>{v.dealerName}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>📍 {[v.district, v.state].filter(Boolean).join(", ")}</div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <button className="sd-book-btn" onClick={() => onBook({ vehicle: v, mode: "testdrive" })}>
+                🗓 Book free test drive
               </button>
-              <button onClick={() => onBook({ vehicle: v, mode: "reserve" })} style={{ width: "100%", background: C.green, color: "#fff", border: "none", borderRadius: 16, padding: 16, fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
-                ⚡ RESERVE VEHICLE (₹1,000)
+              <button className="sd-reserve-btn" onClick={() => onBook({ vehicle: v, mode: "reserve" })}>
+                ⚡ Reserve Vehicle (₹1,000)
               </button>
-              <p style={{ textAlign: "center", fontSize: 10, opacity: 0.5, margin: "4px 0 0" }}>
-                Token is fully adjustable against the final purchase price
+              <p style={{ textAlign: "center", fontSize: 10, color: "#9CA3AF", margin: "4px 0 0", lineHeight: 1.5 }}>
+                Token of ₹1,000 is fully adjustable against the final purchase price
               </p>
             </div>
           </div>
         </aside>
       </div>
+
+      {/* ── Similar EVs ── */}
+      {similar.length > 0 && (
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 20px 60px" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#111", marginBottom: 16 }}>Similar EVs You Might Like</h2>
+          <div className="sd-similar-grid">
+            {similar.map(s => (
+              <div key={s.id} onClick={() => onView(s)} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "box-shadow 0.15s" }}>
+                <div style={{ height: 120, background: "linear-gradient(135deg,#F3F4F6,#E5E7EB)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {Array.isArray(s.images) && s.images[0] && s.images[0] !== "🚗" && s.images[0] !== "🛵" && s.images[0] !== "🛺"
+                    ? <img src={s.images[0]} alt={s.model} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ fontSize: 44 }}>{TYPE_ICON[s.type] || "🚗"}</div>}
+                </div>
+                <div style={{ padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, color: "#9CA3AF" }}>{s.brand}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 4 }}>{s.model}</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: "#22C55E" }}>{fmt.currency(s.exShowroom || s.price)}</div>
+                  {s.range && <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>⚡ {s.range} km range</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -327,36 +684,37 @@ export default function ShowroomPage() {
 
   const brands = ["All Brands", ...(filters.brands || [])]
 
-  if (viewing) return <ProductDetail v={viewing} onBack={() => setViewing(null)} onBook={setBookVehicle} />
+  if (viewing) return <ProductDetail v={viewing} vehicles={vehicles} onBack={() => setViewing(null)} onView={setViewing} onBook={setBookVehicle} />
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#FAFAFA" }}>
+      <style>{MOBILE_STYLES}</style>
       <TopBar />
-      <div style={{ background: C.ink, padding: "60px 24px", textAlign: "center", color: "#fff" }}>
-        <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: "-1.5px", marginBottom: 12 }}>Expert Vetted Marketplace</h1>
-        <p style={{ fontSize: 16, opacity: 0.6, maxWidth: 600, margin: "0 auto" }}>Discover high-performance electric mobility, hand-picked by EV.OS intelligence for the Indian road.</p>
+      <div style={{ background: C.ink, padding: "48px 20px", textAlign: "center", color: "#fff" }}>
+        <h1 className="showroom-hero-title">Expert Vetted Marketplace</h1>
+        <p className="showroom-hero-subtitle">Discover high-performance electric mobility, hand-picked by EV.OS intelligence for the Indian road.</p>
       </div>
 
-      <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 70, zIndex: 80 }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 24px", display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, fontWeight: 900, color: C.ink2 }}>FILTERS:</span>
-          <select value={type} onChange={e => setType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+      <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 56, zIndex: 80 }}>
+        <div className="showroom-filter-bar">
+          <span style={{ fontSize: 12, fontWeight: 900, color: C.ink2, whiteSpace: "nowrap" }}>FILTERS:</span>
+          <select value={type} onChange={e => setType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 110 }}>
             {["All", "2W", "4W", "3W"].map(t => <option key={t} value={t}>{t === "All" ? "All Types" : t}</option>)}
           </select>
-          <select value={brand} onChange={e => setBrand(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+          <select value={brand} onChange={e => setBrand(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 120 }}>
             {brands.map(b => <option key={b}>{b}</option>)}
           </select>
-          <div style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.ink3 }}>{vehicles.length} Models Found</div>
+          <div style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.ink3, whiteSpace: "nowrap" }}>{vehicles.length} Models Found</div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 80px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 16px 80px" }}>
         {loading ? (
-          <div style={{ textAlign: "center", padding: 100, color: C.ink3 }}>Loading live inventory…</div>
+          <div style={{ textAlign: "center", padding: 80, color: C.ink3 }}>Loading live inventory…</div>
         ) : vehicles.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 100, color: C.ink3 }}>No vehicles match these filters.</div>
+          <div style={{ textAlign: "center", padding: 80, color: C.ink3 }}>No vehicles match these filters.</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 32 }}>
+          <div className="showroom-vehicle-grid">
             {vehicles.map(v => <VehicleCard key={v.id} v={v} onView={setViewing} onBook={setBookVehicle} />)}
           </div>
         )}

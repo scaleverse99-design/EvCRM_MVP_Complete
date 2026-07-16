@@ -10,6 +10,7 @@ import { useAuth } from "../../lib/AuthContext"
 import { authFetch } from "../../lib/token-storage"
 import ImportModal from "../../components/ui/ImportModal"
 import TrialBanner from "../../components/TrialBanner"
+import { lookupEVSpecs } from "../../lib/evCatalog"
 
 /* ── WhatsApp templates ─── */
 const WA_REPLY_MAP = {
@@ -109,7 +110,7 @@ const STATUS_OPTIONS = ["IN_STOCK","SOLD","RESERVED","UNAVAILABLE"]
 const STATUS_COLORS  = { IN_STOCK:C.green, SOLD:C.red, RESERVED:C.orange, UNAVAILABLE:C.ink3 }
 
 function emptyVehicle(dealership, dealerName) {
-  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
+  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
 }
 
 /* ── Inventory Report Modal — 5.9 ── */
@@ -147,7 +148,7 @@ function InventoryReportModal({ inventory, onClose }) {
   )
 }
 
-function F({ label, field, form, setForm, type="text", opts }) {
+function F({ label, field, form, setForm, type="text", opts, onBlur }) {
   return (
     <div>
       <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>{label}</div>
@@ -157,7 +158,7 @@ function F({ label, field, form, setForm, type="text", opts }) {
           {opts.map(o=><option key={o} value={o}>{o}</option>)}
         </select>
       ) : (
-        <input type={type} value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} placeholder={label}
+        <input type={type} value={form?.[field]||""} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} onBlur={onBlur} placeholder={label}
           style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}
         />
       )}
@@ -176,6 +177,15 @@ function InventorySection({ dealership, user }) {
   const [filterStatus, setFilterStatus] = useState("")
   const [reportOpen, setReportOpen] = useState(false)
 
+  // Brochure upload → AI extraction → step-through review
+  const [brochureParsing, setBrochureParsing] = useState(false)
+  const [brochureError,   setBrochureError]   = useState("")
+  const [reviewQueue,     setReviewQueue]     = useState(null) // array of extracted vehicles awaiting review, or null when not reviewing
+  const [reviewIndex,     setReviewIndex]     = useState(0)
+  const [reviewForm,      setReviewForm]      = useState(null)
+  const [reviewSaving,    setReviewSaving]    = useState(false)
+  const [reviewAdded,     setReviewAdded]     = useState(0)
+
   const loadInventory = useCallback(async () => {
     setLoading(true)
     try {
@@ -187,11 +197,113 @@ function InventorySection({ dealership, user }) {
 
   useEffect(() => { loadInventory() }, [loadInventory])
 
-  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name)); setEditItem(null); setAddModal(true) }
+  const [autofilled, setAutofilled] = useState(false)
+
+  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name)); setEditItem(null); setAddModal(true); setAutofilled(false) }
   const openEdit = (item) => {
     setForm({ ...item, features: Array.isArray(item.features) ? item.features.join(", ") : item.features, tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags })
     setEditItem(item)
     setAddModal(true)
+    setAutofilled(false)
+  }
+
+  // Auto-fills specs from the internal EV catalog once brand+model are both
+  // entered — only fills fields the dealer hasn't already typed something
+  // into, so it never overwrites a manual entry.
+  const applyCatalogAutofill = () => {
+    setForm(f => {
+      if (!f?.brand || !f?.model) return f
+      const specs = lookupEVSpecs(f.brand, f.model)
+      if (!specs) { setAutofilled(false); return f }
+      setAutofilled(true)
+      const next = { ...f }
+      if (!next.range)            next.range = specs.range
+      if (!next.batteryCapacity)  next.batteryCapacity = specs.batteryCapacity
+      if (!next.topSpeed)         next.topSpeed = specs.topSpeed
+      if (!next.chargingTime)     next.chargingTime = specs.chargingTime
+      if (!next.seatingCapacity)  next.seatingCapacity = specs.seatingCapacity
+      if (!next.bootSpace)        next.bootSpace = specs.bootSpace
+      if (!next.groundClearance)  next.groundClearance = specs.groundClearance
+      if (!next.warrantyYears)    next.warrantyYears = specs.warrantyYears
+      if (!next.features)         next.features = specs.features.join(", ")
+      return next
+    })
+  }
+
+  // ── Brochure upload → AI extraction → step-through review ──────────
+  const brochureVehicleToForm = (extracted) => ({
+    ...emptyVehicle(dealership, user?.name),
+    ...extracted,
+    features: Array.isArray(extracted.features) ? extracted.features.join(", ") : (extracted.features || ""),
+  })
+
+  const handleBrochureFile = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = "" // allow re-selecting the same file later
+    if (!file) return
+    if (file.type !== "application/pdf") { setBrochureError("Please select a PDF file"); return }
+
+    setBrochureError("")
+    setBrochureParsing(true)
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      try {
+        const res = await authFetch("/api/dealer/inventory/parse-brochure", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdfBase64: ev.target.result }),
+        })
+        const data = await res.json()
+        if (!res.ok) { setBrochureError(data.error || "Could not read this brochure"); return }
+        if (!data.vehicles?.length) { setBrochureError("No vehicles found in this PDF — try a different file or add manually."); return }
+
+        setReviewQueue(data.vehicles)
+        setReviewIndex(0)
+        setReviewForm(brochureVehicleToForm(data.vehicles[0]))
+        setReviewAdded(0)
+      } catch {
+        setBrochureError("Upload failed. Please try again.")
+      } finally {
+        setBrochureParsing(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const advanceReview = () => {
+    const nextIndex = reviewIndex + 1
+    if (!reviewQueue || nextIndex >= reviewQueue.length) {
+      setReviewQueue(null); setReviewForm(null); setReviewIndex(0)
+      loadInventory()
+      return
+    }
+    setReviewIndex(nextIndex)
+    setReviewForm(brochureVehicleToForm(reviewQueue[nextIndex]))
+  }
+
+  const confirmReviewVehicle = async () => {
+    if (!reviewForm.brand || !reviewForm.model) return alert("Brand and model are required")
+    setReviewSaving(true)
+    try {
+      const payload = {
+        ...reviewForm,
+        features: typeof reviewForm.features === "string" ? reviewForm.features.split(",").map(s => s.trim()).filter(Boolean) : reviewForm.features,
+        exShowroom: Number(reviewForm.exShowroom) || 0, range: Number(reviewForm.range) || 0,
+        topSpeed: Number(reviewForm.topSpeed) || 0, year: Number(reviewForm.year) || new Date().getFullYear(),
+      }
+      const res = await authFetch("/api/dealer/inventory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Save failed"); return }
+      setReviewAdded(n => n + 1)
+      advanceReview()
+    } finally {
+      setReviewSaving(false)
+    }
+  }
+
+  const skipReviewVehicle = () => advanceReview()
+
+  const closeReview = () => {
+    setReviewQueue(null); setReviewForm(null); setReviewIndex(0)
+    if (reviewAdded > 0) loadInventory()
   }
 
   const handleSave = async () => {
@@ -330,12 +442,22 @@ function InventorySection({ dealership, user }) {
             style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}25`, color:C.blue, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, textDecoration:"none" }}>
             🌐 View Marketplace
           </Link>
+          <label style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:brochureParsing?"wait":"pointer", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:6, opacity:brochureParsing?0.6:1 }}>
+            {brochureParsing ? "⏳ Reading brochure…" : "📄 Upload Brochure"}
+            <input type="file" accept="application/pdf" onChange={handleBrochureFile} disabled={brochureParsing} style={{ display:"none" }} />
+          </label>
           <button onClick={openAdd}
             style={{ background:C.green, border:"none", color:"#fff", borderRadius:20, padding:"8px 18px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             + Add Vehicle
           </button>
         </div>
       </div>
+      {brochureError && (
+        <div style={{ background:`${C.red}10`, border:`1px solid ${C.red}30`, color:C.red, borderRadius:10, padding:"10px 16px", marginBottom:16, fontSize:12, fontWeight:600, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span>⚠️ {brochureError}</span>
+          <button onClick={()=>setBrochureError("")} style={{ background:"none", border:"none", color:C.red, cursor:"pointer", fontWeight:900 }}>✕</button>
+        </div>
+      )}
 
       {/* Inventory table */}
       <Card noPad>
@@ -411,9 +533,14 @@ function InventorySection({ dealership, user }) {
       {/* Add/Edit Modal */}
       {addModal && form && (
         <Modal title={editItem ? `Edit — ${editItem.brand} ${editItem.model}` : "Add Vehicle to Inventory"} onClose={()=>{ setAddModal(false); setForm(null); setEditItem(null) }}>
+          {autofilled && (
+            <div style={{ gridColumn:"span 2", background:`${C.green}12`, border:`1px solid ${C.green}40`, borderRadius:10, padding:"9px 14px", marginBottom:14, fontSize:12, color:C.green, fontWeight:700 }}>
+              ✨ Specs auto-filled from our EV catalog — review and adjust anything before saving.
+            </div>
+          )}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <F label="Brand *"           field="brand" form={form} setForm={setForm} />
-            <F label="Model *"           field="model" form={form} setForm={setForm} />
+            <F label="Brand *"           field="brand" form={form} setForm={setForm} onBlur={applyCatalogAutofill} />
+            <F label="Model *"           field="model" form={form} setForm={setForm} onBlur={applyCatalogAutofill} />
             <F label="Variant"           field="variant" form={form} setForm={setForm} />
             <F label="Colour"            field="color" form={form} setForm={setForm} />
             <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} form={form} setForm={setForm} />
@@ -423,6 +550,11 @@ function InventorySection({ dealership, user }) {
             <F label="Range (km)"        field="range"       type="number" form={form} setForm={setForm} />
             <F label="Battery Capacity"  field="batteryCapacity" form={form} setForm={setForm} />
             <F label="Top Speed (km/h)"  field="topSpeed"    type="number" form={form} setForm={setForm} />
+            <F label="Charging Time"     field="chargingTime" form={form} setForm={setForm} />
+            <F label="Seating Capacity"  field="seatingCapacity" type="number" form={form} setForm={setForm} />
+            <F label="Boot Space"        field="bootSpace" form={form} setForm={setForm} />
+            <F label="Ground Clearance"  field="groundClearance" form={form} setForm={setForm} />
+            <F label="Warranty (Years)"  field="warrantyYears" type="number" form={form} setForm={setForm} />
             <F label="Ex-Showroom Price" field="exShowroom"  type="number" form={form} setForm={setForm} />
             <F label="On-Road Price"     field="onRoadPrice"  type="number" form={form} setForm={setForm} />
             <F label="EMI / month"       field="emi"         type="number" form={form} setForm={setForm} />
@@ -479,6 +611,53 @@ function InventorySection({ dealership, user }) {
       )}
 
       {reportOpen && <InventoryReportModal inventory={inventory} onClose={()=>setReportOpen(false)} />}
+
+      {/* Brochure review — one vehicle at a time, editable before it goes live */}
+      {reviewQueue && reviewForm && (
+        <Modal title={`Review Vehicle ${reviewIndex + 1} of ${reviewQueue.length} — from brochure`} onClose={closeReview}>
+          <div style={{ background:`${C.blue}10`, border:`1px solid ${C.blue}30`, borderRadius:10, padding:"9px 14px", marginBottom:16, fontSize:12, color:C.blue, fontWeight:700 }}>
+            ✨ Extracted from your PDF — review every field before it's published to the marketplace. Nothing goes live until you confirm.
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+            <F label="Brand *"           field="brand" form={reviewForm} setForm={setReviewForm} />
+            <F label="Model *"           field="model" form={reviewForm} setForm={setReviewForm} />
+            <F label="Variant"           field="variant" form={reviewForm} setForm={setReviewForm} />
+            <F label="Colour"            field="color" form={reviewForm} setForm={setReviewForm} />
+            <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} form={reviewForm} setForm={setReviewForm} />
+            <F label="Body Type"         field="bodyType" opts={BODY_TYPES} form={reviewForm} setForm={setReviewForm} />
+            <F label="Range (km)"        field="range"       type="number" form={reviewForm} setForm={setReviewForm} />
+            <F label="Battery Capacity"  field="batteryCapacity" form={reviewForm} setForm={setReviewForm} />
+            <F label="Top Speed (km/h)"  field="topSpeed"    type="number" form={reviewForm} setForm={setReviewForm} />
+            <F label="Charging Time"     field="chargingTime" form={reviewForm} setForm={setReviewForm} />
+            <F label="Seating Capacity"  field="seatingCapacity" type="number" form={reviewForm} setForm={setReviewForm} />
+            <F label="Boot Space"        field="bootSpace" form={reviewForm} setForm={setReviewForm} />
+            <F label="Ground Clearance"  field="groundClearance" form={reviewForm} setForm={setReviewForm} />
+            <F label="Warranty (Years)"  field="warrantyYears" type="number" form={reviewForm} setForm={setReviewForm} />
+            <F label="Ex-Showroom Price" field="exShowroom"  type="number" form={reviewForm} setForm={setReviewForm} />
+            <F label="Status"            field="status"      opts={STATUS_OPTIONS} form={reviewForm} setForm={setReviewForm} />
+            <div style={{ gridColumn:"span 2" }}>
+              <F label="Features (comma-separated)" field="features" form={reviewForm} setForm={setReviewForm} />
+            </div>
+          </div>
+          {reviewAdded > 0 && (
+            <div style={{ marginTop:14, fontSize:11.5, color:C.ink3 }}>✓ {reviewAdded} vehicle{reviewAdded===1?"":"s"} added so far from this brochure.</div>
+          )}
+          <div style={{ display:"flex", gap:10, marginTop:20 }}>
+            <button onClick={closeReview}
+              style={{ background:"transparent", border:`1.5px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"11px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              Stop Reviewing
+            </button>
+            <button onClick={skipReviewVehicle}
+              style={{ background:"transparent", border:`1.5px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"11px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              Skip This One
+            </button>
+            <button onClick={confirmReviewVehicle} disabled={reviewSaving}
+              style={{ flex:1, background: reviewSaving ? C.ink3 : C.green, border:"none", color:"#fff", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor: reviewSaving?"not-allowed":"pointer", fontFamily:"inherit" }}>
+              {reviewSaving ? "Publishing…" : reviewIndex + 1 < reviewQueue.length ? "✓ Confirm & Next Vehicle" : "✓ Confirm & Finish"}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -944,6 +1123,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[], bookings=[], quotes=
                     <div style={{ fontWeight:700, color:C.ink, fontSize:14 }}>
                       {l.name}
                       {coveredOwnerName(l) && <span style={{ fontSize:8.5, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>COVERING FOR {coveredOwnerName(l).toUpperCase()}</span>}
+                      {l.oemVerified && <span style={{ fontSize:8.5, fontWeight:800, color:"#065F46", background:"#D1FAE5", borderRadius:5, padding:"1px 6px", marginLeft:6 }}>✓ OEM-VERIFIED</span>}
                     </div>
                     <div style={{ fontSize:11, color:C.ink3 }}>{l.phone}{l.vehicle ? ` · ${l.vehicle}` : ""}</div>
                   </div>
@@ -998,7 +1178,7 @@ function LeadsSection({ leads, loading, onRefresh, reps=[], bookings=[], quotes=
                   <td style={{ padding:"10px 16px", cursor:"pointer" }} onClick={()=>setDetailLead(l)}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <Avatar name={l.name} size={28} />
-                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}{coveredOwnerName(l) && <span style={{ fontSize:8, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>COVERING · {coveredOwnerName(l)}</span>}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div>{l.tokenCollected > 0 && <div style={{ display:"inline-block", marginTop:3, background:`${C.green}18`, color:C.green, fontSize:9, fontWeight:800, padding:"1px 7px", borderRadius:8 }}>💰 TOKEN ₹{l.tokenCollected.toLocaleString("en-IN")} PAID</div>}</div>
+                      <div><div style={{ fontWeight:700, color:C.ink }}>{l.name}{coveredOwnerName(l) && <span style={{ fontSize:8, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>COVERING · {coveredOwnerName(l)}</span>}{l.oemVerified && <span style={{ fontSize:8, fontWeight:800, color:"#065F46", background:"#D1FAE5", borderRadius:4, padding:"1px 5px", marginLeft:5 }}>✓ OEM-VERIFIED</span>}</div><div style={{ fontSize:10, color:C.ink3 }}>{l.phone}</div>{l.tokenCollected > 0 && <div style={{ display:"inline-block", marginTop:3, background:`${C.green}18`, color:C.green, fontSize:9, fontWeight:800, padding:"1px 7px", borderRadius:8 }}>💰 TOKEN ₹{l.tokenCollected.toLocaleString("en-IN")} PAID</div>}</div>
                       {(l.notes||[]).length > 0 && <span style={{ fontSize:9, color:C.ink3 }}>📝{l.notes.length}</span>}
                     </div>
                   </td>

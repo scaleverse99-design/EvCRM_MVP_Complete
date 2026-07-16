@@ -36,36 +36,43 @@ create index if not exists idx_inventory_dealership on inventory    ((data->>'de
 create index if not exists idx_feed_dealership      on feed         ((data->>'dealership'));
 create index if not exists idx_reps_dealership      on reps         ((data->>'dealership'));
 
--- RLS: disabled — all access goes through the server-side service-role
--- client (lib/supabaseAdmin.js), never directly from the browser. If you
--- later add direct client-side Supabase queries, enable RLS + policies
--- per table before doing so.
-alter table users        disable row level security;
-alter table sessions     disable row level security;
-alter table otps         disable row level security;
-alter table auth_logs    disable row level security;
-alter table dealers      disable row level security;
-alter table reps         disable row level security;
-alter table inventory    disable row level security;
-alter table leads        disable row level security;
-alter table customers    disable row level security;
-alter table tasks        disable row level security;
-alter table bookings     disable row level security;
-alter table feed         disable row level security;
-alter table service_centers disable row level security;
+-- RLS: enabled, no policies — every table blocks the anon/authenticated
+-- roles entirely (the public NEXT_PUBLIC_SUPABASE_ANON_KEY can't read/
+-- write/delete anything). All real access goes through the server-side
+-- service-role client (lib/supabaseAdmin.js), which ALWAYS bypasses RLS
+-- regardless of policies — so this costs nothing functionally.
+-- (Previously left disabled "since nothing touches these tables client-side" —
+-- flagged 2026-07-12 by Supabase's own security advisor as rls_disabled_in_public,
+-- since a leaked anon key would otherwise have full read/write/delete on every
+-- row. Fixed 2026-07-15 — see scripts/enable-rls.sql for the exact migration run.)
+alter table users        enable row level security;
+alter table sessions     enable row level security;
+alter table otps         enable row level security;
+alter table auth_logs    enable row level security;
+alter table dealers      enable row level security;
+alter table reps         enable row level security;
+alter table inventory    enable row level security;
+alter table leads        enable row level security;
+alter table customers    enable row level security;
+alter table tasks        enable row level security;
+alter table bookings     enable row level security;
+alter table feed         enable row level security;
+alter table service_centers enable row level security;
 
 -- ── Added 2026-07-11: tables for QuotePro quotes + customer service module ──
 create table if not exists quotes           (id text primary key, data jsonb not null, created_at timestamptz default now());
 create table if not exists service_requests (id text primary key, data jsonb not null, created_at timestamptz default now());
 create table if not exists service_settings (id text primary key, data jsonb not null, created_at timestamptz default now());
-alter table quotes           disable row level security;
-alter table service_requests disable row level security;
-alter table service_settings disable row level security;
+alter table quotes           enable row level security;
+alter table service_requests enable row level security;
+alter table service_settings enable row level security;
 
 -- Rep geo-tagged attendance (added Jul 2026, replaces the old Firestore path)
 create table if not exists attendance (id text primary key, data jsonb not null, created_at timestamptz default now());
 create index if not exists idx_attendance_dealership on attendance ((data->>'dealership'));
+alter table attendance enable row level security;
 
 -- OEM restock requests from dealers (added Jul 2026)
 create table if not exists stock_requests (id text primary key, data jsonb not null, created_at timestamptz default now());
 create index if not exists idx_stock_requests_dealership on stock_requests ((data->>'dealership'));
+alter table stock_requests enable row level security;

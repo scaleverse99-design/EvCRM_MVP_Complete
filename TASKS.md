@@ -1,0 +1,145 @@
+# Tasks
+
+## Pending (Priority Order)
+
+- [ ] **Deploy "Find My EV" AI search widget** — backend-verified, browser tool was down
+      for visual QA, not yet deployed
+  - Floating 🔍 chat toggle on all consumer pages (via TopBar) — user describes what they
+    want in plain language, same Gemini key does multi-turn conversational search over
+    live inventory, matched vehicles open in a new tab, AI itself detects when the user's
+    done ("found what I need") and closes the chat
+  - Verified via direct API calls: correct vehicle match, done-detection, clarifying
+    question on vague input, linked `/vehicles/[id]` page returns 200
+  - **Not yet visually confirmed in a real browser** — worth a manual look after deploy
+  - Files: `app/api/marketplace/search-assistant/route.js`, `components/home/SearchAssistant.js`,
+    `components/home/TopBar.js`
+
+- [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
+  - Current: whole-table reads/writes in `lib/store.js`
+  - Goal: convert to row-level upsert/delete
+  - Impact: top engineering priority, affects performance
+
+- [ ] Razorpay live keys + real token payments (§8.2)
+  - Add live keys to `.env.production` + redeploy
+  - Currently: bookings fall back to no-payment mode
+
+- [ ] Wire SMS gateway for MyGarage OTP (§8.3)
+  - Current: demo-mode returns OTP in response
+  - Target: MSG91/Twilio via `SMS_GATEWAY_KEY` in `app/api/service/otp/route.js`
+
+- [ ] Move base64 attachments to Supabase Storage (§8.5)
+
+- [ ] Push query filtering into Supabase (§8.6)
+
+- [ ] Consolidate two marketplaces; clean legacy pages (§8.7)
+  - `/` vs `/buy-vehicles` — keep only one
+  - Remove `/queue`, mock admin pages
+
+- [ ] Complete founder/admin panel (§8.8)
+
+## In Progress
+
+(none)
+
+## Completed
+
+- [x] **Brochure-PDF bulk upload (AI extraction)** — ✅ DEPLOYED (2026-07-16)
+  - "📄 Upload Brochure" in dealer Inventory tab → Gemini reads the PDF directly →
+    step-through review modal (one vehicle at a time, editable, explicit confirm)
+  - Real-extraction verified: 2-variant Nexon brochure → both variants w/ correct specs,
+    features, Lakh→rupees conversion
+  - Gemini key: new AQ.-format key in `.env` + `.env.production`; quota on 2.5-flash only
+
+- [x] **Vehicle detail page + EV spec catalog** — ✅ DEPLOYED (2026-07-16)
+  - `lib/evCatalog.js` autofill in dealer Inventory form + expanded public detail page
+  - Antigravity then redesigned the detail page Cars24-style (2026-07-16 00:43);
+    Claude completed its 2 dead buttons: "Check EMI →" (now scrolls to calculator —
+    instant scroll on purpose, smooth silently fails on this page) and "Price breakup →"
+    (now toggles inline ex-showroom + charges = on-road breakdown)
+  - Both verified in-browser locally; deployed with the fixes
+
+- [x] **Deploy script bug: post-deploy steps never ran** — ✅ FIXED (2026-07-16)
+  - `npx` without `call` in deploy_on_windows.bat never returned control — git deploy-tags
+    and the Cloudflare auto-purge silently never executed
+  - Fixed with `call npx …`; purge + tagging now run after every deploy
+
+- [x] **OEM Sign Out button (§8.1c)** — ✅ FIXED, DEPLOYED, VERIFIED LIVE (2026-07-15)
+  - OEM console had no way to sign out at all — every other dashboard has one, OEM's
+    standalone header just never got one added
+  - Added "🚪 Sign Out" button wired to the same `logout()` used elsewhere
+  - Verified live on evcrm.in: logged in as real OEM account, button renders, click
+    logs out and lands on /login correctly
+
+- [x] **Cloudflare cache purging automated — manual purge no longer needed** (2026-07-15)
+  - Root cause of needing manual purges: Cloudflare was edge-caching HTML pages
+  - Added a Cache Rule (Bypass HTML, cache only `/_next/static/*`) — permanent fix,
+    every page load now always hits origin fresh
+  - Added `scripts/purge-cloudflare.js`, wired into `deploy_on_windows.bat` as a backup —
+    auto-purges after every deploy using `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID`
+    in `.env.production` (git-ignored)
+  - Tested: token scoped correctly (Zone → Cache Purge → Purge, evcrm.in only), zone
+    lookup + actual purge call both succeeded
+
+- [x] **Login auto-redirect bug (§8.1b)** — ✅ FIXED, DEPLOYED, VERIFIED LIVE (2026-07-15)
+  - `/login` was silently bouncing users back to their old dashboard before they could
+    switch roles/accounts — removed the "Accelerated Pre-flight" redirect in
+    `app/login/page.js`
+  - Verified live on evcrm.in with real accounts (the actual reported scenario): logged in
+    as OEM → landed on /oem → went back to /login with that session active → form showed
+    correctly (no bounce) → logged in as a real dealer → landed on /dealer successfully
+  - Role-switching from /login now works end-to-end
+
+- [x] **Login/reset stuck-button bug (§8.1)** — confirmed ALREADY FIXED, doc was stale (2026-07-15)
+  - The fix was actually shipped 3 days earlier in commit `e60a924` ("harden login/reset vs
+    autofill", 2026-07-12) — handoff.md's Known Issues section just never got updated
+  - Re-verified: code review confirms both `handleLogin` and `handleReset` in
+    `app/login/page.js` already wrap in `<form onSubmit>` + fall back to reading live DOM
+    input values when React state is empty (the exact autofill fix)
+  - Live-tested: login on evcrm.in with OEM test account fired the fetch correctly, landed
+    on `/oem` as expected
+  - Caveat: couldn't perfectly simulate real Chrome password-manager autofill via browser
+    automation — if a user reports this again, treat as a new bug, not a regression (the
+    original fix is confirmed present and working via the normal path)
+  - **Lesson**: handoff.md's Known Issues section can go stale when a fix ships without
+    updating the doc — worth periodically re-verifying "open" issues against recent commits
+
+- [x] **Fixed Supabase RLS security advisory + missing `stock_requests` table** (2026-07-15)
+  - Enabled RLS (no policies) on all 18 production tables — closes the anon-key exposure
+    risk Supabase's own advisor flagged; zero functional impact (app uses service_role key)
+  - **Bonus bug fixed**: `stock_requests` table never existed in production — every OEM
+    Stock Requests action since that feature shipped was silently writing to an ephemeral
+    local file that never persisted. Table now created and confirmed working live.
+  - Ran via `scripts/enable-rls.sql` in the Supabase SQL Editor (no DB connection string /
+    Management API token exists in this project for automated execution)
+  - Verified: 18/18 tables show `rowsecurity: true`; live app re-checked, no regressions
+  - Details: handoff.md §8.0
+
+- [x] **OEM "Sponsor Instead" flow** — ✅ LIVE on evcrm.in/oem (2026-07-15)
+  - When Onboard Dealer hits a duplicate email, links the existing independent dealer into
+    this OEM's network and offers a "💳 Sponsor This Dealer Instead →" shortcut
+  - Sponsoring sends an informational email to the dealer (new to network, no action needed)
+  - Files: `app/api/oem/onboard-dealer/route.js`, `app/api/oem/route.js`, `lib/email.js`, `app/oem/page.js`
+  - Verified locally (full flow incl. email) AND live on production (duplicate detection +
+    Sponsor-Instead button both confirmed rendering correctly)
+
+- [x] **OEM Inside Sales tab** — ✅ LIVE on evcrm.in/oem (2026-07-15)
+  - New 6th OEM tab: assign a named inside-sales agent to any lead across the network,
+    mark it "OEM-Verified" once the agent confirms genuine interest by phone
+  - Verified lead shows a green "✓ OEM-VERIFIED" badge on the dealer's own Leads tab
+    (mobile card + desktop table) so dealer reps prioritize it — passive badge only, no
+    auto-notification to dealer (per design decision)
+  - Files: `app/api/oem/route.js` (GET leads + 2 new PATCH actions), `app/oem/page.js`
+    (new tab UI), `app/dealer/page.js` (badge, 2 spots)
+  - Verified locally via curl AND live on production (tab shows real leads across network
+    with correct dealer names)
+
+- [x] **OEM Console 5-Area Deploy** — ✅ LIVE & VERIFIED on evcrm.in/oem (2026-07-15)
+  - ✅ My Network — dealer grid w/ live stats + Conv %
+  - ✅ Onboard Dealer — full form (business/owner/email/phone/city/state), tested UI
+  - ✅ Feedback — Quote Rejections + Sales Rep Comments, real data confirmed
+  - ✅ Stock Requests — restock lifecycle, empty state confirmed working
+  - ✅ Reports — Dealer Performance table + Vehicle Demand by Location
+  - Root causes found & fixed along the way:
+    1. Stale `.next`/`.firebase` local build cache caused deploy to repackage old bundle — fixed by clearing both before rebuild
+    2. Cloudflare edge cache served stale HTML after deploy — fixed by manual Cloudflare cache purge
+  - Note: Subscription cost shows only for "active" billing (trial dealers show "—") — accurate to billing model, not a bug

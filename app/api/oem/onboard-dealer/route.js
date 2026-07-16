@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { hashPassword, generateToken, hashToken, buildCookieHeader, ok, err, verifyToken } from "../../../../lib/auth"
 import { findUserByEmail, createUser, createSession, logLoginAttempt } from "../../../../lib/db"
+import { readTable, writeTable } from "../../../../lib/store"
 
 function getOEM(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "").trim()
@@ -39,8 +40,33 @@ export async function POST(req) {
     }
 
     const emailClean = email.toLowerCase().trim()
-    if (await findUserByEmail(emailClean)) {
-      return Response.json({ success: false, errors: { email: "This email is already registered" } }, { status: 409 })
+    const existing = await findUserByEmail(emailClean)
+    if (existing) {
+      // If this is an independent dealer not yet tied to any OEM network, link them
+      // into this OEM's network (still locked/self-registered — Sponsor unlocks access)
+      // so the OEM can sponsor instead of onboarding a duplicate account.
+      let canSponsor = false
+      if (existing.role === "dealer" && (!existing.oemId || existing.oemId === oem.oemId)) {
+        if (!existing.oemId) {
+          const users = await readTable("users")
+          const idx = users.findIndex(u => u.id === existing.id)
+          if (idx !== -1) {
+            users[idx].oemId = oem.oemId
+            await writeTable("users", users)
+          }
+        }
+        canSponsor = true
+      }
+      return Response.json({
+        success: false,
+        errors: { email: "This email is already registered" },
+        duplicate: {
+          role: existing.role,
+          dealership: existing.role === "dealer" ? existing.dealership : null,
+          businessName: existing.dealershipName || existing.name || null,
+          canSponsor,
+        },
+      }, { status: 409 })
     }
 
     const nameForSlug = businessName.trim()

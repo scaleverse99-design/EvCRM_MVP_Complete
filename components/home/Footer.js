@@ -10,12 +10,28 @@ export default function Footer() {
   const linkStyle = { fontSize: 13, color: C.ink3, textDecoration: "none", marginBottom: 12, display: "block" }
 
   return (
-    <footer style={{ background: "#fff", borderTop: `1px solid ${C.border}`, padding: "80px 0 40px" }}>
+    <footer style={{ background: "#fff", borderTop: `1px solid ${C.border}`, padding: "60px 0 32px" }}>
+      <style>{`
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 48px; margin-bottom: 60px; }
+        .footer-brand-col { grid-column: span 2; }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: ${C.ink3}; flex-wrap: wrap; gap: 12px; }
+        .footer-bottom-links { display: flex; gap: 24px; }
+        @media (max-width: 768px) {
+          .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+          .footer-brand-col { grid-column: span 2; }
+        }
+        @media (max-width: 480px) {
+          .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+          .footer-brand-col { grid-column: span 1; }
+          .footer-bottom { flex-direction: column; text-align: center; }
+          .footer-bottom-links { justify-content: center; }
+        }
+      `}</style>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 48, marginBottom: 60 }}>
+        <div className="footer-grid">
           
           {/* Brand & Mission */}
-          <div style={{ gridColumn: "span 2" }}>
+          <div className="footer-brand-col">
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", marginBottom: 20 }}>
               <span style={{ fontSize: 24, fontWeight: 900, color: C.ink, letterSpacing: "-0.8px" }}>
                 EV<span style={{ color: C.green }}>.CRM</span>
@@ -63,9 +79,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 32, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: C.ink3 }}>
+        <div className="footer-bottom" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24 }}>
           <div>© 2026 EvCRM. All rights reserved. GST Registered in Telangana.</div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className="footer-bottom-links">
              <Link href="/privacy" style={{ color: C.ink3, textDecoration: "none" }}>Privacy Policy</Link>
              <Link href="/terms" style={{ color: C.ink3, textDecoration: "none" }}>Terms of Service</Link>
           </div>

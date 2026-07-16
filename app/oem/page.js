@@ -15,6 +15,7 @@ function fmtDT(iso) {
 const TABS = [
   { id:"network",  icon:"🏪", label:"My Network" },
   { id:"onboard",  icon:"➕", label:"Onboard Dealer" },
+  { id:"insidesales", icon:"📞", label:"Inside Sales" },
   { id:"feedback", icon:"💬", label:"Feedback" },
   { id:"stock",    icon:"📦", label:"Stock Requests" },
   { id:"reports",  icon:"📊", label:"Reports" },
@@ -22,7 +23,7 @@ const TABS = [
 
 export default function OEMDashboard() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, logout } = useAuth()
   const [tab, setTab] = useState("network")
   const [dealers, setDealers]         = useState([])
   const [escalations, setEscalations] = useState([])
@@ -30,6 +31,7 @@ export default function OEMDashboard() {
   const [repComments, setRepComments] = useState([])
   const [stockRequests, setStockRequests] = useState([])
   const [locationTrends, setLocationTrends] = useState([])
+  const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [acting, setActing]   = useState(null)
 
@@ -38,6 +40,7 @@ export default function OEMDashboard() {
   const [onboarding, setOnboarding] = useState(false)
   const [onboardErrors, setOnboardErrors] = useState({})
   const [onboardResult, setOnboardResult] = useState(null)
+  const [duplicateDealer, setDuplicateDealer] = useState(null)
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "oem") router.replace("/login")
@@ -53,6 +56,7 @@ export default function OEMDashboard() {
       if (d.repComments) setRepComments(d.repComments)
       if (d.stockRequests) setStockRequests(d.stockRequests)
       if (d.locationTrends) setLocationTrends(d.locationTrends)
+      if (d.leads) setLeads(d.leads)
     } catch {}
     setLoading(false)
   }, [])
@@ -76,6 +80,22 @@ export default function OEMDashboard() {
     setActing(null)
   }
 
+  const assignInsideSales = async (leadId) => {
+    const agent = window.prompt("Inside sales agent name to assign:")
+    if (!agent) return
+    setActing(leadId)
+    await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"assign_inside_sales", leadId, agent }) })
+    await load()
+    setActing(null)
+  }
+
+  const verifyLead = async (leadId, verified) => {
+    setActing(leadId)
+    await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"verify_lead", leadId, verified }) })
+    await load()
+    setActing(null)
+  }
+
   const updateStockRequest = async (requestId, status) => {
     setActing(requestId)
     await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"update_stock_request", requestId, status }) })
@@ -84,7 +104,7 @@ export default function OEMDashboard() {
   }
 
   const handleOnboard = async () => {
-    setOnboardErrors({}); setOnboardResult(null)
+    setOnboardErrors({}); setOnboardResult(null); setDuplicateDealer(null)
     setOnboarding(true)
     try {
       const res = await authFetch("/api/oem/onboard-dealer", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(form) })
@@ -95,10 +115,21 @@ export default function OEMDashboard() {
         await load()
       } else {
         setOnboardErrors(data.errors || { global: data.error || "Onboarding failed" })
+        if (data.duplicate?.canSponsor) {
+          setDuplicateDealer(data.duplicate)
+          await load() // dealer may have just been linked into this OEM's network
+        }
       }
     } finally {
       setOnboarding(false)
     }
+  }
+
+  const sponsorDuplicate = async () => {
+    if (!duplicateDealer) return
+    await sponsor(duplicateDealer.dealership)
+    setDuplicateDealer(null)
+    setTab("network")
   }
 
   if (authLoading || !user) return <div style={{ padding:60, textAlign:"center", fontFamily:"system-ui", color:"#64748b" }}>Loading…</div>
@@ -116,6 +147,12 @@ export default function OEMDashboard() {
             <div style={{ fontSize:19, fontWeight:900, color:"#fff" }}>Ev<span style={{ color:"#6EE7B7" }}>.CRM</span> <span style={{ fontSize:11, fontWeight:700, background:"#334155", borderRadius:6, padding:"3px 10px", marginLeft:8, verticalAlign:"middle" }}>OEM CONSOLE</span></div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.6)", marginTop:2 }}>{user.name} · Network: {user.dealership}</div>
           </div>
+          <button onClick={logout}
+            style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.8)", borderRadius:9, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}
+            onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.color="#fff" }}
+            onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.8)" }}>
+            <span>🚪</span> Sign Out
+          </button>
         </div>
       </div>
 
@@ -273,6 +310,17 @@ export default function OEMDashboard() {
                   <input style={input} placeholder="e.g. Maharashtra" value={form.state} onChange={e=>setForm({...form,state:e.target.value})} />
                 </div>
                 {onboardErrors.global && <div style={{ fontSize:12, color:C.red }}>{onboardErrors.global}</div>}
+                {duplicateDealer && (
+                  <div style={{ background:"#EFF6FF", border:"1px solid #3B82F6", borderRadius:10, padding:14 }}>
+                    <div style={{ fontSize:12.5, color:"#1E40AF", marginBottom:10 }}>
+                      <b>{duplicateDealer.businessName || "This dealer"}</b> already has an EvCRM account. Sponsor their subscription instead to bring them into your network.
+                    </div>
+                    <button onClick={sponsorDuplicate} disabled={acting === duplicateDealer.dealership}
+                      style={{ width:"100%", background:"#1E293B", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                      {acting === duplicateDealer.dealership ? "…" : "💳 Sponsor This Dealer Instead →"}
+                    </button>
+                  </div>
+                )}
                 <button onClick={handleOnboard} disabled={onboarding}
                   style={{ background:"#1E293B", color:"#fff", border:"none", borderRadius:10, padding:"13px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity:onboarding?0.7:1 }}>
                   {onboarding ? "Onboarding…" : "➕ Onboard Dealer — Grant Full Access"}
@@ -280,6 +328,45 @@ export default function OEMDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── INSIDE SALES ── */}
+        {tab === "insidesales" && (
+          <>
+            <div style={{ fontSize:16, fontWeight:800, marginBottom:4 }}>Inside Sales — Call & Verify</div>
+            <div style={{ fontSize:12, color:C.ink3, marginBottom:14 }}>
+              Assign an inside sales agent to call leads across your network, confirm genuine interest, then verify — dealers see a badge and can prioritize follow-up.
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {!loading && leads.length === 0 && <div style={{ ...card, color:C.ink3, fontSize:13 }}>No leads yet from your accessible dealers.</div>}
+              {leads.map(l => (
+                <div key={l.id} style={card}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap", marginBottom:8 }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800 }}>
+                        {l.name} {l.vehicle ? `— ${l.vehicle}` : ""}
+                        {l.oemVerified && <span style={{ fontSize:9, fontWeight:800, color:"#065F46", background:"#D1FAE5", borderRadius:6, padding:"2px 8px", marginLeft:8 }}>✓ OEM-VERIFIED</span>}
+                      </div>
+                      <div style={{ fontSize:11, color:C.ink3, marginTop:2 }}>{l.phone} · {l.dealerName} · {l.status}</div>
+                    </div>
+                    <span style={{ background:"#F3F4F6", color:C.ink3, fontSize:9.5, fontWeight:800, borderRadius:7, padding:"4px 10px", whiteSpace:"nowrap" }}>{fmtDT(l.createdAt)}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                    <button onClick={()=>assignInsideSales(l.id)} disabled={acting===l.id}
+                      style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"7px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      {l.insideSalesAgent ? `📞 ${l.insideSalesAgent}` : "📞 Assign Agent"}
+                    </button>
+                    {l.insideSalesAgent && (
+                      <button onClick={()=>verifyLead(l.id, !l.oemVerified)} disabled={acting===l.id}
+                        style={{ background: l.oemVerified ? "none" : "#059669", color: l.oemVerified ? C.ink2 : "#fff", border:`1px solid ${l.oemVerified ? C.border : "#059669"}`, borderRadius:8, padding:"7px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                        {acting===l.id ? "…" : l.oemVerified ? "Unverify" : "✓ Mark Verified — Send to Showroom"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* ── FEEDBACK ── */}

@@ -70,3 +70,19 @@ button, input, textarea, select { font-family: inherit; }
 .login-spin { animation: evcrm-spin .7s linear infinite; }
 .login-input:focus { border-color: #059669 !important; box-shadow: 0 0 16px rgba(5, 150, 105, 0.08) !important; }
 .login-btn:hover { transform: translateY(-1px); opacity: 0.9; }
+
+/* ── Global Mobile Responsiveness ── */
+html, body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+  body { -webkit-tap-highlight-color: transparent; }
+  img { max-width: 100%; height: auto; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+}

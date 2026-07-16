@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { C } from "../../lib/constants"
 import { Btn } from "../ui"
 import DISTRICTS from "../../data/districts.json"
+import SearchAssistant from "./SearchAssistant"
 
 export default function TopBar({ location, setLocation }) {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function TopBar({ location, setLocation }) {
   const [showLocPicker, setShowLocPicker] = useState(false)
   const [isDetecting, setIsDetecting] = useState(false)
   const [search, setSearch] = useState("")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setIsSticky(window.scrollY > 50)
@@ -46,12 +48,34 @@ export default function TopBar({ location, setLocation }) {
 
   return (
     <>
+      <style>{`
+        .topbar-search-area { display: flex; align-items: center; gap: 12px; flex: 1; max-width: 450px; margin: 0 40px; }
+        .topbar-nav { display: flex; align-items: center; gap: 28px; }
+        .topbar-nav-links { display: flex; gap: 24px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .topbar-nav-actions { display: flex; align-items: center; gap: 20px; }
+        .topbar-nav-sep { width: 1px; height: 20px; background: ${C.border}; margin: 0 4px; }
+        .topbar-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px; font-size: 22px; color: ${C.ink}; }
+        .topbar-mobile-menu { display: none; }
+        @media (max-width: 768px) {
+          .topbar-search-area { display: none !important; }
+          .topbar-nav { display: none !important; }
+          .topbar-hamburger { display: flex !important; align-items: center; justify-content: center; }
+          .topbar-mobile-menu {
+            display: flex; flex-direction: column; gap: 0;
+            background: #fff; border-top: 1px solid ${C.border};
+            padding: 0; position: absolute; top: 100%; left: 0; right: 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            z-index: 999; animation: mobileMenuIn 0.2s ease;
+          }
+          @keyframes mobileMenuIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        }
+      `}</style>
       <header style={{
         position: "sticky", top: 0, zIndex: 1000,
         background: isSticky ? "rgba(255, 255, 255, 0.98)" : "#fff",
         backdropFilter: "blur(12px)",
         borderBottom: `1px solid ${C.border}`,
-        padding: isSticky ? "10px 0" : "16px 0",
+        padding: isSticky ? "10px 0" : "12px 0",
         transition: "all 0.3s ease",
         color: C.ink
       }}>
@@ -70,7 +94,7 @@ export default function TopBar({ location, setLocation }) {
             </span>
           </Link>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, maxWidth: 450, margin: "0 40px" }}>
+          <div className="topbar-search-area">
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
@@ -109,15 +133,15 @@ export default function TopBar({ location, setLocation }) {
             </button>
           </div>
 
-          <nav style={{ display: "flex", alignItems: "center", gap: 28 }}>
-            <div style={{ display: "flex", gap: 24, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          <nav className="topbar-nav">
+            <div className="topbar-nav-links">
               <Link href="/showroom" style={{ textDecoration: "none", color: "inherit", opacity: 0.8 }}>Buy Vehicles</Link>
               <Link href="/charging" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Charge Stations</Link>
             </div>
 
-            <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }}></div>
+            <div className="topbar-nav-sep"></div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <div className="topbar-nav-actions">
               <Link href="/shortlisted" style={{ textDecoration: "none", color: C.ink, fontSize: 18, position: "relative" }}>
                 ♡
               </Link>
@@ -137,7 +161,32 @@ export default function TopBar({ location, setLocation }) {
               </button>
             </div>
           </nav>
+
+          {/* Hamburger button for mobile */}
+          <button className="topbar-hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="topbar-mobile-menu">
+            <div style={{ padding: "12px 20px" }}>
+              <form onSubmit={(e) => { e.preventDefault(); if (search.trim()) { router.push(`/search?q=${encodeURIComponent(search)}`); setMobileMenuOpen(false); } }} style={{ position: "relative" }}>
+                <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+                  style={{ width: "100%", padding: "10px 16px", paddingRight: 40, borderRadius: 12, border: `1.5px solid ${C.border}`, fontSize: 14, outline: "none", background: "#f3f4f6", color: C.ink, boxSizing: "border-box" }} />
+                <button type="submit" style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", opacity: 0.4, fontSize: 14 }}>🔍</button>
+              </form>
+            </div>
+            <Link href="/showroom" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>🚗 Buy Vehicles</Link>
+            <Link href="/charging" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>⚡ Charge Stations</Link>
+            <Link href="/shortlisted" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>♡ Shortlisted</Link>
+            <button onClick={() => { setShowLocPicker(true); setMobileMenuOpen(false); }} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, background: "none", border: "none", textAlign: "left", color: C.ink, fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "inherit" }}>📍 {location?.district || "Set Location"}</button>
+            <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}` }}>
+              <button onClick={() => { router.push("/login"); setMobileMenuOpen(false); }} style={{ width: "100%", background: C.green, color: "#fff", border: "none", padding: "12px", borderRadius: 12, fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>EXPERT PORTAL</button>
+            </div>
+          </div>
+        )}
       </header>
 
       {showLocPicker && (
@@ -228,6 +277,7 @@ export default function TopBar({ location, setLocation }) {
           </div>
         </div>
       )}
+      <SearchAssistant />
     </>
   )
 }

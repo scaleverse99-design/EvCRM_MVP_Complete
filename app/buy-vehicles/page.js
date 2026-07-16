@@ -276,6 +276,25 @@ function BuyVehiclesPage() {
         ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:${T.bg}; } ::-webkit-scrollbar-thumb { background:${T.border}; border-radius:3px; }
         @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
         @keyframes shimmer { 0% { background-position:-200% 0 } 100% { background-position:200% 0 } }
+        .bv-nav-search { flex: 1; max-width: 480px; margin: 0 32px; position: relative; }
+        .bv-nav-links { display: flex; gap: 10px; }
+        .bv-hero-title { font-size: 40px; font-weight: 900; letter-spacing: -1px; line-height: 1.1; }
+        .bv-vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .bv-trust-bar { display: flex; justify-content: center; gap: 40px; margin-top: 56px; padding-top: 40px; border-top: 1px solid ${T.border}; }
+        .bv-filter-chips { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        @media (max-width: 768px) {
+          .bv-nav-search { display: none !important; }
+          .bv-nav-links { display: none !important; }
+          .bv-hero-title { font-size: 26px; letter-spacing: -0.5px; }
+          .bv-vehicle-grid { grid-template-columns: 1fr; gap: 16px; }
+          .bv-trust-bar { flex-wrap: wrap; gap: 20px; margin-top: 32px; padding-top: 24px; }
+          .bv-trust-bar > div { width: calc(50% - 10px); }
+          .bv-filter-chips { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+          .bv-filter-chips::-webkit-scrollbar { display: none; }
+        }
+        @media (max-width: 480px) {
+          .bv-hero-title { font-size: 22px; }
+        }
       `}</style>
 
       {/* ── Top Nav ─── */}
@@ -287,7 +306,7 @@ function BuyVehiclesPage() {
           </Link>
 
           {/* Search */}
-          <div style={{ flex:1, maxWidth:480, margin:"0 32px", position:"relative" }}>
+          <div className="bv-nav-search">
             <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:16 }}>🔍</span>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search brand, model, type…"
               style={{ width:"100%", background:T.card, border:`1.5px solid ${T.border}`, color:T.ink, borderRadius:40, padding:"10px 16px 10px 42px", fontSize:13, outline:"none", fontFamily:"inherit", transition:"border-color 0.15s" }}
@@ -295,7 +314,7 @@ function BuyVehiclesPage() {
             />
           </div>
 
-          <div style={{ display:"flex", gap:10 }}>
+          <div className="bv-nav-links">
             <Link href="/charging" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", padding:"8px 14px", border:`1px solid ${T.border}`, borderRadius:20 }}>⚡ Chargers</Link>
             <Link href="/service-centers"   style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", padding:"8px 14px", border:`1px solid ${T.border}`, borderRadius:20 }}>🔧 Service</Link>
             <Link href="/dealer" style={{ background:T.gradient, color:"#000", fontSize:13, fontWeight:800, textDecoration:"none", padding:"8px 18px", borderRadius:20 }}>CRM Portal</Link>
@@ -310,7 +329,7 @@ function BuyVehiclesPage() {
             <div style={{ width:8, height:8, borderRadius:"50%", background:T.accent, animation:"pulse 1.5s infinite" }}/>
             <span style={{ fontSize:12, fontWeight:700, color:T.accent }}>LIVE INVENTORY — {vehicles.length} vehicles available</span>
           </div>
-          <h1 style={{ fontSize:40, fontWeight:900, color:T.ink, margin:0, letterSpacing:"-1px", lineHeight:1.1 }}>
+          <h1 className="bv-hero-title" style={{ color:T.ink, margin:0 }}>
             Buy Your Dream <span style={{ background:T.gradient, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Electric Vehicle</span>
           </h1>
           <p style={{ fontSize:15, color:T.ink2, marginTop:12, maxWidth:540, margin:"12px auto 0" }}>
@@ -321,12 +340,12 @@ function BuyVehiclesPage() {
         {/* ── Filter bar ─── */}
         <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, padding:"16px 20px", marginBottom:28 }}>
           {/* Type chips */}
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14, alignItems:"center" }}>
+          <div className="bv-filter-chips" style={{ marginBottom:14 }}>
             <span style={{ fontSize:11, fontWeight:700, color:T.ink3, marginRight:4 }}>TYPE</span>
             {TYPE_OPTS.map(o => <Chip key={o.v} label={`${typeIconMap[o.v]||""} ${o.l}`.trim()} active={type===o.v} onClick={() => setType(o.v)} />)}
           </div>
           {/* Brand + District + Range + Sort */}
-          <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"center" }}>
+          <div className="bv-filter-chips">
             <span style={{ fontSize:11, fontWeight:700, color:T.ink3, marginRight:4 }}>FILTER</span>
             {[
               { label:"All Brands", value:brand, set:setBrand, opts:[{ v:"", l:"All Brands" }, ...filters.brands.map(b=>({ v:b, l:b }))] },
@@ -358,7 +377,7 @@ function BuyVehiclesPage() {
 
         {/* ── Grid ─── */}
         {loading ? (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:20 }}>
+          <div className="bv-vehicle-grid">
             {[...Array(6)].map((_,i) => (
               <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:20, height:420, background:`linear-gradient(90deg, ${T.card} 25%, ${T.cardHov} 50%, ${T.card} 75%)`, backgroundSize:"200% 100%", animation:"shimmer 1.5s infinite" }}/>
             ))}
@@ -370,13 +389,13 @@ function BuyVehiclesPage() {
             <div style={{ fontSize:14, color:T.ink2 }}>Try adjusting your filters or search query</div>
           </div>
         ) : (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:20 }}>
+          <div className="bv-vehicle-grid">
             {vehicles.map(v => <VehicleCard key={v.id} v={v} onBook={setBookVehicle} />)}
           </div>
         )}
 
         {/* ── Bottom trust bar ─── */}
-        <div style={{ display:"flex", justifyContent:"center", gap:40, marginTop:56, paddingTop:40, borderTop:`1px solid ${T.border}` }}>
+        <div className="bv-trust-bar">
           {[["🔒","Secure Booking","₹1K token, adjustable"], ["🚗","Free Test Drive","48-hour trial period"], ["✅","Certified Dealers","Verified & rated"], ["🤝","Finance Assist","Dealer-aligned EMI options"]].map(([icon, label, sub]) => (
             <div key={label} style={{ textAlign:"center" }}>
               <div style={{ fontSize:28, marginBottom:8 }}>{icon}</div>
