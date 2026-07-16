@@ -31,6 +31,17 @@
 
 ## Completed
 
+- [x] **OEM bulk dealer import (Excel/CSV → accounts → email verification)** — ✅ LIVE,
+  user-confirmed working on evcrm.in/oem (2026-07-16)
+  - Onboard Dealer tab: Manual Entry (1–10) / Bulk Import (2K+) toggle; upload → validated
+    preview → confirm → accounts created (`pending_verification`) → branded verification
+    email → dealer edits & saves at `/dealer/verify-profile?token=…` → account active
+  - Verified against prod with a 2,000-row xlsx (parsed+validated in 4s); `bulk_imports`
+    table created manually in prod Supabase SQL Editor (per §8.0 lesson)
+  - Same session: booking modal fixed to open on detail page, thumbnail category labels
+    removed, EMI surface hidden behind `EMI_ENABLED=false`, low-res photo upload warning,
+    image-blur root-caused to 100×100px source files (see handoff §7/§8.5a-b)
+
 - [x] **Vehicle detail page — 4 fixes from user QA** — ✅ deploying (2026-07-16)
   1. Blurry images: dealer photo upload was downscaling to 640×480 @ 70% JPEG; bumped to
      1280px longest side @ 85% + high smoothing. NOTE: only helps NEW uploads — existing
