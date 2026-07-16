@@ -59,6 +59,7 @@ export async function POST(req) {
     bootSpace:       body.bootSpace || "",
     groundClearance: body.groundClearance || "",
     warrantyYears:   body.warrantyYears || "",
+    certified:       body.certified || false,
     exShowroom:  body.exShowroom || 0,
     onRoadPrice: body.onRoadPrice || 0,
     emi:         body.emi || 0,

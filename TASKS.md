@@ -2,18 +2,6 @@
 
 ## Pending (Priority Order)
 
-- [ ] **Deploy "Find My EV" AI search widget** — backend-verified, browser tool was down
-      for visual QA, not yet deployed
-  - Floating 🔍 chat toggle on all consumer pages (via TopBar) — user describes what they
-    want in plain language, same Gemini key does multi-turn conversational search over
-    live inventory, matched vehicles open in a new tab, AI itself detects when the user's
-    done ("found what I need") and closes the chat
-  - Verified via direct API calls: correct vehicle match, done-detection, clarifying
-    question on vague input, linked `/vehicles/[id]` page returns 200
-  - **Not yet visually confirmed in a real browser** — worth a manual look after deploy
-  - Files: `app/api/marketplace/search-assistant/route.js`, `components/home/SearchAssistant.js`,
-    `components/home/TopBar.js`
-
 - [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
   - Current: whole-table reads/writes in `lib/store.js`
   - Goal: convert to row-level upsert/delete
@@ -42,6 +30,31 @@
 (none)
 
 ## Completed
+
+- [x] **Vehicle detail page — 4 fixes from user QA** — ✅ deploying (2026-07-16)
+  1. Blurry images: dealer photo upload was downscaling to 640×480 @ 70% JPEG; bumped to
+     1280px longest side @ 85% + high smoothing. NOTE: only helps NEW uploads — existing
+     vehicles' images are already stored at 640px, dealer must re-upload to get crisp ones.
+  2. "EV.CRM Certified" / "Warranty Covered" no longer hardcoded-on — Certified now gated
+     behind a new dealer `certified` checkbox (Inventory form); warranty badge only shows
+     when `warrantyYears` is set. "Free Test Drive" / "Safe Booking" / "Refundable Token"
+     stay (always-true platform facts).
+  3. "Car Overview" heading → "Vehicle Overview" (was wrong for 2-wheelers).
+  4. Stray "0"s in the price panel: `{v.onRoadPrice && …}` rendered a literal 0 when the
+     value was 0 (React number-falsy footgun) — converted all `number && JSX` in
+     ProductDetail to ternaries (price block + pill tags).
+  - Files: `app/dealer/page.js` (image resize + certified checkbox + emptyVehicle),
+    `app/api/dealer/inventory/route.js` (persist certified), `app/showroom/page.js` (badges/heading/zeros)
+  - Verified locally: certified badge hidden by default, heading correct, no stray 0s
+
+- [x] **"Find My EV" AI search widget** — ✅ DEPLOYED & VERIFIED LIVE on evcrm.in (2026-07-16)
+  - Floating 🔍 chat on all consumer pages; plain-language multi-turn search over live
+    inventory via Gemini; matched vehicles open `/vehicles/[id]` in a new tab; AI detects
+    when the user is done and shows an end state + "Start a new search"
+  - Verified live end-to-end: "family SUV under 20 lakh with good range" → returned the
+    real Mahindra XUV400 result card linking the right detail page in a new tab
+  - Files: `app/api/marketplace/search-assistant/route.js`, `components/home/SearchAssistant.js`,
+    `components/home/TopBar.js`
 
 - [x] **Brochure-PDF bulk upload (AI extraction)** — ✅ DEPLOYED (2026-07-16)
   - "📄 Upload Brochure" in dealer Inventory tab → Gemini reads the PDF directly →

@@ -110,7 +110,7 @@ const STATUS_OPTIONS = ["IN_STOCK","SOLD","RESERVED","UNAVAILABLE"]
 const STATUS_COLORS  = { IN_STOCK:C.green, SOLD:C.red, RESERVED:C.orange, UNAVAILABLE:C.ink3 }
 
 function emptyVehicle(dealership, dealerName) {
-  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
+  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
 }
 
 /* ── Inventory Report Modal — 5.9 ── */
@@ -355,26 +355,23 @@ function InventorySection({ dealership, user }) {
         const img = new Image()
         img.onload = () => {
           const canvas = document.createElement("canvas")
-          const MAX_WIDTH = 640
-          const MAX_HEIGHT = 480
+          // Cap the longest side at 1280px — the marketplace detail page shows the
+          // main image ~760px wide, so 1280 keeps it crisp (incl. on retina) without
+          // bloating the base64 row. Was 640×480@0.7, which upscaled and looked blurry.
+          const MAX_SIDE = 1280
           let width = img.width
           let height = img.height
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width
-              width = MAX_WIDTH
-            }
+          if (width >= height) {
+            if (width > MAX_SIDE) { height *= MAX_SIDE / width; width = MAX_SIDE }
           } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height
-              height = MAX_HEIGHT
-            }
+            if (height > MAX_SIDE) { width *= MAX_SIDE / height; height = MAX_SIDE }
           }
           canvas.width = width
           canvas.height = height
           const ctx = canvas.getContext("2d")
+          ctx.imageSmoothingQuality = "high"
           ctx.drawImage(img, 0, 0, width, height)
-          const base64 = canvas.toDataURL("image/jpeg", 0.7)
+          const base64 = canvas.toDataURL("image/jpeg", 0.85)
           setForm(f => {
             const currentImages = Array.isArray(f.images) ? f.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
             if (!currentImages.includes(base64)) {
@@ -595,6 +592,10 @@ function InventorySection({ dealership, user }) {
             <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:C.ink2, cursor:"pointer" }}>
               <input type="checkbox" checked={form?.isDemo||false} onChange={e=>setForm(f=>({...f,isDemo:e.target.checked}))} />
               This is a demo/test-drive vehicle (excluded from marketplace stock counts)
+            </label>
+            <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:C.ink2, cursor:"pointer" }}>
+              <input type="checkbox" checked={form?.certified||false} onChange={e=>setForm(f=>({...f,certified:e.target.checked}))} />
+              Mark as EV.CRM Certified (shows a ✅ Certified badge on the marketplace listing)
             </label>
           </div>
           <div style={{ display:"flex", gap:10, marginTop:20 }}>

@@ -416,25 +416,23 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
             </h1>
             {/* Pill tags */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-              {v.range      && <span className="sd-tag">⚡ {v.range} km</span>}
-              {v.condition !== "new" && v.km && <span className="sd-tag">📍 {v.km?.toLocaleString()} km</span>}
-              {v.condition === "new"  && <span className="sd-tag">✨ New</span>}
-              {v.bodyType   && <span className="sd-tag">{v.bodyType}</span>}
-              {v.color      && <span className="sd-tag">🎨 {v.color}</span>}
-              {v.topSpeed   && <span className="sd-tag">🏎 {v.topSpeed} km/h</span>}
+              {v.range      ? <span className="sd-tag">⚡ {v.range} km</span> : null}
+              {v.condition !== "new" && v.km ? <span className="sd-tag">📍 {v.km?.toLocaleString()} km</span> : null}
+              {v.condition === "new"  ? <span className="sd-tag">✨ New</span> : null}
+              {v.bodyType   ? <span className="sd-tag">{v.bodyType}</span> : null}
+              {v.color      ? <span className="sd-tag">🎨 {v.color}</span> : null}
+              {v.topSpeed   ? <span className="sd-tag">🏎 {v.topSpeed} km/h</span> : null}
             </div>
             {/* Location */}
             <div style={{ fontSize: 13, color: "#6B7280", paddingBottom: 16, borderBottom: "1px solid #F3F4F6" }}>
               📍 {[v.dealerName, v.district, v.state].filter(Boolean).join(", ")}
             </div>
-            {/* Trust badges */}
+            {/* Trust badges — "Certified" and warranty are dealer-controlled, not shown by
+                default. Free Test Drive is an always-true platform fact, so it always shows. */}
             <div className="sd-trust-row">
-              <span className="sd-trust-badge">✅ EV.CRM Certified</span>
-              <span className="sd-trust-sep" />
-              <span className="sd-trust-badge">🛡️ Warranty Covered</span>
-              <span className="sd-trust-sep" />
+              {v.certified ? <><span className="sd-trust-badge">✅ EV.CRM Certified</span><span className="sd-trust-sep" /></> : null}
+              {v.warrantyYears ? <><span className="sd-trust-badge">🛡️ {v.warrantyYears}yr Warranty</span><span className="sd-trust-sep" /></> : null}
               <span className="sd-trust-badge">🗓 Free Test Drive</span>
-              {v.warrantyYears && <><span className="sd-trust-sep" /><span className="sd-trust-badge">📋 {v.warrantyYears}yr Warranty</span></>}
             </div>
           </div>
 
@@ -465,7 +463,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
             <div style={{ padding: 20 }}>
               {activeTab === "overview" && (
                 <>
-                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 0.5 }}>Car Overview</h3>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 0.5 }}>Vehicle Overview</h3>
                   <div className="sd-overview-row">
                     {[
                       { icon: "📅", label: "Reg. Year", val: v.year },
@@ -567,22 +565,22 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
                     <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600 }}>Ex-showroom</div>
                     <div style={{ fontSize: 26, fontWeight: 900, color: "#111", letterSpacing: "-0.5px" }}>{fmt.currency(v.exShowroom || v.price)}</div>
                   </div>
-                  {v.onRoadPrice && (
+                  {v.onRoadPrice ? (
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "#6B7280" }}>On-Road (est.)</div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: "#374151" }}>{fmt.currency(v.onRoadPrice)}</div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
-                {v.onRoadPrice && (
+                {v.onRoadPrice ? (
                   <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
                     + {fmt.currency(v.onRoadPrice - (v.exShowroom || v.price))} other charges
                     <button onClick={() => setShowBreakup(s => !s)} style={{ background: "none", border: "none", color: "#22C55E", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
                       {showBreakup ? "Hide breakup ↑" : "Price breakup →"}
                     </button>
                   </div>
-                )}
-                {showBreakup && v.onRoadPrice && (
+                ) : null}
+                {showBreakup && v.onRoadPrice ? (
                   <div style={{ background: "#F9FAFB", border: "1px solid #F3F4F6", borderRadius: 10, padding: "10px 14px", marginTop: 10 }}>
                     {[
                       ["Ex-showroom price", v.exShowroom || v.price],
@@ -597,13 +595,14 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
                       <span style={{ fontWeight: 900, color: "#111" }}>{fmt.currency(v.onRoadPrice)}</span>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
 
-            {/* Trust */}
+            {/* Trust — "Certified EV" only when the dealer marks it; Safe Booking + Refundable
+                Token are always-true platform facts. */}
             <div style={{ background: "#F0FDF4", borderTop: "1px solid #BBF7D0", borderBottom: "1px solid #BBF7D0", padding: "10px 20px", display: "flex", gap: 14, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>✅ Certified EV</span>
+              {v.certified ? <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>✅ Certified EV</span> : null}
               <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>🔒 Safe Booking</span>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#166534" }}>↩ Refundable Token</span>
             </div>
