@@ -245,6 +245,11 @@ function BookingModal({ vehicle, mode = "testdrive", onClose }) {
 }
 
 /* ── EMI calculator — pure client-side, standard reducing-balance formula ── */
+// Feature flag: EMI figures are illustrative only and we have no finance-provider
+// tie-up yet, so the whole EMI surface (calculator card + "EMI starts at" panel
+// block) is hidden until a real provider is wired up. Flip to true to re-enable.
+const EMI_ENABLED = false
+
 function EMICalculator({ price }) {
   const [downPayment, setDownPayment] = useState(Math.round(price * 0.2))
   const [months, setMonths] = useState(36)
@@ -528,10 +533,12 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
             </div>
           </div>
 
-          {/* EMI Calculator */}
-          <div id="sd-emi-calc" style={{ marginTop: 0 }}>
-            <EMICalculator price={v.exShowroom || v.price || 0} />
-          </div>
+          {/* EMI Calculator — hidden behind EMI_ENABLED until a finance provider is tied up */}
+          {EMI_ENABLED && (
+            <div id="sd-emi-calc" style={{ marginTop: 0 }}>
+              <EMICalculator price={v.exShowroom || v.price || 0} />
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: Sticky Booking Panel ── */}
@@ -539,7 +546,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
           <div className="sd-panel">
             {/* Price section */}
             <div style={{ padding: "20px 20px 16px" }}>
-              {emiApprox && (
+              {EMI_ENABLED && emiApprox && (
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600 }}>EMI starts at</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
