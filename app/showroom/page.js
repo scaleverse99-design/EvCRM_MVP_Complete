@@ -341,6 +341,7 @@ const DETAIL_STYLES = `
 
 function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
   const [activeImg, setActiveImg] = useState(0)
+  const [bookingMode, setBookingMode] = useState(null)
   const [activeTab, setActiveTab] = useState("overview")
   const [showBreakup, setShowBreakup] = useState(false)
   const validImages = Array.isArray(v.images) ? v.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
@@ -616,10 +617,10 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
 
             {/* CTA Buttons */}
             <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <button className="sd-book-btn" onClick={() => onBook({ vehicle: v, mode: "testdrive" })}>
+              <button className="sd-book-btn" onClick={() => setBookingMode("testdrive")}>
                 🗓 Book free test drive
               </button>
-              <button className="sd-reserve-btn" onClick={() => onBook({ vehicle: v, mode: "reserve" })}>
+              <button className="sd-reserve-btn" onClick={() => setBookingMode("reserve")}>
                 ⚡ Reserve Vehicle (₹1,000)
               </button>
               <p style={{ textAlign: "center", fontSize: 10, color: "#9CA3AF", margin: "4px 0 0", lineHeight: 1.5 }}>
@@ -653,6 +654,9 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
           </div>
         </div>
       )}
+
+      {/* Booking Modal */}
+      {bookingMode && <BookingModal vehicle={v} mode={bookingMode} onClose={() => setBookingMode(null)} />}
     </div>
   )
 }
