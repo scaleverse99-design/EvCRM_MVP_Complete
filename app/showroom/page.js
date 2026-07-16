@@ -298,8 +298,6 @@ const DETAIL_STYLES = `
   .sd-thumb:last-child { border-right: none; }
   .sd-thumb.active { border-bottom-color: #22C55E; }
   .sd-thumb img { width: 44px; height: 32px; object-fit: cover; border-radius: 4px; }
-  .sd-thumb-label { font-size: 10px; color: #aaa; font-weight: 600; }
-  .sd-thumb.active .sd-thumb-label { color: #22C55E; }
   .sd-panel { background: #fff; border-radius: 16px; border: 1px solid #E5E7EB; overflow: hidden; position: sticky; top: 72px; }
   .sd-tag { display: inline-flex; align-items: center; gap: 5px; background: #F3F4F6; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #374151; white-space: nowrap; }
   .sd-trust-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: #F0FDF4; border-top: 1px solid #BBF7D0; border-bottom: 1px solid #BBF7D0; flex-wrap: wrap; }
@@ -335,7 +333,6 @@ const DETAIL_STYLES = `
     .sd-highlights { grid-template-columns: 1fr; }
     .sd-overview-row { grid-template-columns: 1fr; }
     .sd-feat-grid { grid-template-columns: 1fr; }
-    .sd-thumb-label { display: none; }
   }
 `
 
@@ -349,9 +346,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
   const featureList = Array.isArray(v.features) ? v.features.filter(Boolean) : []
   const similar = vehicles.filter(x => x.id !== v.id && x.type === v.type).slice(0, 4)
 
-  const imgCategories = hasPhotos
-    ? validImages.map((url, i) => ({ label: ["Exterior","Interior","Features","Highlights","Tyres"][i] || `View ${i+1}`, url }))
-    : []
+  const imgCategories = hasPhotos ? validImages.map(url => ({ url })) : []
 
   // "Great things" highlights based on vehicle data
   const highlights = [
@@ -397,8 +392,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
                   <div className="sd-thumb-row">
                     {imgCategories.map((cat, i) => (
                       <button key={i} className={`sd-thumb${activeImg === i ? " active" : ""}`} onClick={() => setActiveImg(i)}>
-                        <img src={cat.url} alt={cat.label} />
-                        <span className="sd-thumb-label">{cat.label}</span>
+                        <img src={cat.url} alt={`${v.brand} ${v.model} photo ${i + 1}`} />
                       </button>
                     ))}
                   </div>
