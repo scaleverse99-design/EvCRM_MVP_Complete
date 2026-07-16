@@ -176,6 +176,7 @@ function InventorySection({ dealership, user }) {
   const [deleting,  setDeleting]  = useState(null)
   const [filterStatus, setFilterStatus] = useState("")
   const [reportOpen, setReportOpen] = useState(false)
+  const [lowResWarnings, setLowResWarnings] = useState([]) // filenames of uploaded photos that are too small to look sharp
 
   // Brochure upload → AI extraction → step-through review
   const [brochureParsing, setBrochureParsing] = useState(false)
@@ -199,12 +200,13 @@ function InventorySection({ dealership, user }) {
 
   const [autofilled, setAutofilled] = useState(false)
 
-  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name)); setEditItem(null); setAddModal(true); setAutofilled(false) }
+  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name)); setEditItem(null); setAddModal(true); setAutofilled(false); setLowResWarnings([]) }
   const openEdit = (item) => {
     setForm({ ...item, features: Array.isArray(item.features) ? item.features.join(", ") : item.features, tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags })
     setEditItem(item)
     setAddModal(true)
     setAutofilled(false)
+    setLowResWarnings([])
   }
 
   // Auto-fills specs from the internal EV catalog once brand+model are both
@@ -354,6 +356,13 @@ function InventorySection({ dealership, user }) {
       reader.onload = (event) => {
         const img = new Image()
         img.onload = () => {
+          // The detail page shows the main image ~865px wide — a source smaller than
+          // that gets stretched by the browser and looks blurry no matter what we do
+          // here (we can't add detail the file doesn't have). Warn so the dealer
+          // re-shoots / finds a bigger file instead of wondering why it's blurry.
+          if (Math.max(img.width, img.height) < 800) {
+            setLowResWarnings(w => [...w, `${file.name} (${img.width}×${img.height}px)`])
+          }
           const canvas = document.createElement("canvas")
           // Cap the longest side at 1280px — the marketplace detail page shows the
           // main image ~760px wide, so 1280 keeps it crisp (incl. on retina) without
@@ -583,7 +592,14 @@ function InventorySection({ dealership, user }) {
                   <span style={{ fontSize: 9, color: C.blue, fontWeight: 700 }}>Add Photo</span>
                 </label>
               </div>
-              <div style={{ fontSize: 10, color: C.ink3, marginTop: 6 }}>Choose multiple photos to upload. Tap '✕' to remove.</div>
+              <div style={{ fontSize: 10, color: C.ink3, marginTop: 6 }}>Choose multiple photos to upload. Tap '✕' to remove. Use photos at least 1000px wide — small images look blurry on the marketplace.</div>
+              {lowResWarnings.length > 0 && (
+                <div style={{ marginTop: 8, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#92400E", lineHeight: 1.6 }}>
+                  ⚠️ <b>Low-resolution photo{lowResWarnings.length > 1 ? "s" : ""} — will look blurry on the marketplace:</b>
+                  {lowResWarnings.map((w, i) => <div key={i}>· {w}</div>)}
+                  <div style={{ marginTop: 4 }}>Please replace with the original camera photo (not a thumbnail or screenshot). Aim for at least 1000px on the longest side.</div>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ marginTop:14, display:"grid", gap:14 }}>
