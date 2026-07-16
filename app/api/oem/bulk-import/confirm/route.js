@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic"
 
-import { verifyToken, ok, err } from "../../../../lib/auth"
-import { readTable, writeTable } from "../../../../lib/store"
-import { sendBulkImportVerificationEmail } from "../../../../lib/email"
+import { verifyToken, ok, err } from "../../../../../lib/auth"
+import { readTable, writeTable } from "../../../../../lib/store"
+import { sendBulkImportVerificationEmail } from "../../../../../lib/email"
 import jwt from "jsonwebtoken"
 import bcryptjs from "bcryptjs"
 
