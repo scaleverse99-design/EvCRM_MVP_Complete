@@ -19,17 +19,21 @@ function isValidEmail(email) {
   return re.test(email)
 }
 
-// Validate phone (India: 10 digits, may have +91 prefix)
+// Validate phone (India: 10 digits; tolerates +91/91/0 prefixes — Excel often
+// stores "+919886600171" as the NUMBER 919886600171, so strip digit prefixes too)
 function isValidPhone(phone) {
   if (!phone) return false
-  const cleaned = phone.toString().replace(/^\+91/, "").replace(/\D/g, "")
-  return cleaned.length === 10 && /^\d{10}$/.test(cleaned)
+  const digits = phone.toString().replace(/\D/g, "")
+  const ten = digits.length > 10 ? digits.slice(-10) : digits
+  const prefix = digits.slice(0, digits.length - 10)
+  if (digits.length > 10 && prefix !== "91" && prefix !== "0" && prefix !== "091") return false
+  return ten.length === 10 && /^[6-9]\d{9}$/.test(ten)
 }
 
 // Normalize phone to 10 digits
 function normalizePhone(phone) {
   if (!phone) return ""
-  return phone.toString().replace(/^\+91/, "").replace(/\D/g, "").slice(-10)
+  return phone.toString().replace(/\D/g, "").slice(-10)
 }
 
 // Parse file (Excel or CSV)
@@ -62,50 +66,76 @@ const COLUMN_ALIASES = {
   ownerPhone: ["ownerphone", "owner phone", "proprietor phone", "owner contact"],
 }
 
-// Normalize row headers (find aliased column names)
+// Fuzzy fallbacks for real-world contact exports whose headers don't match
+// any exact alias (e.g. "Phone Number", "Public Display Name", "Mobile No.")
+const FUZZY_HINTS = {
+  phone: ["phone", "mobile", "whatsapp", "contact no"],
+  name: ["name"],
+  email: ["mail"],
+  city: ["city", "location"],
+  state: ["state", "region"],
+}
+
+// Normalize row headers: exact alias match first, then fuzzy contains-match
 function normalizeRow(row) {
   const normalized = {}
   const headers = Object.keys(row)
+  const used = new Set()
 
   for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
     const headerKey = headers.find(h =>
-      aliases.some(alias => h.toLowerCase() === alias.toLowerCase())
+      !used.has(h) && aliases.some(alias => h.toLowerCase().trim() === alias.toLowerCase())
     )
     if (headerKey) {
       normalized[key] = row[headerKey]
+      used.add(headerKey)
+    }
+  }
+
+  for (const [key, hints] of Object.entries(FUZZY_HINTS)) {
+    if (normalized[key] !== undefined) continue
+    const headerKey = headers.find(h => {
+      if (used.has(h)) return false
+      const k = h.toLowerCase().trim()
+      return hints.some(hint => k.includes(hint))
+    })
+    if (headerKey) {
+      normalized[key] = row[headerKey]
+      used.add(headerKey)
     }
   }
 
   return normalized
 }
 
-// Validate a single row
-function validateRow(row, index, existingEmails) {
+// Validate a single row.
+// Email OR phone is enough to onboard: with an email we send the verification
+// link by mail; with only a phone the OEM sends the link via WhatsApp and the
+// dealer types their email (and password) on the verification page themselves.
+// City/state are optional at import — the dealer fills them at verification.
+function validateRow(row, index, existingEmails, existingPhones) {
   const errors = []
 
-  if (!row.email || !row.email.toString().trim()) {
-    errors.push("Missing email")
-  } else if (!isValidEmail(row.email.toString().trim())) {
-    errors.push("Invalid email format")
-  } else if (existingEmails.has(row.email.toString().toLowerCase().trim())) {
-    errors.push("Email already registered in EvCRM")
+  const email = row.email ? row.email.toString().trim() : ""
+  const hasPhone = row.phone && isValidPhone(row.phone)
+
+  if (email) {
+    if (!isValidEmail(email)) {
+      errors.push("Invalid email format")
+    } else if (existingEmails.has(email.toLowerCase())) {
+      errors.push("Email already registered in EvCRM")
+    }
+  } else if (!hasPhone) {
+    errors.push(row.phone ? "Invalid phone format (expected 10 digits) and no email" : "Needs an email or a phone number")
   }
 
-  if (!row.name || !row.name.toString().trim()) {
-    errors.push("Missing dealer/business name")
+  if (hasPhone && existingPhones.has(normalizePhone(row.phone))) {
+    errors.push("Phone already registered in EvCRM")
   }
 
-  if (!row.city || !row.city.toString().trim()) {
-    errors.push("Missing city")
-  }
-
-  if (!row.state || !row.state.toString().trim()) {
-    errors.push("Missing state")
-  }
-
-  if (row.phone && !isValidPhone(row.phone)) {
-    errors.push("Invalid phone format (expected 10 digits)")
-  }
+  // Name is NOT required — WhatsApp-style exports have no display name for
+  // unsaved contacts. A placeholder is used and the dealer corrects it on the
+  // verification page (the name field is editable there).
 
   return errors
 }
@@ -140,9 +170,12 @@ export async function POST(req) {
 
     if (!file) return err("No file uploaded", 400)
 
-    // Validate file type
+    // Validate file type — check the extension as well as the MIME, because
+    // browsers report an empty type for .xlsx when no spreadsheet app is
+    // registered (common on Windows without Office).
     const allowedMimes = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv", "application/vnd.ms-excel"]
-    if (!allowedMimes.includes(file.type) && !file.name.endsWith(".csv")) {
+    const okExt = /\.(xlsx|xls|csv)$/i.test(file.name || "")
+    if (!allowedMimes.includes(file.type) && !okExt) {
       return err("Please upload an Excel (.xlsx) or CSV file", 400)
     }
 
@@ -159,9 +192,11 @@ export async function POST(req) {
       return err("File contains no data rows", 400)
     }
 
-    // Get existing emails to check duplicates
+    // Existing emails AND phones to check duplicates (phone-only rows are
+    // deduped by phone since they have no email yet)
     const users = await readTable("users")
-    const existingEmails = new Set(users.map(u => u.email.toLowerCase()))
+    const existingEmails = new Set(users.map(u => (u.email || "").toLowerCase()).filter(Boolean))
+    const existingPhones = new Set(users.map(u => normalizePhone(u.phone)).filter(p => p.length === 10))
 
     // Validate each row
     const preview = []
@@ -173,22 +208,28 @@ export async function POST(req) {
     rows.forEach((row, idx) => {
       const normalized = normalizeRow(row)
       const rowNum = idx + 2 // Excel rows start at 2 (row 1 is header)
-      const errors = validateRow(normalized, rowNum, existingEmails)
+      const errors = validateRow(normalized, rowNum, existingEmails, existingPhones)
 
       if (errors.length === 0) {
         validCount++
+        const email = normalized.email ? normalized.email.toString().toLowerCase().trim() : ""
+        const phone = normalizePhone(normalized.phone)
+        // Track within-file duplicates too
+        if (email) existingEmails.add(email)
+        if (phone.length === 10) existingPhones.add(phone)
+        const cleanName = normalized.name ? normalized.name.toString().trim() : ""
         preview.push({
-          name: normalized.name.toString().trim(),
-          email: normalized.email.toString().toLowerCase().trim(),
-          phone: normalizePhone(normalized.phone),
-          city: normalized.city.toString().trim(),
-          state: normalized.state.toString().trim(),
+          name: cleanName || (phone ? `Dealer ${phone}` : email.split("@")[0]),
+          email,
+          phone,
+          city: normalized.city ? normalized.city.toString().trim() : "",
+          state: normalized.state ? normalized.state.toString().trim() : "",
           businessName: normalized.businessName ? normalized.businessName.toString().trim() : "",
           ownerName: normalized.ownerName ? normalized.ownerName.toString().trim() : "",
           status: "ok",
         })
       } else {
-        if (errors.includes("Email already registered in EvCRM")) {
+        if (errors.some(e => e.includes("already registered"))) {
           duplicateCount++
         } else {
           errorCount++
@@ -212,13 +253,13 @@ export async function POST(req) {
       id: importId,
       oemId: oem.oemId,
       fileName: file.name,
-      fileContent: buffer.toString("base64"),
       totalRows: rows.length,
       validRows: validCount,
       duplicates: duplicateCount,
       errorRows: errorCount,
-      preview: preview.slice(0, 100), // Store first 100 for preview
-      fullData: rows, // Store original rows for confirm step
+      // The FULL validated list — the confirm step iterates this. (Was capped
+      // at 100, which silently dropped everything past the first 100 accounts.)
+      preview,
       status: "preview_ready",
       createdAt: new Date().toISOString(),
     })

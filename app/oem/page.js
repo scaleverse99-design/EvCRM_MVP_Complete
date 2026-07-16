@@ -505,16 +505,49 @@ export default function OEMDashboard() {
                 {bulkResult ? (
                   <div style={{ ...card, borderColor:`${C.green}40`, background:"#F0FDF4" }}>
                     <div style={{ fontSize:14, fontWeight:800, color:"#065F46", marginBottom:10 }}>✓ Import Complete</div>
-                    <div style={{ fontSize:12, color:C.ink2, marginBottom:14 }}>
-                      Successfully created <b>{bulkResult.summary.created}</b> dealer accounts. Verification emails have been sent.
-                      {bulkResult.summary.failed > 0 && <> <b>{bulkResult.summary.failed}</b> accounts failed to create.</>}
-                    </div>
+                    <div style={{ fontSize:12, color:C.ink2, marginBottom:14 }}>{bulkResult.message}</div>
                     <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:10, padding:14, fontSize:12, marginBottom:14 }}>
                       <div style={{ marginBottom:6 }}><b>Created:</b> {bulkResult.summary.created} / {bulkResult.summary.requested}</div>
+                      <div style={{ marginBottom:6 }}><b>Verification emails sent:</b> {bulkResult.summary.emailsSent || 0}</div>
+                      <div style={{ marginBottom:6 }}><b>Need WhatsApp link:</b> {bulkResult.summary.whatsappPending || 0}</div>
                       <div><b>Failed:</b> {bulkResult.summary.failed}</div>
                     </div>
+
+                    {(bulkResult.accounts || []).length > 0 && (
+                      <button onClick={()=>{
+                        const rows = [["name","phone","email","verification_link"], ...bulkResult.accounts.map(a => [a.name, a.phone || "", a.email || "", a.verifyUrl])]
+                        const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n")
+                        const url = window.URL.createObjectURL(new Blob([csv], { type:"text/csv" }))
+                        const a = document.createElement("a"); a.href = url; a.download = "dealer-verification-links.csv"; a.click(); window.URL.revokeObjectURL(url)
+                      }} style={{ width:"100%", background:"#1E293B", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit", marginBottom:14 }}>
+                        ⬇ Download All Verification Links (CSV)
+                      </button>
+                    )}
+
+                    {(bulkResult.accounts || []).filter(a => !a.sentByEmail && a.waUrl).length > 0 && (
+                      <div style={{ marginBottom:14 }}>
+                        <div style={{ fontSize:12, fontWeight:800, marginBottom:8 }}>📲 Send verification links via WhatsApp</div>
+                        <div style={{ maxHeight:320, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+                          {bulkResult.accounts.filter(a => !a.sentByEmail && a.waUrl).slice(0, 100).map((a, i) => (
+                            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px" }}>
+                              <div style={{ fontSize:11.5, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                <b>{a.name}</b> · {a.phone}
+                              </div>
+                              <a href={a.waUrl} target="_blank" rel="noreferrer"
+                                style={{ background:"#25D366", color:"#fff", borderRadius:7, padding:"6px 12px", fontSize:11, fontWeight:800, textDecoration:"none", whiteSpace:"nowrap" }}>
+                                📲 Send
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                        {bulkResult.accounts.filter(a => !a.sentByEmail).length > 100 && (
+                          <div style={{ fontSize:11, color:C.ink3, marginTop:6 }}>Showing first 100 — the CSV above has every link.</div>
+                        )}
+                      </div>
+                    )}
+
                     <div style={{ background:"#EFF6FF", border:"1px solid #3B82F6", borderRadius:10, padding:12, fontSize:12, color:"#1E40AF", marginBottom:14 }}>
-                      ℹ️ Dealers will receive a verification email. They have 24 hours to verify their details and set a password.
+                      ℹ️ Each link is valid for 7 days. The dealer confirms their details, enters their email (if you didn't have it) and sets their own password — then they can log in.
                     </div>
                     <button onClick={()=>{setBulkResult(null); setBulkFile(null); setBulkPreview(null)}}
                       style={{ width:"100%", background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -598,7 +631,7 @@ export default function OEMDashboard() {
                           </button>
                           <button onClick={handleBulkConfirm} disabled={bulkConfirming}
                             style={{ flex:1, background:"#059669", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", opacity:bulkConfirming?0.7:1 }}>
-                            {bulkConfirming ? "Creating accounts…" : `✓ Confirm & Send ${bulkPreview.summary.validRows} Emails`}
+                            {bulkConfirming ? "Creating accounts…" : `✓ Confirm & Create ${bulkPreview.summary.validRows} Accounts`}
                           </button>
                         </div>
                       </div>

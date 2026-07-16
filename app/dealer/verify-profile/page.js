@@ -21,7 +21,10 @@ function VerifyProfileContent() {
     state: "",
     businessName: "",
     ownerName: "",
+    password: "",
+    passwordConfirm: "",
   })
+  const [emailLocked, setEmailLocked] = useState(true)
 
   const [expiryAt, setExpiryAt] = useState(null)
 
@@ -43,7 +46,8 @@ function VerifyProfileContent() {
           return
         }
 
-        setForm(data.user)
+        setForm(f => ({ ...f, ...data.user, password: "", passwordConfirm: "" }))
+        setEmailLocked(!!data.user.emailLocked)
         setExpiryAt(new Date(data.expiryAt))
         setError(null)
       } catch (e) {
@@ -62,6 +66,8 @@ function VerifyProfileContent() {
 
   const handleSubmit = async e => {
     e.preventDefault()
+    if (form.password.length < 8) { setError("Password must be at least 8 characters"); return }
+    if (form.password !== form.passwordConfirm) { setError("Passwords do not match"); return }
     setSubmitting(true)
     setError(null)
 
@@ -207,12 +213,15 @@ function VerifyProfileContent() {
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Email (Read-only)</label>
+            <label style={labelStyle}>{emailLocked ? "Email (Read-only)" : "Your Email — this becomes your login *"}</label>
             <input
               type="email"
               value={form.email}
-              disabled
-              style={{ ...inputStyle, background: "#F9FAFB", color: C.ink3, cursor: "not-allowed" }}
+              disabled={emailLocked}
+              required={!emailLocked}
+              onChange={e => handleChange("email", e.target.value)}
+              placeholder={emailLocked ? "" : "you@yourbusiness.com"}
+              style={emailLocked ? { ...inputStyle, background: "#F9FAFB", color: C.ink3, cursor: "not-allowed" } : inputStyle}
             />
           </div>
 
@@ -250,7 +259,7 @@ function VerifyProfileContent() {
             />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>Owner Name (Optional)</label>
             <input
               type="text"
@@ -259,6 +268,32 @@ function VerifyProfileContent() {
               style={inputStyle}
               placeholder="e.g. Raj Kumar"
             />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+            <div>
+              <label style={labelStyle}>Set Password (min 8 chars) *</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={e => handleChange("password", e.target.value)}
+                style={inputStyle}
+                required
+                minLength={8}
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Confirm Password *</label>
+              <input
+                type="password"
+                value={form.passwordConfirm}
+                onChange={e => handleChange("passwordConfirm", e.target.value)}
+                style={inputStyle}
+                required
+                placeholder="••••••••"
+              />
+            </div>
           </div>
 
           <button
@@ -293,7 +328,7 @@ function VerifyProfileContent() {
             color: "#065F46",
           }}
         >
-          ✓ After verification, you can log in with your email and create a password at{" "}
+          ✓ After verification, log in with your email and the password you set above at{" "}
           <a href="/login" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>
             evcrm.in/login
           </a>
