@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../lib/auth"
 import { readTable, writeTable } from "../../../lib/store"
-import { sendOEMSponsorshipEmail } from "../../../lib/email"
+import { sendOEMSponsorshipEmail, sendBulkImportVerificationEmail } from "../../../lib/email"
+import jwt from "jsonwebtoken"
 
 function getOEM(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "").trim()
@@ -45,12 +46,17 @@ export async function GET(req) {
       dealership: d.dealership,
       name: d.name,
       email: d.email,
+      phone: d.phone || "",
       businessName: d.dealershipName || d.name,
       oemDistributed: !!d.oemDistributed,
       oemSponsored: !!d.oemSponsored,
       access,
       billingStatus: d.billingStatus || "trial",
       subscriptionCost: (d.billingStatus || "").startsWith("active") ? MRR_PER_DEALER : 0,
+      // Bulk-imported dealers who haven't opened their verification link yet —
+      // the UI lists these separately with resend actions
+      pendingVerification: d.status === "pending_verification",
+      verificationTokenExpiry: d.status === "pending_verification" ? d.verificationTokenExpiry || null : null,
     }
     if (!access) return base // locked — no operational data leaves the API
 
@@ -172,6 +178,52 @@ export async function PATCH(req) {
     }
 
     return ok({ sponsored: body.dealership })
+  }
+
+  // Regenerate a pending dealer's verification link (7 days) without
+  // re-uploading anything. Emails it automatically when the account has an
+  // email; always returns verifyUrl + waUrl so the UI can offer WhatsApp/copy.
+  if (body.action === "resend_verification") {
+    const users = await readTable("users")
+    const idx = users.findIndex(u => u.role === "dealer" && u.dealership === body.dealership && u.oemId === oem.oemId)
+    if (idx === -1) return err("Dealer not found in your network", 404)
+    const dealer = users[idx]
+    if (dealer.status !== "pending_verification") return err("This dealer is already verified", 400)
+
+    const verificationToken = jwt.sign(
+      { email: dealer.email || "", dealership: dealer.dealership, oemId: oem.oemId, type: "dealer_verification" },
+      process.env.JWT_SECRET || "dev-secret",
+      { expiresIn: "7d" }
+    )
+    const expiryTime = new Date()
+    expiryTime.setDate(expiryTime.getDate() + 7)
+    users[idx] = { ...dealer, verificationToken, verificationTokenExpiry: expiryTime.toISOString(), verificationResentAt: at }
+    await writeTable("users", users)
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://evcrm.in"
+    const verifyUrl = `${appUrl}/dealer/verify-profile?token=${verificationToken}`
+    const oemUser = users.find(u => u.role === "oem" && u.dealership === oem.oemId)
+    const oemName = oemUser?.dealershipName || oemUser?.name || "EvCRM"
+
+    let emailSent = false
+    if (dealer.email) {
+      try {
+        await sendBulkImportVerificationEmail({
+          email: dealer.email, dealerName: dealer.name, businessName: dealer.dealershipName || dealer.name,
+          ownerName: dealer.ownerName || "", phone: dealer.phone, city: dealer.city, state: dealer.state,
+          verificationToken, oemName,
+        })
+        emailSent = true
+      } catch (e) {
+        console.error("[oem/resend_verification] email failed:", e.message)
+      }
+    }
+
+    const waUrl = dealer.phone
+      ? `https://wa.me/91${dealer.phone}?text=${encodeURIComponent(`Hi ${dealer.name}! ${oemName} has set up your EvCRM dealer account. Please verify your details and set your password here (link valid 7 days): ${verifyUrl}`)}`
+      : null
+
+    return ok({ resent: true, emailSent, verifyUrl, waUrl, expiresAt: expiryTime.toISOString() })
   }
 
   if (body.action === "assign_agent") {

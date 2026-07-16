@@ -46,6 +46,10 @@ export default function OEMDashboard() {
   const [onboardResult, setOnboardResult] = useState(null)
   const [duplicateDealer, setDuplicateDealer] = useState(null)
 
+  // Pending-verification dealers (bulk-imported, not yet verified)
+  const [pendingSearch, setPendingSearch] = useState("")
+  const [resentInfo, setResentInfo] = useState({}) // dealership -> "email" | "wa" | "copied"
+
   // Prospects (imported call lists) state
   const [prospects, setProspects] = useState([])
   const [prospectCounts, setProspectCounts] = useState({})
@@ -196,6 +200,28 @@ export default function OEMDashboard() {
     setActing(null)
   }
 
+  // Resend a pending dealer's verification link. mode: "email" | "wa" | "copy"
+  const resendVerification = async (dealership, mode) => {
+    setActing(dealership)
+    try {
+      const r = await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"resend_verification", dealership }) })
+      const d = await r.json()
+      if (!d.resent) { alert(d.error || "Could not resend"); return }
+      if (mode === "wa" && d.waUrl) {
+        window.open(d.waUrl, "_blank")
+        setResentInfo(m => ({ ...m, [dealership]: "wa" }))
+      } else if (mode === "copy") {
+        await navigator.clipboard.writeText(d.verifyUrl)
+        setResentInfo(m => ({ ...m, [dealership]: "copied" }))
+      } else {
+        setResentInfo(m => ({ ...m, [dealership]: d.emailSent ? "email" : "copied" }))
+        if (!d.emailSent) await navigator.clipboard.writeText(d.verifyUrl)
+      }
+    } finally {
+      setActing(null)
+    }
+  }
+
   // Prefill the manual Onboard form from a prospect (they still need an email)
   const convertProspect = (p) => {
     setForm({ businessName: p.name || "", ownerName: p.name || "", email: p.email || "", phone: p.phone || "", city: p.city || "", state: p.state || "" })
@@ -332,10 +358,64 @@ export default function OEMDashboard() {
               OEM-distributed dealers share full data automatically. Self-registered dealers stay private until you sponsor their monthly subscription.
             </div>
 
+            {/* Pending verification — bulk-imported dealers who haven't verified yet */}
+            {!loading && dealers.some(d => d.pendingVerification) && (() => {
+              const pending = dealers.filter(d => d.pendingVerification)
+              const q = pendingSearch.toLowerCase().trim()
+              const filtered = pending.filter(d => !q || (d.name || "").toLowerCase().includes(q) || (d.phone || "").includes(q) || (d.email || "").toLowerCase().includes(q))
+              return (
+                <div style={{ marginBottom:28 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
+                    <div style={{ fontSize:13.5, fontWeight:800, color:"#92400E" }}>⏳ Pending Verification ({pending.length})</div>
+                    <input placeholder="Search pending…" value={pendingSearch} onChange={e=>setPendingSearch(e.target.value)}
+                      style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 12px", fontSize:12, outline:"none", fontFamily:"inherit", minWidth:200 }} />
+                  </div>
+                  <div style={{ fontSize:11.5, color:C.ink3, marginBottom:10 }}>
+                    These dealers have accounts but haven't opened their verification link yet. Resend generates a fresh 7-day link — no need to re-upload anything.
+                  </div>
+                  <div style={{ maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+                    {filtered.slice(0, 100).map(d => (
+                      <div key={d.dealership} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"10px 14px" }}>
+                        <div style={{ fontSize:12, minWidth:0 }}>
+                          <b>{d.businessName || d.name}</b>
+                          <span style={{ color:C.ink3, marginLeft:8 }}>{d.phone ? `📞 ${d.phone}` : ""}{d.email ? ` ✉️ ${d.email}` : ""}</span>
+                          {d.verificationTokenExpiry && <span style={{ color:C.ink3, marginLeft:8, fontSize:10.5 }}>link expires {fmtDT(d.verificationTokenExpiry)}</span>}
+                          {resentInfo[d.dealership] && (
+                            <span style={{ color:"#059669", fontWeight:800, fontSize:10.5, marginLeft:8 }}>
+                              ✓ {resentInfo[d.dealership] === "email" ? "email sent" : resentInfo[d.dealership] === "wa" ? "WhatsApp opened" : "link copied"}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          {d.email && (
+                            <button onClick={()=>resendVerification(d.dealership, "email")} disabled={acting===d.dealership}
+                              style={{ background:"#1E293B", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                              {acting===d.dealership ? "…" : "✉️ Resend Email"}
+                            </button>
+                          )}
+                          {d.phone && (
+                            <button onClick={()=>resendVerification(d.dealership, "wa")} disabled={acting===d.dealership}
+                              style={{ background:"#25D366", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                              {acting===d.dealership ? "…" : "📲 WhatsApp"}
+                            </button>
+                          )}
+                          <button onClick={()=>resendVerification(d.dealership, "copy")} disabled={acting===d.dealership}
+                            style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            🔗 Copy Link
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {filtered.length > 100 && <div style={{ fontSize:11, color:C.ink3, marginTop:8, textAlign:"center" }}>Showing first 100 of {filtered.length} — use search to find a specific dealer.</div>}
+                </div>
+              )
+            })()}
+
             {loading ? <div style={{ padding:30, color:C.ink3, fontSize:13 }}>Loading network…</div> : (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:14, marginBottom:32 }}>
                 {dealers.length === 0 && <div style={{ ...card, color:C.ink3, fontSize:13 }}>No dealers linked to your OEM network yet. Use "Onboard Dealer" to add your first one.</div>}
-                {dealers.map(d => (
+                {dealers.filter(d => !d.pendingVerification).map(d => (
                   <div key={d.dealership} style={{ ...card, borderColor: d.access ? `${C.green}40` : C.border }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8, marginBottom:10 }}>
                       <div>
