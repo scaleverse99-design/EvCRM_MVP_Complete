@@ -83,3 +83,8 @@ alter table stock_requests enable row level security;
 -- step can fail with "Import not found" when it lands on a different instance.
 create table if not exists bulk_imports (id text primary key, data jsonb not null, created_at timestamptz default now());
 alter table bulk_imports enable row level security;
+
+-- OEM prospect/call lists imported from contact exports (added 2026-07-17).
+-- Run in the production Supabase SQL Editor (same §8.0 lesson as bulk_imports).
+create table if not exists prospects (id text primary key, data jsonb not null, created_at timestamptz default now());
+alter table prospects enable row level security;

@@ -15,11 +15,15 @@ function fmtDT(iso) {
 const TABS = [
   { id:"network",  icon:"🏪", label:"My Network" },
   { id:"onboard",  icon:"➕", label:"Onboard Dealer" },
+  { id:"prospects", icon:"📇", label:"Prospects" },
   { id:"insidesales", icon:"📞", label:"Inside Sales" },
   { id:"feedback", icon:"💬", label:"Feedback" },
   { id:"stock",    icon:"📦", label:"Stock Requests" },
   { id:"reports",  icon:"📊", label:"Reports" },
 ]
+
+const PROSPECT_STATUSES = ["NEW", "CONTACTED", "INTERESTED", "CONVERTED", "NOT_INTERESTED"]
+const PROSPECT_COLORS = { NEW:"#3B82F6", CONTACTED:"#F59E0B", INTERESTED:"#8B5CF6", CONVERTED:"#059669", NOT_INTERESTED:"#9CA3AF" }
 
 export default function OEMDashboard() {
   const router = useRouter()
@@ -41,6 +45,15 @@ export default function OEMDashboard() {
   const [onboardErrors, setOnboardErrors] = useState({})
   const [onboardResult, setOnboardResult] = useState(null)
   const [duplicateDealer, setDuplicateDealer] = useState(null)
+
+  // Prospects (imported call lists) state
+  const [prospects, setProspects] = useState([])
+  const [prospectCounts, setProspectCounts] = useState({})
+  const [prospectsLoaded, setProspectsLoaded] = useState(false)
+  const [prospectUploading, setProspectUploading] = useState(false)
+  const [prospectImportResult, setProspectImportResult] = useState(null)
+  const [prospectFilter, setProspectFilter] = useState("")   // status filter, "" = all
+  const [prospectSearch, setProspectSearch] = useState("")
 
   // Bulk import state
   const [onboardMode, setOnboardMode] = useState("manual") // "manual" or "bulk"
@@ -139,6 +152,62 @@ export default function OEMDashboard() {
     setDuplicateDealer(null)
     setTab("network")
   }
+
+  // Prospects handlers
+  const loadProspects = async () => {
+    try {
+      const r = await authFetch("/api/oem/prospects")
+      const d = await r.json()
+      if (d.prospects) { setProspects(d.prospects); setProspectCounts(d.counts || {}) }
+    } catch {}
+    setProspectsLoaded(true)
+  }
+
+  const handleProspectUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = "" // allow re-selecting the same file
+    setProspectUploading(true)
+    setProspectImportResult(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await authFetch("/api/oem/prospects", { method: "POST", body: formData })
+      let data
+      try { data = await res.json() }
+      catch { data = { error: `Server didn't accept the upload (HTTP ${res.status}). Please try again in a minute.` } }
+      if (data.success) {
+        setProspectImportResult(data)
+        await loadProspects()
+      } else {
+        setProspectImportResult({ error: data.error || data.message || "Import failed" })
+      }
+    } catch (err2) {
+      setProspectImportResult({ error: err2.message })
+    } finally {
+      setProspectUploading(false)
+    }
+  }
+
+  const updateProspect = async (id, patch) => {
+    setActing(id)
+    await authFetch("/api/oem/prospects", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id, ...patch }) })
+    await loadProspects()
+    setActing(null)
+  }
+
+  // Prefill the manual Onboard form from a prospect (they still need an email)
+  const convertProspect = (p) => {
+    setForm({ businessName: p.name || "", ownerName: p.name || "", email: p.email || "", phone: p.phone || "", city: p.city || "", state: p.state || "" })
+    setOnboardMode("manual")
+    setOnboardResult(null)
+    setTab("onboard")
+  }
+
+  useEffect(() => {
+    if (tab === "prospects" && user?.role === "oem" && !prospectsLoaded) loadProspects()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, user, prospectsLoaded])
 
   // Bulk import handlers
   const handleBulkFileSelect = async (e) => {
@@ -562,6 +631,108 @@ export default function OEMDashboard() {
               </>
             )}
           </div>
+        )}
+
+        {/* ── PROSPECTS (imported call lists) ── */}
+        {tab === "prospects" && (
+          <>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, flexWrap:"wrap", marginBottom:4 }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:800 }}>Prospects — Call List</div>
+                <div style={{ fontSize:12, color:C.ink3, marginTop:2, maxWidth:560, lineHeight:1.5 }}>
+                  Upload any contact export (Excel/CSV — phone numbers required, names/comments picked up automatically). Work the list by phone, then hit "Onboard →" once a dealer shares their email.
+                </div>
+              </div>
+              <label style={{ background:"#1E293B", color:"#fff", borderRadius:10, padding:"11px 18px", fontSize:12, fontWeight:800, cursor:"pointer", whiteSpace:"nowrap" }}>
+                {prospectUploading ? "Importing…" : "📇 Import Contacts"}
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleProspectUpload} style={{ display:"none" }} disabled={prospectUploading} />
+              </label>
+            </div>
+
+            {prospectImportResult && (
+              prospectImportResult.error ? (
+                <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:"10px 14px", fontSize:12, color:C.red, margin:"10px 0" }}>
+                  ✕ {prospectImportResult.error}
+                </div>
+              ) : (
+                <div style={{ background:"#F0FDF4", border:"1px solid #059669", borderRadius:10, padding:"10px 14px", fontSize:12, color:"#065F46", margin:"10px 0" }}>
+                  ✓ Imported <b>{prospectImportResult.summary.added}</b> of {prospectImportResult.summary.totalRows} rows
+                  {prospectImportResult.summary.skippedDuplicate > 0 && <> · {prospectImportResult.summary.skippedDuplicate} duplicates skipped</>}
+                  {prospectImportResult.summary.skippedInvalid > 0 && <> · {prospectImportResult.summary.skippedInvalid} invalid phone numbers skipped</>}
+                  {" "}(columns detected — phone: "{prospectImportResult.detectedColumns.phone}"{prospectImportResult.detectedColumns.name ? `, name: "${prospectImportResult.detectedColumns.name}"` : ""}{prospectImportResult.detectedColumns.notes ? `, notes: "${prospectImportResult.detectedColumns.notes}"` : ""})
+                </div>
+              )
+            )}
+
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", margin:"12px 0 14px" }}>
+              <button onClick={()=>setProspectFilter("")}
+                style={{ background:prospectFilter===""?"#1E293B":"#F3F4F6", color:prospectFilter===""?"#fff":C.ink2, border:"none", borderRadius:8, padding:"7px 13px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                All ({prospects.length})
+              </button>
+              {PROSPECT_STATUSES.map(s => (
+                <button key={s} onClick={()=>setProspectFilter(s)}
+                  style={{ background:prospectFilter===s?PROSPECT_COLORS[s]:"#F3F4F6", color:prospectFilter===s?"#fff":C.ink2, border:"none", borderRadius:8, padding:"7px 13px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                  {s.replace("_", " ")} ({prospectCounts[s] || 0})
+                </button>
+              ))}
+              <input placeholder="Search name / phone / notes…" value={prospectSearch} onChange={e=>setProspectSearch(e.target.value)}
+                style={{ marginLeft:"auto", background:"#fff", border:`1px solid ${C.border}`, borderRadius:9, padding:"8px 12px", fontSize:12, outline:"none", fontFamily:"inherit", minWidth:220 }} />
+            </div>
+
+            {(() => {
+              const q = prospectSearch.toLowerCase().trim()
+              const filtered = prospects
+                .filter(p => !prospectFilter || p.status === prospectFilter)
+                .filter(p => !q || (p.name || "").toLowerCase().includes(q) || (p.phone || "").includes(q) || (p.notes || "").toLowerCase().includes(q))
+              const shown = filtered.slice(0, 200)
+              return (
+                <>
+                  {!prospectsLoaded && <div style={{ ...card, color:C.ink3, fontSize:13 }}>Loading prospects…</div>}
+                  {prospectsLoaded && prospects.length === 0 && (
+                    <div style={{ ...card, color:C.ink3, fontSize:13 }}>No prospects yet — import a contacts file to build your call list.</div>
+                  )}
+                  {prospectsLoaded && prospects.length > 0 && filtered.length === 0 && (
+                    <div style={{ ...card, color:C.ink3, fontSize:13 }}>Nothing matches this filter/search.</div>
+                  )}
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {shown.map(p => (
+                      <div key={p.id} style={{ ...card, padding:14 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap" }}>
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ fontSize:13, fontWeight:800 }}>
+                              {p.name || "(no name)"}
+                              <span style={{ background:`${PROSPECT_COLORS[p.status]}18`, color:PROSPECT_COLORS[p.status], fontSize:9, fontWeight:800, borderRadius:6, padding:"2px 8px", marginLeft:8, verticalAlign:"middle" }}>{p.status.replace("_"," ")}</span>
+                            </div>
+                            <div style={{ fontSize:11.5, color:C.ink3, marginTop:2 }}>
+                              📞 {p.phone}{p.email ? ` · ✉️ ${p.email}` : ""}{p.city ? ` · ${p.city}` : ""}
+                            </div>
+                            {p.notes && <div style={{ fontSize:11.5, color:C.ink2, marginTop:6, fontStyle:"italic" }}>"{p.notes}"</div>}
+                          </div>
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                            <a href={`tel:+91${p.phone}`} style={{ border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, textDecoration:"none" }}>📞 Call</a>
+                            <a href={`https://wa.me/91${p.phone}`} target="_blank" rel="noreferrer" style={{ border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, textDecoration:"none" }}>💬 WhatsApp</a>
+                            <select value={p.status} disabled={acting===p.id} onChange={e=>updateProspect(p.id, { status: e.target.value })}
+                              style={{ border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 8px", fontSize:11, fontWeight:700, fontFamily:"inherit", background:"#fff", cursor:"pointer" }}>
+                              {PROSPECT_STATUSES.map(s => <option key={s} value={s}>{s.replace("_"," ")}</option>)}
+                            </select>
+                            <button onClick={()=>{ const n = window.prompt("Notes for this prospect:", p.notes || ""); if (n !== null) updateProspect(p.id, { notes: n }) }} disabled={acting===p.id}
+                              style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>📝</button>
+                            <button onClick={()=>convertProspect(p)}
+                              style={{ background:"#059669", color:"#fff", border:"none", borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>Onboard →</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {filtered.length > 200 && (
+                    <div style={{ fontSize:11.5, color:C.ink3, marginTop:10, textAlign:"center" }}>
+                      Showing first 200 of {filtered.length} — narrow it down with search or a status filter.
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </>
         )}
 
         {/* ── INSIDE SALES ── */}
