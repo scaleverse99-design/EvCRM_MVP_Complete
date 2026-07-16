@@ -54,9 +54,12 @@ const COLUMN_ALIASES = {
   phone: ["phone", "contact phone", "dealer phone", "owner phone"],
   city: ["city", "location", "city name"],
   state: ["state", "region", "state name"],
-  businessName: ["business name", "company name", "dealership name"],
-  ownerName: ["owner name", "proprietor", "owner", "proprietor name"],
-  ownerPhone: ["owner phone", "proprietor phone", "owner contact"],
+  // Include the camelCase header names too — our own downloadable template uses
+  // "businessName"/"ownerName" headers, which the spaced aliases didn't match
+  // (verified live: those columns silently imported as empty).
+  businessName: ["businessname", "business name", "company name", "dealership name"],
+  ownerName: ["ownername", "owner name", "proprietor", "owner", "proprietor name"],
+  ownerPhone: ["ownerphone", "owner phone", "proprietor phone", "owner contact"],
 }
 
 // Normalize row headers (find aliased column names)

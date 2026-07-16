@@ -154,7 +154,11 @@ export default function OEMDashboard() {
       formData.append("file", file)
 
       const res = await authFetch("/api/oem/bulk-import", { method: "POST", body: formData })
-      const data = await res.json()
+      // Guard against non-JSON responses (e.g. an HTML error page during a deploy
+      // or from the CDN) — res.json() on those throws a cryptic "Unexpected token '<'".
+      let data
+      try { data = await res.json() }
+      catch { data = { message: `Server didn't accept the upload (HTTP ${res.status}). Please wait a minute and try again.` } }
 
       if (data.success) {
         setBulkPreview(data)
@@ -178,7 +182,9 @@ export default function OEMDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ importId: bulkPreview.importId }),
       })
-      const data = await res.json()
+      let data
+      try { data = await res.json() }
+      catch { data = { message: `Server error while creating accounts (HTTP ${res.status}). Please try again in a minute — already-created accounts are kept, duplicates are skipped automatically.` } }
 
       if (data.success) {
         setBulkResult(data)

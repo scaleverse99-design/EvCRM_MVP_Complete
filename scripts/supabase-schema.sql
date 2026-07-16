@@ -76,3 +76,10 @@ alter table attendance enable row level security;
 create table if not exists stock_requests (id text primary key, data jsonb not null, created_at timestamptz default now());
 create index if not exists idx_stock_requests_dealership on stock_requests ((data->>'dealership'));
 alter table stock_requests enable row level security;
+
+-- OEM bulk dealer imports — preview/confirm state + audit trail (added 2026-07-16).
+-- IMPORTANT: run this in the production Supabase SQL Editor — without it, store.js
+-- silently falls back to the Cloud Run instance's ephemeral disk and the Confirm
+-- step can fail with "Import not found" when it lands on a different instance.
+create table if not exists bulk_imports (id text primary key, data jsonb not null, created_at timestamptz default now());
+alter table bulk_imports enable row level security;
