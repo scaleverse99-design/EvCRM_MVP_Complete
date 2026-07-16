@@ -11,12 +11,12 @@ import {
 } from "../../../../lib/db"
 
 // ── POST /api/auth/login ──────────────────────────────────────────
-// Body: { email, password }
+// Body: { email, password, role? }
 // Returns: { success, user } + sets HttpOnly cookie
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { email, password } = body
+    const { email, password, role: selectedRole } = body
 
     // ── 1. Basic input validation ─────────────────────────────────
     if (!email || !password) {
@@ -46,6 +46,15 @@ export async function POST(req) {
       // Log failed attempt but give vague error (security best practice)
       await logLoginAttempt(emailClean, ipAddress, false)
       return err("Invalid email or password", 401)
+    }
+
+    // ── 3b. Validate role matches selected portal ─────────────────
+    // Only check if a role was passed from the UI (backwards compatible)
+    if (selectedRole && user.role !== selectedRole) {
+      const portalName = selectedRole === "oem" ? "OEM Partner" : selectedRole === "rep" ? "Sales Rep" : selectedRole === "superadmin" ? "Founder" : "Dealer"
+      const actualPortal = user.role === "oem" ? "OEM Partner" : user.role === "rep" ? "Sales Rep" : user.role === "superadmin" ? "Founder" : "Dealer"
+      await logLoginAttempt(emailClean, ipAddress, false)
+      return err(`Wrong portal selected. This account is a ${actualPortal} account — please select the '${actualPortal}' tab to sign in.`, 403)
     }
 
     // ── 4. Check account is active ────────────────────────────────

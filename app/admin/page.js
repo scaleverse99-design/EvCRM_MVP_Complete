@@ -51,6 +51,8 @@ export default function AdminPage() {
   const [acting, setActing] = useState(null)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
+  const [roleEdits, setRoleEdits] = useState({})   // { userId: selectedRole }
+  const [toast, setToast] = useState(null)          // { type, msg }
 
   useEffect(() => {
     if (authLoading) return
@@ -77,14 +79,43 @@ export default function AdminPage() {
 
   useEffect(() => { if (localUser) loadData() }, [localUser, loadData])
 
+  const showToast = (type, msg) => {
+    setToast({ type, msg })
+    setTimeout(() => setToast(null), 3500)
+  }
+
   const toggleActive = async (u) => {
-    setActing(u.id)
+    setActing(u.id + "_active")
     try {
-      await authFetch("/api/admin/users", {
+      const res = await authFetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: u.id, is_active: u.is_active === false }),
       })
+      const data = await res.json()
+      if (!res.ok) { showToast("error", data.error || "Failed"); return }
+      showToast("success", data.message)
+      await loadData()
+    } finally {
+      setActing(null)
+    }
+  }
+
+  const changeRole = async (u) => {
+    const newRole = roleEdits[u.id]
+    if (!newRole || newRole === u.role) return
+    setActing(u.id + "_role")
+    try {
+      const res = await authFetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: u.id, role: newRole }),
+      })
+      const data = await res.json()
+      if (!res.ok) { showToast("error", data.error || "Failed"); return }
+      showToast("success", `${u.name || u.email}: ${data.message}`)
+      // clear edit state for this user
+      setRoleEdits(prev => { const n = {...prev}; delete n[u.id]; return n })
       await loadData()
     } finally {
       setActing(null)
@@ -169,21 +200,32 @@ export default function AdminPage() {
               </select>
             </div>
 
+            {/* Toast */}
+            {toast && (
+              <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, background: toast.type === "error" ? "#FEF2F2" : "#F0FDF4", border: `1px solid ${toast.type === "error" ? C.red : C.green}40`, borderRadius: 14, padding: "14px 20px", display: "flex", gap: 10, alignItems: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", maxWidth: 360 }}>
+                <span style={{ fontSize: 16 }}>{toast.type === "error" ? "⚠️" : "✅"}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: toast.type === "error" ? C.red : C.green }}>{toast.msg}</span>
+              </div>
+            )}
+
             <div style={{ background: C.card, borderRadius: 20, border: `1px solid ${C.border}`, overflow: "hidden" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                    {["Name", "Email", "Role", "Dealership", "Status", "Action"].map(head => (
+                    {["Name", "Email", "Role", "Dealership", "Status", "Change Role", "Active"].map(head => (
                       <th key={head} style={{ padding: "14px 20px", textAlign: "left", fontSize: 10, fontWeight: 800, color: C.ink2, textTransform: "uppercase", letterSpacing: 1 }}>{head}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: C.ink3 }}>Loading users…</td></tr>
+                    <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: C.ink3 }}>Loading users…</td></tr>
                   ) : filteredUsers.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: C.ink3 }}>No users match.</td></tr>
-                  ) : filteredUsers.map(u => (
+                    <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: C.ink3 }}>No users match.</td></tr>
+                  ) : filteredUsers.map(u => {
+                    const pendingRole = roleEdits[u.id]
+                    const isDirty = pendingRole && pendingRole !== u.role
+                    return (
                     <tr key={u.id} style={{ borderTop: `1px solid ${C.border}` }}>
                       <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: C.ink }}>{u.name || "—"}</td>
                       <td style={{ padding: "14px 20px", fontSize: 12, color: C.ink2 }}>{u.email}</td>
@@ -194,16 +236,47 @@ export default function AdminPage() {
                       <td style={{ padding: "14px 20px" }}>
                         <span style={{ fontSize: 10, fontWeight: 800, color: u.is_active === false ? C.red : C.green }}>{u.is_active === false ? "● INACTIVE" : "● ACTIVE"}</span>
                       </td>
+
+                      {/* ── Role Editor ── */}
+                      <td style={{ padding: "14px 20px" }}>
+                        {u.role !== "founder" ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <select
+                              value={pendingRole ?? u.role}
+                              onChange={e => setRoleEdits(prev => ({ ...prev, [u.id]: e.target.value }))}
+                              style={{ background: C.bg, border: `1.5px solid ${isDirty ? C.accent : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 12, color: C.ink, outline: "none", fontFamily: "inherit", cursor: "pointer" }}
+                            >
+                              <option value="dealer">🏪 Dealer</option>
+                              <option value="rep">⚡ Sales Rep</option>
+                              <option value="oem">🏭 OEM</option>
+                              <option value="superadmin">🔱 Superadmin</option>
+                            </select>
+                            {isDirty && (
+                              <button
+                                onClick={() => changeRole(u)}
+                                disabled={acting === u.id + "_role"}
+                                style={{ background: C.accent, border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", opacity: acting === u.id + "_role" ? 0.6 : 1 }}
+                              >
+                                {acting === u.id + "_role" ? "…" : "Save"}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 11, color: C.ink3 }}>Protected</span>
+                        )}
+                      </td>
+
+                      {/* ── Active Toggle ── */}
                       <td style={{ padding: "14px 20px" }}>
                         {u.role !== "founder" && (
-                          <button onClick={() => toggleActive(u)} disabled={acting === u.id}
-                            style={{ background: "none", border: `1px solid ${u.is_active === false ? C.green : C.red}40`, color: u.is_active === false ? C.green : C.red, borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: acting === u.id ? 0.6 : 1 }}>
-                            {acting === u.id ? "…" : u.is_active === false ? "Reactivate" : "Deactivate"}
+                          <button onClick={() => toggleActive(u)} disabled={acting === u.id + "_active"}
+                            style={{ background: "none", border: `1px solid ${u.is_active === false ? C.green : C.red}40`, color: u.is_active === false ? C.green : C.red, borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: acting === u.id + "_active" ? 0.6 : 1 }}>
+                            {acting === u.id + "_active" ? "…" : u.is_active === false ? "Activate" : "Deactivate"}
                           </button>
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>

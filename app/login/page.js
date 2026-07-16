@@ -209,7 +209,7 @@ export default function LoginPage() {
 
     setLogging(true)
     try {
-      const res  = await fetch("/api/auth/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailVal, password:passVal }) })
+      const res  = await fetch("/api/auth/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailVal, password:passVal, role }) })
       const data = await res.json()
 
       if (!res.ok) { setLoginErr(data.error||"Invalid email or password"); return }

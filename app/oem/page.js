@@ -42,6 +42,14 @@ export default function OEMDashboard() {
   const [onboardResult, setOnboardResult] = useState(null)
   const [duplicateDealer, setDuplicateDealer] = useState(null)
 
+  // Bulk import state
+  const [onboardMode, setOnboardMode] = useState("manual") // "manual" or "bulk"
+  const [bulkFile, setBulkFile] = useState(null)
+  const [bulkParsing, setBulkParsing] = useState(false)
+  const [bulkPreview, setBulkPreview] = useState(null) // { importId, summary, preview, errorDetails }
+  const [bulkConfirming, setBulkConfirming] = useState(false)
+  const [bulkResult, setBulkResult] = useState(null)
+
   useEffect(() => {
     if (!authLoading && user && user.role !== "oem") router.replace("/login")
   }, [user, authLoading, router])
@@ -130,6 +138,77 @@ export default function OEMDashboard() {
     await sponsor(duplicateDealer.dealership)
     setDuplicateDealer(null)
     setTab("network")
+  }
+
+  // Bulk import handlers
+  const handleBulkFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBulkFile(file)
+    setBulkParsing(true)
+    setBulkPreview(null)
+    setBulkResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await authFetch("/api/oem/bulk-import", { method: "POST", body: formData })
+      const data = await res.json()
+
+      if (data.success) {
+        setBulkPreview(data)
+      } else {
+        setBulkPreview({ error: data.message || "Failed to parse file" })
+      }
+    } catch (err) {
+      setBulkPreview({ error: `Error: ${err.message}` })
+    } finally {
+      setBulkParsing(false)
+    }
+  }
+
+  const handleBulkConfirm = async () => {
+    if (!bulkPreview?.importId) return
+    setBulkConfirming(true)
+
+    try {
+      const res = await authFetch("/api/oem/bulk-import/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ importId: bulkPreview.importId }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setBulkResult(data)
+        setBulkFile(null)
+        setBulkPreview(null)
+        await load()
+      } else {
+        setBulkPreview({ ...bulkPreview, error: data.message || "Failed to confirm import" })
+      }
+    } catch (err) {
+      setBulkPreview({ ...bulkPreview, error: `Error: ${err.message}` })
+    } finally {
+      setBulkConfirming(false)
+    }
+  }
+
+  const downloadTemplate = async () => {
+    try {
+      const res = await authFetch("/api/oem/bulk-import")
+      const csv = await res.text()
+      const blob = new Blob([csv], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "dealer-template.csv"
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      alert(`Failed to download template: ${err.message}`)
+    }
   }
 
   if (authLoading || !user) return <div style={{ padding:60, textAlign:"center", fontFamily:"system-ui", color:"#64748b" }}>Loading…</div>
@@ -261,12 +340,27 @@ export default function OEMDashboard() {
 
         {/* ── ONBOARD DEALER ── */}
         {tab === "onboard" && (
-          <div style={{ maxWidth:520 }}>
+          <div style={{ maxWidth:580 }}>
             <div style={{ fontSize:16, fontWeight:800, marginBottom:4 }}>Onboard a New Dealer</div>
             <div style={{ fontSize:12, color:C.ink3, marginBottom:20, lineHeight:1.6 }}>
               This is how you distribute EvCRM directly to your dealer network. The dealer gets full network access immediately — no sponsorship step needed, since they came from you.
             </div>
 
+            {/* Mode Toggle */}
+            <div style={{ display:"flex", gap:12, marginBottom:20 }}>
+              <button onClick={()=>setOnboardMode("manual")}
+                style={{ flex:1, background:onboardMode==="manual"?"#1E293B":"#F3F4F6", color:onboardMode==="manual"?"#fff":C.ink2, border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                ✎ Manual Entry (1–10)
+              </button>
+              <button onClick={()=>setOnboardMode("bulk")}
+                style={{ flex:1, background:onboardMode==="bulk"?"#1E293B":"#F3F4F6", color:onboardMode==="bulk"?"#fff":C.ink2, border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+                📤 Bulk Import (2K+)
+              </button>
+            </div>
+
+            {/* MANUAL MODE */}
+            {onboardMode === "manual" && (
+              <>
             {onboardResult ? (
               <div style={{ ...card, borderColor:`${C.green}40`, background:"#F0FDF4" }}>
                 <div style={{ fontSize:14, fontWeight:800, color:"#065F46", marginBottom:10 }}>✓ {onboardResult.dealer.businessName} onboarded</div>
@@ -326,6 +420,140 @@ export default function OEMDashboard() {
                   {onboarding ? "Onboarding…" : "➕ Onboard Dealer — Grant Full Access"}
                 </button>
               </div>
+            )}
+              </>
+            )}
+
+            {/* BULK IMPORT MODE */}
+            {onboardMode === "bulk" && (
+              <>
+                {bulkResult ? (
+                  <div style={{ ...card, borderColor:`${C.green}40`, background:"#F0FDF4" }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#065F46", marginBottom:10 }}>✓ Import Complete</div>
+                    <div style={{ fontSize:12, color:C.ink2, marginBottom:14 }}>
+                      Successfully created <b>{bulkResult.summary.created}</b> dealer accounts. Verification emails have been sent.
+                      {bulkResult.summary.failed > 0 && <> <b>{bulkResult.summary.failed}</b> accounts failed to create.</>}
+                    </div>
+                    <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:10, padding:14, fontSize:12, marginBottom:14 }}>
+                      <div style={{ marginBottom:6 }}><b>Created:</b> {bulkResult.summary.created} / {bulkResult.summary.requested}</div>
+                      <div><b>Failed:</b> {bulkResult.summary.failed}</div>
+                    </div>
+                    <div style={{ background:"#EFF6FF", border:"1px solid #3B82F6", borderRadius:10, padding:12, fontSize:12, color:"#1E40AF", marginBottom:14 }}>
+                      ℹ️ Dealers will receive a verification email. They have 24 hours to verify their details and set a password.
+                    </div>
+                    <button onClick={()=>{setBulkResult(null); setBulkFile(null); setBulkPreview(null)}}
+                      style={{ width:"100%", background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      📤 Import Another File
+                    </button>
+                  </div>
+                ) : bulkPreview ? (
+                  <div>
+                    {bulkPreview.error ? (
+                      <div style={{ ...card, borderColor:`#EF4444`, background:"#FEF2F2" }}>
+                        <div style={{ fontSize:13, fontWeight:800, color:C.red, marginBottom:10 }}>✕ Error</div>
+                        <div style={{ fontSize:12, color:C.ink2, marginBottom:14 }}>{bulkPreview.error}</div>
+                        <button onClick={()=>{setBulkFile(null); setBulkPreview(null)}}
+                          style={{ width:"100%", background:C.red, color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                          Try Another File
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ ...card, marginBottom:16 }}>
+                          <div style={{ fontSize:13, fontWeight:800, marginBottom:12 }}>📊 Preview</div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:10, marginBottom:16 }}>
+                            <div style={{ background:"#F0FDF4", borderRadius:10, padding:12, textAlign:"center" }}>
+                              <div style={{ fontSize:18, fontWeight:900, color:"#059669" }}>{bulkPreview.summary.validRows}</div>
+                              <div style={{ fontSize:10, color:C.ink3, marginTop:4 }}>Valid</div>
+                            </div>
+                            <div style={{ background:"#FEF3C7", borderRadius:10, padding:12, textAlign:"center" }}>
+                              <div style={{ fontSize:18, fontWeight:900, color:"#D97706" }}>{bulkPreview.summary.duplicates}</div>
+                              <div style={{ fontSize:10, color:C.ink3, marginTop:4 }}>Duplicates</div>
+                            </div>
+                            <div style={{ background:"#FEE2E2", borderRadius:10, padding:12, textAlign:"center" }}>
+                              <div style={{ fontSize:18, fontWeight:900, color:C.red }}>{bulkPreview.summary.errors}</div>
+                              <div style={{ fontSize:10, color:C.ink3, marginTop:4 }}>Errors</div>
+                            </div>
+                            <div style={{ background:"#F3F4F6", borderRadius:10, padding:12, textAlign:"center" }}>
+                              <div style={{ fontSize:18, fontWeight:900, color:C.ink2 }}>{bulkPreview.summary.totalRows}</div>
+                              <div style={{ fontSize:10, color:C.ink3, marginTop:4 }}>Total</div>
+                            </div>
+                          </div>
+
+                          {bulkPreview.errorDetails && bulkPreview.errorDetails.length > 0 && (
+                            <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:12, marginBottom:14 }}>
+                              <div style={{ fontSize:12, fontWeight:800, color:C.red, marginBottom:8 }}>⚠️ Errors Found</div>
+                              {bulkPreview.errorDetails.slice(0, 5).map((err, i) => (
+                                <div key={i} style={{ fontSize:11, color:C.ink2, marginBottom:4, paddingBottom:4, borderBottom: i < 4 ? `1px solid #FECACA` : "none" }}>
+                                  <b>Row {err.row}:</b> {err.email || "(no email)"} — {err.errors}
+                                </div>
+                              ))}
+                              {bulkPreview.fullErrorCount > 5 && <div style={{ fontSize:11, color:C.ink3, marginTop:8 }}>… and {bulkPreview.fullErrorCount - 5} more errors</div>}
+                            </div>
+                          )}
+
+                          <div style={{ fontSize:12, fontWeight:700, marginBottom:8 }}>Sample Valid Rows:</div>
+                          <div style={{ background:"#F8FAFB", border:`1px solid ${C.border}`, borderRadius:10, padding:12, overflowX:"auto" }}>
+                            <table style={{ fontSize:11, width:"100%", borderCollapse:"collapse" }}>
+                              <thead>
+                                <tr style={{ borderBottom:`1px solid ${C.border}` }}>
+                                  {["Name", "Email", "City", "State"].map(h => (
+                                    <th key={h} style={{ padding:"6px 8px", textAlign:"left", fontWeight:700, color:C.ink3 }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bulkPreview.preview.slice(0, 5).map((row, i) => (
+                                  <tr key={i} style={{ borderTop:`1px solid ${C.border}` }}>
+                                    <td style={{ padding:"6px 8px" }}>{row.name}</td>
+                                    <td style={{ padding:"6px 8px", fontSize:10 }}>{row.email}</td>
+                                    <td style={{ padding:"6px 8px" }}>{row.city}</td>
+                                    <td style={{ padding:"6px 8px" }}>{row.state}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div style={{ display:"flex", gap:12 }}>
+                          <button onClick={()=>{setBulkFile(null); setBulkPreview(null)}}
+                            style={{ flex:1, background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            ← Cancel
+                          </button>
+                          <button onClick={handleBulkConfirm} disabled={bulkConfirming}
+                            style={{ flex:1, background:"#059669", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", opacity:bulkConfirming?0.7:1 }}>
+                            {bulkConfirming ? "Creating accounts…" : `✓ Confirm & Send ${bulkPreview.summary.validRows} Emails`}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ ...card, marginBottom:16 }}>
+                      <div style={{ fontSize:13, fontWeight:700, marginBottom:12 }}>📤 Upload Dealer List</div>
+                      <p style={{ fontSize:12, color:C.ink3, marginBottom:14, lineHeight:1.5 }}>
+                        Upload an Excel or CSV file with your dealer information. We'll validate, show you a preview, then create accounts and send verification emails.
+                      </p>
+                      <label style={{ display:"block", border:`2px dashed #3B82F6`, borderRadius:12, padding:"32px 20px", textAlign:"center", cursor:"pointer", background:"#EFF6FF", transition:"all 0.2s" }}
+                        onMouseEnter={e=>{ e.currentTarget.style.background="#DBEAFE"; e.currentTarget.style.borderColor="#1E40AF" }}
+                        onMouseLeave={e=>{ e.currentTarget.style.background="#EFF6FF"; e.currentTarget.style.borderColor="#3B82F6" }}>
+                        <div style={{ fontSize:32, marginBottom:8 }}>📁</div>
+                        <div style={{ fontSize:12, fontWeight:700, color:"#1E40AF", marginBottom:4 }}>{bulkFile ? bulkFile.name : "Choose file or drag & drop"}</div>
+                        <div style={{ fontSize:11, color:"#0284C7" }}>Excel (.xlsx) or CSV — up to 5 MB</div>
+                        <input type="file" onChange={handleBulkFileSelect} accept=".xlsx,.xls,.csv" style={{ display:"none" }} disabled={bulkParsing} />
+                      </label>
+                      <button onClick={downloadTemplate}
+                        style={{ width:"100%", marginTop:12, background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                        📥 Download Template
+                      </button>
+                    </div>
+
+                    {bulkParsing && <div style={{ ...card, textAlign:"center", color:C.ink3, fontSize:12 }}>Parsing file…</div>}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
