@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../../lib/auth"
 import { readTable, writeTable } from "../../../../lib/store"
-import XLSX from "xlsx"
+import * as XLSX from "xlsx"
 
 function getOEM(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "").trim()

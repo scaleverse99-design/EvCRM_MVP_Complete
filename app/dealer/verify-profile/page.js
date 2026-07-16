@@ -1,9 +1,9 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { C } from "../../../lib/constants"
 
-export default function VerifyProfilePage() {
+function VerifyProfileContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
@@ -300,5 +300,13 @@ export default function VerifyProfilePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VerifyProfilePage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "60px 24px", textAlign: "center", color: "#64748b" }}>Loading...</div>}>
+      <VerifyProfileContent />
+    </Suspense>
   )
 }
