@@ -2,6 +2,13 @@
 
 ## Pending (Priority Order)
 
+- [ ] **Decide on the 990 dummy pending-verification dealers in production** — leftover from
+  bulk-import testing (fake `.invalid`/`.example`/`.testmail` emails). Cleanup mechanism
+  (`remove_pending` PATCH action) already exists; just needs a go-ahead. Raised, not confirmed.
+
+- [ ] **Test the used-car/ICE dealer flow with a real dealer** — feature is built, deployed,
+  verified (see handoff.md §7), but has zero real-world usage yet. Discuss next steps.
+
 - [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
   - Current: whole-table reads/writes in `lib/store.js`
   - Goal: convert to row-level upsert/delete

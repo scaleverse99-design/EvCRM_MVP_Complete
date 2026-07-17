@@ -1,7 +1,7 @@
 # EvCRM — Complete Product Handoff Document
 
 > **Purpose**: Everything a developer (or AI agent in Google Antigravity IDE) needs to continue building this product.
-> **Last updated**: 2026-07-17 (evening) · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
+> **Last updated**: 2026-07-18 · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
 
 ---
 
@@ -169,6 +169,8 @@ Showroom marketplace (`app/showroom/page.js`) gets a **Fuel Type filter** dropdo
 
 **Verified end-to-end** (not just locally — registered a real dealer via the actual `/api/register` endpoint, not a seeded fixture): ICE dealer signup swapped to Maruti/Hyundai/Toyota/etc. brand list correctly → added a used Petrol Maruti Swift with a filled 2-item-per-category inspection report → confirmed absent from `/api/marketplace/vehicles?fuelType=Petrol` while `PENDING` → approved via direct PATCH *and* via the actual "Approve & Publish" button in the browser → confirmed it then appeared with correct fuel badge (no EV icons) and a working Inspection Report card. Confirmed a plain new-EV add with zero new fields touched still behaves exactly as before (auto-`condition`, immediate marketplace visibility, no inspection section rendered). Files: `app/register/page.js`, `app/api/register/route.js`, `app/api/auth/me/route.js`, `app/api/dealer/inventory/route.js`, `app/dealer/page.js`, `app/api/marketplace/vehicles/route.js`, `app/showroom/page.js`, `app/api/oem/route.js`, `app/oem/page.js`.
 
+**Used Car Dealer login tile (added 2026-07-18, ✅ DEPLOYED & VERIFIED on evcrm.in/login):** Follow-on polish to the universal-CRM feature above — the login screen (`app/login/page.js`) now shows **4 tiles**: EV Dealer, **🚙 Used Car Dealer** (new), Sales Rep, OEM (Founder stays hidden behind its existing secret-combo reveal). Both dealer tiles submit the identical `role:"dealer"` to `/api/auth/login` — accounts are one role in the DB, per the universal-CRM design, there is no separate backend role to add. A new UI-only `dealerVariant` state (`"owner"|"usedcar"`) just controls which tile highlights and swaps the heading/subtext copy ("Used Car Dealer Sign In" / "Access your used-car dealer command centre") — it is never sent to the API. Each `ROLES` entry now carries a `key` distinct from `id` (two tiles share `id:"dealer"`, which previously would have been an invalid duplicate React key) and an `isTileActive(r)` helper (`role===r.id && (r.id!=="dealer" || dealerVariant===(r.variant||"owner"))`) drives both the highlight state and `activeColor`. The "Create dealer account →" link now routes to `/register?category=ICE` when the Used Car Dealer tile is active; `app/register/page.js` reads that query param on mount to pre-select the ICE toggle + `ICE_BRANDS` list added in the universal-CRM change (component split into `RegisterPageContent` wrapped in `<Suspense>`, since `useSearchParams()` requires it at build time — same lesson as `app/dealer/verify-profile/page.js`). **Verified in-browser end-to-end**: all 4 tiles render; clicking Used Car Dealer updates heading/subtext; its "Create dealer account" link lands on `/register?category=ICE` with Maruti/Hyundai/etc. brands pre-shown and Ather/Ola hidden; confirmed zero regression on the EV Dealer tile via a real register+login round-trip against the dev sandbox. Files: `app/login/page.js`, `app/register/page.js`.
+
 **Auth/infra**: login w/ role redirects (rep/dealer→/dealer, oem→/oem, founder→/admin) — post-login uses **`window.location.assign` full navigation** (soft router.replace caused an infinite loop; don't regress this); forgot-password email OTP flow (WORKS in prod via Resend); Supabase persistence; seed script; production guard in store.js.
 
 ---
@@ -246,6 +248,15 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
    workaround twice left local dev silently pointed at production Supabase.
 
 ## 10. Suggested Roadmap (in priority order)
+
+0. **Session paused 2026-07-18 — user said "discuss in the morning."** Nothing broken or
+   half-finished; everything below is genuinely queued, not mid-edit. Two loose threads worth
+   raising first thing: (a) **990 dummy pending-verification dealers are still sitting in
+   production** from earlier bulk-import testing (fake `.invalid`/`.example`/`.testmail`
+   emails) — offered to clean them up via the existing `remove_pending` action, user hadn't
+   confirmed yet; (b) the used-car/ICE dealer feature (this section + §7) is built, deployed,
+   and verified, but has **zero real-world usage yet** — worth deciding together whether to
+   test with a real used-car dealer next or keep iterating on the flow first.
 
 1. Row-level store rewrite (#8.4) — before onboarding beyond ~15 dealers, and now doubly
    urgent given the 2,328-dealer bulk-import volume this session proved the pipes can handle.
