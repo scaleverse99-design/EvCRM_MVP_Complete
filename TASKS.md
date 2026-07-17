@@ -31,6 +31,18 @@
 
 ## Completed
 
+- [x] **Universal automobile CRM — EV/ICE dealer category + used-vehicle inspection gate**
+  — ✅ LIVE, verified end-to-end on evcrm.in (2026-07-17)
+  - Dealers pick EV or Petrol/Diesel at signup (`/register` Step 2); same CRM/dashboard
+    for both, no new role
+  - Inventory gains fuelType + dealer-settable condition (new/used)
+  - Used vehicles need a 6-category inspection checklist, gated behind dealer approval
+    before the marketplace API will show them (zero new status enum values needed)
+  - Showroom gets a Fuel Type filter + Inspection Report card on used-vehicle details
+  - Verified via a real registration → used-vehicle creation → approval → marketplace
+    visibility round-trip, both via direct API calls and actual browser clicks; confirmed
+    the existing new-EV flow is byte-for-byte unaffected. See handoff.md §7 for detail.
+
 - [x] **Network Inventory Tracker** — ✅ LIVE on evcrm.in/oem (2026-07-17)
   - New OEM "🚗 Inventory" tab: clickable status tiles (In Stock/Booked/Sold/Cancelled/
     Dead Stock), Cancellation + Dead Stock reason rollups (case-insensitive grouping),
