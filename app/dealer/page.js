@@ -106,8 +106,12 @@ const BP_VEHICLES = [
 ───────────────────────────────────────────── */
 const VEHICLE_TYPES  = ["4W","2W","3W"]
 const BODY_TYPES     = ["SUV","Hatchback","Sedan","Crossover","Scooter","Motorcycle","Auto"]
-const STATUS_OPTIONS = ["IN_STOCK","SOLD","RESERVED","UNAVAILABLE"]
-const STATUS_COLORS  = { IN_STOCK:C.green, SOLD:C.red, RESERVED:C.orange, UNAVAILABLE:C.ink3 }
+// BOOKED replaces the old RESERVED label; CANCELLED and DEAD_STOCK require a
+// reason (tracked network-wide in the OEM Inventory tab). RESERVED/UNAVAILABLE
+// stay in the maps so existing rows keep rendering.
+const STATUS_OPTIONS = ["IN_STOCK","BOOKED","SOLD","CANCELLED","DEAD_STOCK"]
+const STATUS_COLORS  = { IN_STOCK:C.green, BOOKED:C.orange, SOLD:C.red, CANCELLED:"#DC2626", DEAD_STOCK:C.ink3, RESERVED:C.orange, UNAVAILABLE:C.ink3 }
+const REASON_STATUSES = ["CANCELLED","DEAD_STOCK"]
 
 function emptyVehicle(dealership, dealerName) {
   return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
@@ -121,7 +125,7 @@ function InventoryReportModal({ inventory, onClose }) {
     byModel[key] = byModel[key] || { received:0, sold:0, pipeline:0, closing:0 }
     byModel[key].received++
     if (v.status === "SOLD") byModel[key].sold++
-    else if (v.status === "RESERVED") byModel[key].pipeline++
+    else if (v.status === "RESERVED" || v.status === "BOOKED") byModel[key].pipeline++
     else if (v.status === "IN_STOCK") byModel[key].closing++
   })
   return (
@@ -310,10 +314,15 @@ function InventorySection({ dealership, user }) {
 
   const handleSave = async () => {
     if (!form.brand || !form.model) return alert("Brand and model are required")
+    if (REASON_STATUSES.includes(form.status) && !(form.statusReason || "").trim()) {
+      return alert(`Please give a reason for marking this vehicle ${form.status.replace("_", " ").toLowerCase()}`)
+    }
     setSaving(true)
     try {
       const payload = {
         ...form,
+        // Reason only applies to cancelled/dead-stock; clear it on other statuses
+        statusReason: REASON_STATUSES.includes(form.status) ? form.statusReason.trim() : "",
         features: typeof form.features === "string" ? form.features.split(",").map(s=>s.trim()).filter(Boolean) : form.features,
         tags:     typeof form.tags === "string"     ? form.tags.split(",").map(s=>s.trim()).filter(Boolean)     : form.tags,
         exShowroom: Number(form.exShowroom), onRoadPrice: Number(form.onRoadPrice), emi: Number(form.emi), range: Number(form.range),
@@ -565,6 +574,16 @@ function InventorySection({ dealership, user }) {
             <F label="On-Road Price"     field="onRoadPrice"  type="number" form={form} setForm={setForm} />
             <F label="EMI / month"       field="emi"         type="number" form={form} setForm={setForm} />
             <F label="Status"            field="status"      opts={STATUS_OPTIONS} form={form} setForm={setForm} />
+            {REASON_STATUSES.includes(form?.status) && (
+              <div style={{ gridColumn: "span 2" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#DC2626", marginBottom: 5 }}>
+                  Reason for {form.status === "CANCELLED" ? "cancellation" : "dead stock"} (required — visible to your OEM)
+                </div>
+                <input value={form.statusReason || ""} onChange={e=>setForm(f=>({...f, statusReason:e.target.value}))}
+                  placeholder={form.status === "CANCELLED" ? "e.g. Customer backed out — financing rejected" : "e.g. Old variant, no demand for 6+ months"}
+                  style={{ width:"100%", background:"#FEF2F2", border:"1.5px solid #FECACA", borderRadius:8, padding:"9px 12px", fontSize:12.5, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }} />
+              </div>
+            )}
             <F label="State"             field="state" form={form} setForm={setForm} />
             <F label="District"          field="district" form={form} setForm={setForm} />
             <F label="VIN"               field="vin" form={form} setForm={setForm} />

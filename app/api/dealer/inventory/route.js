@@ -65,6 +65,7 @@ export async function POST(req) {
     emi:         body.emi || 0,
     tokenAmount: 1000,
     status:      body.status || "IN_STOCK",
+    statusReason: body.statusReason || "",
     vin:         body.vin || "",
     isDemo:      body.isDemo || false,
     demoMileage: body.isDemo ? (body.demoMileage || 0) : null,
@@ -111,7 +112,7 @@ export async function PATCH(req) {
   // 5.3 Stock Count Update audit trail — log status transitions
   if (updates.status && updates.status !== inv[idx].status) {
     inv[idx].stockLog = inv[idx].stockLog || []
-    inv[idx].stockLog.unshift({ event: updates.status.toLowerCase(), note: `Status changed ${inv[idx].status} → ${updates.status}`, date: new Date().toISOString() })
+    inv[idx].stockLog.unshift({ event: updates.status.toLowerCase(), note: `Status changed ${inv[idx].status} → ${updates.status}${updates.statusReason ? ` (${updates.statusReason})` : ""}`, date: new Date().toISOString() })
   }
 
   inv[idx] = { ...inv[idx], ...updates, updatedAt: new Date().toISOString() }

@@ -16,11 +16,16 @@ const TABS = [
   { id:"network",  icon:"🏪", label:"My Network" },
   { id:"onboard",  icon:"➕", label:"Onboard Dealer" },
   { id:"prospects", icon:"📇", label:"Prospects" },
+  { id:"inventory", icon:"🚗", label:"Inventory" },
   { id:"insidesales", icon:"📞", label:"Inside Sales" },
   { id:"feedback", icon:"💬", label:"Feedback" },
   { id:"stock",    icon:"📦", label:"Stock Requests" },
   { id:"reports",  icon:"📊", label:"Reports" },
 ]
+
+const INV_BUCKETS = ["IN_STOCK", "BOOKED", "SOLD", "CANCELLED", "DEAD_STOCK"]
+const INV_COLORS = { IN_STOCK:"#059669", BOOKED:"#F59E0B", SOLD:"#3B82F6", CANCELLED:"#DC2626", DEAD_STOCK:"#6B7280" }
+const INV_LABELS = { IN_STOCK:"In Stock", BOOKED:"Booked", SOLD:"Sold", CANCELLED:"Cancelled", DEAD_STOCK:"Dead Stock" }
 
 const PROSPECT_STATUSES = ["NEW", "CONTACTED", "INTERESTED", "CONVERTED", "NOT_INTERESTED"]
 const PROSPECT_COLORS = { NEW:"#3B82F6", CONTACTED:"#F59E0B", INTERESTED:"#8B5CF6", CONVERTED:"#059669", NOT_INTERESTED:"#9CA3AF" }
@@ -52,6 +57,12 @@ export default function OEMDashboard() {
   const [selectedPending, setSelectedPending] = useState([]) // dealership ids ticked for batch email
   const [sendProgress, setSendProgress] = useState(null) // { done, total, sent, failed } while batch-sending
   const [pendingPage, setPendingPage] = useState(0) // 100 dealers per page — select/send one page at a time
+
+  // Network inventory tracker state
+  const [invData, setInvData] = useState(null) // { summary, perDealer, cancelReasons, deadStockReasons, vehicles }
+  const [invLoaded, setInvLoaded] = useState(false)
+  const [invFilter, setInvFilter] = useState("") // "" = all buckets
+  const [invSearch, setInvSearch] = useState("")
 
   // Prospects (imported call lists) state
   const [prospects, setProspects] = useState([])
@@ -279,6 +290,15 @@ export default function OEMDashboard() {
     if (tab === "prospects" && user?.role === "oem" && !prospectsLoaded) loadProspects()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user, prospectsLoaded])
+
+  useEffect(() => {
+    if (tab === "inventory" && user?.role === "oem" && !invLoaded) {
+      authFetch("/api/oem/inventory").then(r => r.json()).then(d => {
+        if (d.summary) setInvData(d)
+      }).catch(() => {}).finally(() => setInvLoaded(true))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, user, invLoaded])
 
   // Bulk import handlers
   const handleBulkFileSelect = async (e) => {
@@ -942,6 +962,120 @@ export default function OEMDashboard() {
                 </>
               )
             })()}
+          </>
+        )}
+
+        {/* ── INVENTORY TRACKER ── */}
+        {tab === "inventory" && (
+          <>
+            <div style={{ fontSize:16, fontWeight:800, marginBottom:4 }}>Network Inventory Tracker</div>
+            <div style={{ fontSize:12, color:C.ink3, marginBottom:16 }}>
+              Live stock position across every accessible dealer — in stock, booked, sold, cancelled and dead stock, with dealers' stated reasons for cancellations and dead stock.
+            </div>
+
+            {!invLoaded && <div style={{ ...card, color:C.ink3, fontSize:13 }}>Loading network inventory…</div>}
+            {invLoaded && !invData && <div style={{ ...card, color:C.ink3, fontSize:13 }}>Could not load inventory — try reloading the page.</div>}
+            {invData && (
+              <>
+                {/* Summary tiles */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))", gap:10, marginBottom:24 }}>
+                  <div style={{ ...card, textAlign:"center", padding:14 }}>
+                    <div style={{ fontSize:22, fontWeight:900 }}>{invData.summary.TOTAL}</div>
+                    <div style={{ fontSize:10, color:C.ink3, marginTop:3, fontWeight:700 }}>TOTAL VEHICLES</div>
+                  </div>
+                  {INV_BUCKETS.map(s => (
+                    <div key={s} onClick={()=>setInvFilter(invFilter === s ? "" : s)}
+                      style={{ ...card, textAlign:"center", padding:14, cursor:"pointer", borderColor: invFilter === s ? INV_COLORS[s] : C.border, borderWidth: invFilter === s ? 2 : 1 }}>
+                      <div style={{ fontSize:22, fontWeight:900, color:INV_COLORS[s] }}>{invData.summary[s]}</div>
+                      <div style={{ fontSize:10, color:C.ink3, marginTop:3, fontWeight:700, textTransform:"uppercase" }}>{INV_LABELS[s]}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cancellation + dead-stock reasons */}
+                {(invData.cancelReasons.length > 0 || invData.deadStockReasons.length > 0) && (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:14, marginBottom:24 }}>
+                    {[["❌ Cancellation Reasons", invData.cancelReasons, "#DC2626"], ["🪦 Dead Stock Reasons", invData.deadStockReasons, "#6B7280"]].map(([title, reasons, color]) => reasons.length > 0 && (
+                      <div key={title} style={card}>
+                        <div style={{ fontSize:13, fontWeight:800, marginBottom:10 }}>{title}</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                          {reasons.slice(0, 8).map((r, i) => (
+                            <div key={i} style={{ borderLeft:`3px solid ${color}`, paddingLeft:10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", gap:8 }}>
+                                <span style={{ fontSize:12, fontWeight:700 }}>{r.reason}</span>
+                                <span style={{ fontSize:11, fontWeight:800, color }}>{r.count}×</span>
+                              </div>
+                              <div style={{ fontSize:10.5, color:C.ink3, marginTop:2 }}>{r.vehicles.join(" · ")}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Per-dealer breakdown */}
+                <div style={{ fontSize:13.5, fontWeight:800, marginBottom:8 }}>By Dealer</div>
+                <div style={{ ...card, padding:0, marginBottom:24, overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                    <thead>
+                      <tr style={{ background:"#F8FAFB", borderBottom:`1px solid ${C.border}` }}>
+                        {["Dealer", "Total", ...INV_BUCKETS.map(s => INV_LABELS[s])].map(h => (
+                          <th key={h} style={{ padding:"11px 14px", textAlign:"left", fontSize:10, fontWeight:800, color:C.ink2, textTransform:"uppercase", whiteSpace:"nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invData.perDealer.length === 0 && (
+                        <tr><td colSpan={7} style={{ padding:26, textAlign:"center", color:C.ink3, fontSize:13 }}>No inventory in your accessible network yet.</td></tr>
+                      )}
+                      {invData.perDealer.map(r => (
+                        <tr key={r.dealership} style={{ borderTop:`1px solid ${C.border}` }}>
+                          <td style={{ padding:"10px 14px", fontSize:12, fontWeight:700 }}>{r.businessName}</td>
+                          <td style={{ padding:"10px 14px", fontSize:12, fontWeight:800 }}>{r.total}</td>
+                          {INV_BUCKETS.map(s => (
+                            <td key={s} style={{ padding:"10px 14px", fontSize:12, fontWeight: r[s] ? 800 : 400, color: r[s] ? INV_COLORS[s] : C.ink3 }}>{r[s] || "—"}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Vehicle list */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:8 }}>
+                  <div style={{ fontSize:13.5, fontWeight:800 }}>
+                    Vehicles {invFilter ? `— ${INV_LABELS[invFilter]}` : ""} {invFilter && <button onClick={()=>setInvFilter("")} style={{ background:"none", border:"none", color:C.ink3, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✕ clear filter</button>}
+                  </div>
+                  <input placeholder="Search brand / model / dealer…" value={invSearch} onChange={e=>setInvSearch(e.target.value)}
+                    style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 12px", fontSize:12, outline:"none", fontFamily:"inherit", minWidth:220 }} />
+                </div>
+                {(() => {
+                  const q = invSearch.toLowerCase().trim()
+                  const list = invData.vehicles
+                    .filter(v => !invFilter || v.status === invFilter)
+                    .filter(v => !q || `${v.brand} ${v.model} ${v.variant} ${v.dealerName}`.toLowerCase().includes(q))
+                  return (
+                    <>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {list.length === 0 && <div style={{ ...card, color:C.ink3, fontSize:13 }}>No vehicles match.</div>}
+                        {list.slice(0, 100).map(v => (
+                          <div key={v.id} style={{ ...card, padding:"11px 14px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                            <div style={{ minWidth:0 }}>
+                              <span style={{ fontSize:12.5, fontWeight:800 }}>{v.brand} {v.model}{v.variant ? ` ${v.variant}` : ""}</span>
+                              <span style={{ fontSize:11, color:C.ink3, marginLeft:8 }}>{v.dealerName}{v.exShowroom ? ` · ₹${(v.exShowroom/100000).toFixed(2)}L` : ""}</span>
+                              {v.statusReason && <div style={{ fontSize:11, color:"#B91C1C", marginTop:3, fontStyle:"italic" }}>“{v.statusReason}”</div>}
+                            </div>
+                            <span style={{ background:`${INV_COLORS[v.status]}15`, color:INV_COLORS[v.status], fontSize:9.5, fontWeight:800, borderRadius:7, padding:"4px 10px", whiteSpace:"nowrap" }}>{INV_LABELS[v.status]}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {list.length > 100 && <div style={{ fontSize:11, color:C.ink3, marginTop:8, textAlign:"center" }}>Showing first 100 of {list.length} — narrow with search or a status tile.</div>}
+                    </>
+                  )
+                })()}
+              </>
+            )}
           </>
         )}
 
