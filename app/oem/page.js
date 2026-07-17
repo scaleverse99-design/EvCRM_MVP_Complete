@@ -51,6 +51,7 @@ export default function OEMDashboard() {
   const [resentInfo, setResentInfo] = useState({}) // dealership -> "email" | "wa" | "copied"
   const [selectedPending, setSelectedPending] = useState([]) // dealership ids ticked for batch email
   const [sendProgress, setSendProgress] = useState(null) // { done, total, sent, failed } while batch-sending
+  const [pendingPage, setPendingPage] = useState(0) // 100 dealers per page — select/send one page at a time
 
   // Prospects (imported call lists) state
   const [prospects, setProspects] = useState([])
@@ -407,25 +408,32 @@ export default function OEMDashboard() {
               const pending = dealers.filter(d => d.pendingVerification)
               const q = pendingSearch.toLowerCase().trim()
               const filtered = pending.filter(d => !q || (d.name || "").toLowerCase().includes(q) || (d.phone || "").includes(q) || (d.email || "").toLowerCase().includes(q))
+              // 100 dealers per page — "Select this page" scopes the send to one page's worth
+              const PAGE = 100
+              const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE))
+              const page = Math.min(pendingPage, totalPages - 1)
+              const shown = filtered.slice(page * PAGE, page * PAGE + PAGE)
               return (
                 <div style={{ marginBottom:28 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
                     <div style={{ fontSize:13.5, fontWeight:800, color:"#92400E" }}>⏳ Pending Verification ({pending.length})</div>
-                    <input placeholder="Search pending…" value={pendingSearch} onChange={e=>setPendingSearch(e.target.value)}
+                    <input placeholder="Search pending…" value={pendingSearch} onChange={e=>{ setPendingSearch(e.target.value); setPendingPage(0) }}
                       style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 12px", fontSize:12, outline:"none", fontFamily:"inherit", minWidth:200 }} />
                   </div>
                   <div style={{ fontSize:11.5, color:C.ink3, marginBottom:10 }}>
                     These dealers have accounts but haven't opened their verification link yet. Tick dealers and send onboard emails in one go, or use the per-dealer buttons. Every send issues a fresh 7-day link.
                   </div>
                   {(() => {
-                    const emailable = filtered.filter(d => d.email).map(d => d.dealership)
+                    const emailable = shown.filter(d => d.email).map(d => d.dealership)
                     const allTicked = emailable.length > 0 && emailable.every(x => selectedPending.includes(x))
                     return (
                       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:10, background:"#fff", border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 14px" }}>
                         <label style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, fontWeight:700, cursor:"pointer" }}>
                           <input type="checkbox" checked={allTicked}
-                            onChange={e => setSelectedPending(e.target.checked ? emailable : [])} />
-                          Select all with email ({emailable.length})
+                            onChange={e => setSelectedPending(e.target.checked
+                              ? [...new Set([...selectedPending, ...emailable])]
+                              : selectedPending.filter(x => !emailable.includes(x)))} />
+                          Select this page ({emailable.length} with email)
                         </label>
                         <button onClick={sendOnboardEmails} disabled={!selectedPending.length || !!sendProgress}
                           style={{ background: selectedPending.length ? "#1E293B" : "#E5E7EB", color: selectedPending.length ? "#fff" : C.ink3, border:"none", borderRadius:8, padding:"8px 16px", fontSize:11.5, fontWeight:800, cursor: selectedPending.length ? "pointer" : "default", fontFamily:"inherit" }}>
@@ -435,11 +443,18 @@ export default function OEMDashboard() {
                           <button onClick={()=>setSelectedPending([])}
                             style={{ background:"none", border:"none", color:C.ink3, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Clear</button>
                         )}
+                        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8, fontSize:11.5, fontWeight:700, color:C.ink2 }}>
+                          <button onClick={()=>setPendingPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                            style={{ background:"none", border:`1px solid ${C.border}`, color: page === 0 ? C.ink3 : C.ink2, borderRadius:7, padding:"5px 11px", fontSize:11.5, fontWeight:800, cursor: page === 0 ? "default" : "pointer", fontFamily:"inherit" }}>‹ Prev</button>
+                          <span>Page {page + 1} / {totalPages}</span>
+                          <button onClick={()=>setPendingPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                            style={{ background:"none", border:`1px solid ${C.border}`, color: page >= totalPages - 1 ? C.ink3 : C.ink2, borderRadius:7, padding:"5px 11px", fontSize:11.5, fontWeight:800, cursor: page >= totalPages - 1 ? "default" : "pointer", fontFamily:"inherit" }}>Next ›</button>
+                        </div>
                       </div>
                     )
                   })()}
                   <div style={{ maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
-                    {filtered.slice(0, 100).map(d => (
+                    {shown.map(d => (
                       <div key={d.dealership} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"10px 14px" }}>
                         <div style={{ fontSize:12, minWidth:0, display:"flex", alignItems:"center", gap:9 }}>
                           <input type="checkbox" disabled={!d.email} title={d.email ? "" : "No email — use WhatsApp"}
@@ -481,7 +496,11 @@ export default function OEMDashboard() {
                       </div>
                     ))}
                   </div>
-                  {filtered.length > 100 && <div style={{ fontSize:11, color:C.ink3, marginTop:8, textAlign:"center" }}>Showing first 100 of {filtered.length} — use search to find a specific dealer.</div>}
+                  {filtered.length > PAGE && (
+                    <div style={{ fontSize:11, color:C.ink3, marginTop:8, textAlign:"center" }}>
+                      Showing {page * PAGE + 1}–{Math.min((page + 1) * PAGE, filtered.length)} of {filtered.length} — use Prev/Next to page through, "Select this page" + Send per page.
+                    </div>
+                  )}
                 </div>
               )
             })()}
