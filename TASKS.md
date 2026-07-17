@@ -2,6 +2,10 @@
 
 ## Pending (Priority Order)
 
+- [ ] **Run `prospects` table SQL in production Supabase** (§8.1d) — confirmed via direct
+  query 2026-07-17 that it does NOT exist yet; Prospects tab is silently non-persistent
+  until this runs. One-liner, see handoff.md §8.1d for the exact SQL.
+
 - [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
   - Current: whole-table reads/writes in `lib/store.js`
   - Goal: convert to row-level upsert/delete
@@ -30,6 +34,37 @@
 (none)
 
 ## Completed
+
+- [x] **Network Inventory Tracker** — ✅ LIVE on evcrm.in/oem (2026-07-17)
+  - New OEM "🚗 Inventory" tab: clickable status tiles (In Stock/Booked/Sold/Cancelled/
+    Dead Stock), Cancellation + Dead Stock reason rollups (case-insensitive grouping),
+    per-dealer breakdown, searchable vehicle list with reason display
+  - Dealer side: Cancelled/Dead Stock now require a reason (`statusReason`), enforced
+    client-side and shown to the OEM; BOOKED replaces the old RESERVED label
+  - Verified locally end-to-end with seeded multi-status inventory (see handoff.md §7)
+
+- [x] **OEM bulk import — phone-only onboarding + manual batched emails + pending-dealer
+  management** — ✅ LIVE, verified against real 2,398-row contact file (2026-07-16/17)
+  - Rows with only a phone (no email) now onboard — dealer supplies email + sets their
+    own password at verification; WhatsApp share links + CSV download for phone-only sends
+  - Emails moved from automatic (blew Cloud Run's timeout at 2K rows → HTTP 502, burned
+    daily Resend quota) to a manual, paginated (100/page) batch-send from My Network →
+    Pending Verification, with live progress and per-dealer sent/failed reporting
+  - Added 🗑 Remove + individual Resend/WhatsApp/Copy-Link actions per pending dealer
+  - Fixed 4 blocking bugs found via production testing: wrong password field name (no
+    bulk dealer could ever log in), missing `is_active` flag (same effect), confirm
+    silently capped at first 100 rows, and a 160s→0.5s perf fix (shared locked-password
+    hash instead of per-account bcrypt)
+  - **Root-caused and fixed `authFetch` globally forcing `Content-Type: application/json`
+    onto FormData uploads** — this was corrupting every file upload in the app, not just
+    bulk-import; fixed in `lib/token-storage.js`
+  - Full diagnosis + verification detail in handoff.md §7 (search "phone-only onboarding")
+
+- [x] **OEM Prospects tab** — ✅ LIVE on evcrm.in/oem (2026-07-16) — **⚠️ prospects table
+  missing in prod, see Pending list above**
+  - Import any contact list as a call queue without creating dealer accounts (for lists
+    mixing dealers/OEMs/customers that shouldn't be onboarded wholesale)
+  - Status pipeline, call/WhatsApp links, notes, "Onboard →" prefill into manual form
 
 - [x] **OEM bulk dealer import (Excel/CSV → accounts → email verification)** — ✅ LIVE,
   user-confirmed working on evcrm.in/oem (2026-07-16)
