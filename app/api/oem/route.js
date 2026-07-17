@@ -226,6 +226,19 @@ export async function PATCH(req) {
     return ok({ resent: true, emailSent, verifyUrl, waUrl, expiresAt: expiryTime.toISOString() })
   }
 
+  // Delete a bulk-imported dealer that never verified — for cleaning up test
+  // imports or dead contacts. Refuses anything already verified/active, so an
+  // account with real activity can never be removed this way.
+  if (body.action === "remove_pending") {
+    const users = await readTable("users")
+    const idx = users.findIndex(u => u.role === "dealer" && u.dealership === body.dealership && u.oemId === oem.oemId)
+    if (idx === -1) return err("Dealer not found in your network", 404)
+    if (users[idx].status !== "pending_verification") return err("Only pending-verification dealers can be removed", 400)
+    const removed = users.splice(idx, 1)[0]
+    await writeTable("users", users)
+    return ok({ removed: removed.dealership, name: removed.name })
+  }
+
   if (body.action === "assign_agent") {
     if (!body.agent?.trim()) return err("Agent name required", 400)
     const users = await readTable("users")

@@ -222,6 +222,20 @@ export default function OEMDashboard() {
     }
   }
 
+  // Delete a pending-verification dealer (test imports / dead contacts)
+  const removePending = async (d) => {
+    if (!window.confirm(`Remove ${d.businessName || d.name}? Their unverified account is deleted — you can re-import them later if needed.`)) return
+    setActing(d.dealership)
+    try {
+      const r = await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"remove_pending", dealership: d.dealership }) })
+      const res = await r.json()
+      if (!res.removed) alert(res.error || "Could not remove")
+      await load()
+    } finally {
+      setActing(null)
+    }
+  }
+
   // Prefill the manual Onboard form from a prospect (they still need an email)
   const convertProspect = (p) => {
     setForm({ businessName: p.name || "", ownerName: p.name || "", email: p.email || "", phone: p.phone || "", city: p.city || "", state: p.state || "" })
@@ -402,6 +416,10 @@ export default function OEMDashboard() {
                           <button onClick={()=>resendVerification(d.dealership, "copy")} disabled={acting===d.dealership}
                             style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                             🔗 Copy Link
+                          </button>
+                          <button onClick={()=>removePending(d)} disabled={acting===d.dealership}
+                            style={{ background:"none", border:`1px solid ${C.red}40`, color:C.red, borderRadius:8, padding:"6px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            🗑 Remove
                           </button>
                         </div>
                       </div>
