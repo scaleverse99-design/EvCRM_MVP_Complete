@@ -49,6 +49,8 @@ export default function OEMDashboard() {
   // Pending-verification dealers (bulk-imported, not yet verified)
   const [pendingSearch, setPendingSearch] = useState("")
   const [resentInfo, setResentInfo] = useState({}) // dealership -> "email" | "wa" | "copied"
+  const [selectedPending, setSelectedPending] = useState([]) // dealership ids ticked for batch email
+  const [sendProgress, setSendProgress] = useState(null) // { done, total, sent, failed } while batch-sending
 
   // Prospects (imported call lists) state
   const [prospects, setProspects] = useState([])
@@ -222,6 +224,34 @@ export default function OEMDashboard() {
     }
   }
 
+  // Send onboarding emails to the ticked pending dealers, in batches of 25
+  // so a 2K-dealer send never times out a single request.
+  const sendOnboardEmails = async () => {
+    const targets = [...selectedPending]
+    if (!targets.length) return
+    setSendProgress({ done: 0, total: targets.length, sent: 0, failed: 0 })
+    let sent = 0, failed = 0
+    for (let i = 0; i < targets.length; i += 25) {
+      const batch = targets.slice(i, i + 25)
+      try {
+        const r = await authFetch("/api/oem", { method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ action:"send_onboard_emails", dealerships: batch }) })
+        const d = await r.json()
+        sent += d.sent || 0
+        failed += d.failed || (d.sent === undefined ? batch.length : 0)
+        const map = {}
+        ;(d.results || []).forEach(res => { if (res.sent) map[res.dealership] = "email" })
+        setResentInfo(m => ({ ...m, ...map }))
+      } catch {
+        failed += batch.length
+      }
+      setSendProgress({ done: Math.min(i + 25, targets.length), total: targets.length, sent, failed })
+    }
+    setSendProgress(null)
+    setSelectedPending([])
+    alert(`Onboard emails: ${sent} sent, ${failed} failed.${failed ? " Failed ones can be retried — select them again or use WhatsApp/copy-link." : ""}`)
+    await load()
+  }
+
   // Delete a pending-verification dealer (test imports / dead contacts)
   const removePending = async (d) => {
     if (!window.confirm(`Remove ${d.businessName || d.name}? Their unverified account is deleted — you can re-import them later if needed.`)) return
@@ -385,12 +415,37 @@ export default function OEMDashboard() {
                       style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:9, padding:"7px 12px", fontSize:12, outline:"none", fontFamily:"inherit", minWidth:200 }} />
                   </div>
                   <div style={{ fontSize:11.5, color:C.ink3, marginBottom:10 }}>
-                    These dealers have accounts but haven't opened their verification link yet. Resend generates a fresh 7-day link — no need to re-upload anything.
+                    These dealers have accounts but haven't opened their verification link yet. Tick dealers and send onboard emails in one go, or use the per-dealer buttons. Every send issues a fresh 7-day link.
                   </div>
+                  {(() => {
+                    const emailable = filtered.filter(d => d.email).map(d => d.dealership)
+                    const allTicked = emailable.length > 0 && emailable.every(x => selectedPending.includes(x))
+                    return (
+                      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:10, background:"#fff", border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 14px" }}>
+                        <label style={{ display:"flex", alignItems:"center", gap:7, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                          <input type="checkbox" checked={allTicked}
+                            onChange={e => setSelectedPending(e.target.checked ? emailable : [])} />
+                          Select all with email ({emailable.length})
+                        </label>
+                        <button onClick={sendOnboardEmails} disabled={!selectedPending.length || !!sendProgress}
+                          style={{ background: selectedPending.length ? "#1E293B" : "#E5E7EB", color: selectedPending.length ? "#fff" : C.ink3, border:"none", borderRadius:8, padding:"8px 16px", fontSize:11.5, fontWeight:800, cursor: selectedPending.length ? "pointer" : "default", fontFamily:"inherit" }}>
+                          {sendProgress ? `Sending… ${sendProgress.done}/${sendProgress.total} (${sendProgress.sent} ✓)` : `✉️ Send Onboard Email (${selectedPending.length} selected)`}
+                        </button>
+                        {selectedPending.length > 0 && !sendProgress && (
+                          <button onClick={()=>setSelectedPending([])}
+                            style={{ background:"none", border:"none", color:C.ink3, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Clear</button>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <div style={{ maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
                     {filtered.slice(0, 100).map(d => (
                       <div key={d.dealership} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"10px 14px" }}>
-                        <div style={{ fontSize:12, minWidth:0 }}>
+                        <div style={{ fontSize:12, minWidth:0, display:"flex", alignItems:"center", gap:9 }}>
+                          <input type="checkbox" disabled={!d.email} title={d.email ? "" : "No email — use WhatsApp"}
+                            checked={selectedPending.includes(d.dealership)}
+                            onChange={e => setSelectedPending(s => e.target.checked ? [...s, d.dealership] : s.filter(x => x !== d.dealership))} />
+                          <span>
                           <b>{d.businessName || d.name}</b>
                           <span style={{ color:C.ink3, marginLeft:8 }}>{d.phone ? `📞 ${d.phone}` : ""}{d.email ? ` ✉️ ${d.email}` : ""}</span>
                           {d.verificationTokenExpiry && <span style={{ color:C.ink3, marginLeft:8, fontSize:10.5 }}>link expires {fmtDT(d.verificationTokenExpiry)}</span>}
@@ -399,6 +454,7 @@ export default function OEMDashboard() {
                               ✓ {resentInfo[d.dealership] === "email" ? "email sent" : resentInfo[d.dealership] === "wa" ? "WhatsApp opened" : "link copied"}
                             </span>
                           )}
+                          </span>
                         </div>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           {d.email && (
@@ -606,10 +662,14 @@ export default function OEMDashboard() {
                     <div style={{ fontSize:12, color:C.ink2, marginBottom:14 }}>{bulkResult.message}</div>
                     <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:10, padding:14, fontSize:12, marginBottom:14 }}>
                       <div style={{ marginBottom:6 }}><b>Created:</b> {bulkResult.summary.created} / {bulkResult.summary.requested}</div>
-                      <div style={{ marginBottom:6 }}><b>Verification emails sent:</b> {bulkResult.summary.emailsSent || 0}</div>
-                      <div style={{ marginBottom:6 }}><b>Need WhatsApp link:</b> {bulkResult.summary.whatsappPending || 0}</div>
+                      <div style={{ marginBottom:6 }}><b>With email (send onboard mail from My Network):</b> {bulkResult.summary.withEmail || 0}</div>
+                      <div style={{ marginBottom:6 }}><b>Phone-only (send link via WhatsApp):</b> {bulkResult.summary.phoneOnly || 0}</div>
                       <div><b>Failed:</b> {bulkResult.summary.failed}</div>
                     </div>
+                    <button onClick={()=>{setBulkResult(null); setBulkFile(null); setBulkPreview(null); setTab("network")}}
+                      style={{ width:"100%", background:"#059669", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit", marginBottom:14 }}>
+                      → Go to My Network — Send Onboard Emails
+                    </button>
 
                     {(bulkResult.accounts || []).length > 0 && (
                       <button onClick={()=>{
@@ -622,11 +682,11 @@ export default function OEMDashboard() {
                       </button>
                     )}
 
-                    {(bulkResult.accounts || []).filter(a => !a.sentByEmail && a.waUrl).length > 0 && (
+                    {(bulkResult.accounts || []).filter(a => !a.email && a.waUrl).length > 0 && (
                       <div style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:12, fontWeight:800, marginBottom:8 }}>📲 Send verification links via WhatsApp</div>
+                        <div style={{ fontSize:12, fontWeight:800, marginBottom:8 }}>📲 Phone-only dealers — send links via WhatsApp</div>
                         <div style={{ maxHeight:320, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
-                          {bulkResult.accounts.filter(a => !a.sentByEmail && a.waUrl).slice(0, 100).map((a, i) => (
+                          {bulkResult.accounts.filter(a => !a.email && a.waUrl).slice(0, 100).map((a, i) => (
                             <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px" }}>
                               <div style={{ fontSize:11.5, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                 <b>{a.name}</b> · {a.phone}
@@ -638,7 +698,7 @@ export default function OEMDashboard() {
                             </div>
                           ))}
                         </div>
-                        {bulkResult.accounts.filter(a => !a.sentByEmail).length > 100 && (
+                        {bulkResult.accounts.filter(a => !a.email).length > 100 && (
                           <div style={{ fontSize:11, color:C.ink3, marginTop:6 }}>Showing first 100 — the CSV above has every link.</div>
                         )}
                       </div>

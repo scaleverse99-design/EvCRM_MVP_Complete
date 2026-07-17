@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../../../lib/auth"
 import { readTable, writeTable } from "../../../../../lib/store"
-import { sendBulkImportVerificationEmail } from "../../../../../lib/email"
 import jwt from "jsonwebtoken"
 import bcryptjs from "bcryptjs"
 
@@ -19,11 +18,11 @@ function normalizePhone(raw) {
   return String(raw || "").replace(/\D/g, "").slice(-10)
 }
 
-// POST /api/oem/bulk-import/confirm — Create accounts.
-// Rows WITH an email get the verification link by email; rows with only a
-// phone get no email — instead we return a WhatsApp share link + raw verify
-// URL for each, and the dealer types their own email + password on the
-// verification page.
+// POST /api/oem/bulk-import/confirm — Create accounts ONLY. No emails are
+// sent here (sending 2K emails inside one request blew past Cloud Run's
+// timeout → HTTP 502). The OEM sends onboarding emails afterwards from
+// My Network → Pending Verification (checkbox selection, batched), or uses
+// the per-dealer WhatsApp/copy-link actions.
 export async function POST(req) {
   const oem = getOEM(req)
   if (!oem) return err("Unauthorized", 401)
@@ -49,7 +48,6 @@ export async function POST(req) {
     const failed = []
     const accountsCreated = []
     let createdCount = 0
-    let emailsSent = 0
 
     // One bcrypt hash of a discarded random secret, shared by every pending
     // account. Nobody knows this password, so the accounts simply can't log in
@@ -112,18 +110,6 @@ export async function POST(req) {
         const verifyUrl = `${appUrl}/dealer/verify-profile?token=${verificationToken}`
         let waUrl = null
 
-        if (email) {
-          try {
-            await sendBulkImportVerificationEmail({
-              email, dealerName: row.name, businessName: row.businessName || row.name,
-              ownerName: row.ownerName || "", phone, city: row.city, state: row.state,
-              verificationToken, oemName,
-            })
-            emailsSent++
-          } catch (emailErr) {
-            console.error(`Email send failed for ${email}:`, emailErr.message)
-          }
-        }
         if (phone) {
           const waText = `Hi ${row.name}! ${oemName} has set up your EvCRM dealer account. Please verify your details and set your password here (link valid 7 days): ${verifyUrl}`
           waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(waText)}`
@@ -136,7 +122,6 @@ export async function POST(req) {
           dealership,
           verifyUrl,
           waUrl,
-          sentByEmail: !!email,
         })
 
         createdCount++
@@ -163,12 +148,12 @@ export async function POST(req) {
         requested: importData.preview.length,
         created: createdCount,
         failed: failed.length,
-        emailsSent,
-        whatsappPending: accountsCreated.filter(a => !a.sentByEmail).length,
+        withEmail: accountsCreated.filter(a => a.email).length,
+        phoneOnly: accountsCreated.filter(a => !a.email).length,
       },
       accounts: accountsCreated,
       failedAccounts: failed.slice(0, 10),
-      message: `Created ${createdCount} dealer accounts. ${emailsSent} verification emails sent${accountsCreated.some(a => !a.sentByEmail) ? "; the rest need their link sent via WhatsApp (buttons below / CSV download)" : ""}.`,
+      message: `Created ${createdCount} dealer accounts. No emails were sent yet — go to My Network → Pending Verification, select dealers and click "Send Onboard Email" (or use the WhatsApp buttons / CSV).`,
     })
   } catch (e) {
     return err(`Failed to confirm import: ${e.message}`, 500)

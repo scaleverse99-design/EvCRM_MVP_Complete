@@ -226,6 +226,55 @@ export async function PATCH(req) {
     return ok({ resent: true, emailSent, verifyUrl, waUrl, expiresAt: expiryTime.toISOString() })
   }
 
+  // Send onboarding/verification emails to a batch of selected pending
+  // dealers (each gets a fresh 7-day token). Capped per call — the UI loops
+  // batches so a 2K-dealer send never hits the request timeout that killed
+  // the old confirm-step auto-send.
+  if (body.action === "send_onboard_emails") {
+    const requested = Array.isArray(body.dealerships) ? body.dealerships.slice(0, 50) : []
+    if (!requested.length) return err("No dealers selected", 400)
+
+    const users = await readTable("users")
+    const oemUser = users.find(u => u.role === "oem" && u.dealership === oem.oemId)
+    const oemName = oemUser?.dealershipName || oemUser?.name || "EvCRM"
+
+    const results = []
+    for (const dealership of requested) {
+      const idx = users.findIndex(u => u.role === "dealer" && u.dealership === dealership && u.oemId === oem.oemId)
+      if (idx === -1) { results.push({ dealership, sent: false, error: "not found" }); continue }
+      const d = users[idx]
+      if (d.status !== "pending_verification") { results.push({ dealership, sent: false, error: "already verified" }); continue }
+      if (!d.email) { results.push({ dealership, sent: false, error: "no email — use WhatsApp" }); continue }
+
+      const verificationToken = jwt.sign(
+        { email: d.email, dealership, oemId: oem.oemId, type: "dealer_verification" },
+        process.env.JWT_SECRET || "dev-secret",
+        { expiresIn: "7d" }
+      )
+      const expiryTime = new Date()
+      expiryTime.setDate(expiryTime.getDate() + 7)
+      users[idx] = { ...d, verificationToken, verificationTokenExpiry: expiryTime.toISOString(), verificationResentAt: at }
+
+      try {
+        await sendBulkImportVerificationEmail({
+          email: d.email, dealerName: d.name, businessName: d.dealershipName || d.name,
+          ownerName: d.ownerName || "", phone: d.phone, city: d.city, state: d.state,
+          verificationToken, oemName,
+        })
+        results.push({ dealership, sent: true })
+      } catch (e) {
+        results.push({ dealership, sent: false, error: e.message })
+      }
+    }
+
+    await writeTable("users", users)
+    return ok({
+      sent: results.filter(r => r.sent).length,
+      failed: results.filter(r => !r.sent).length,
+      results,
+    })
+  }
+
   // Delete a bulk-imported dealer that never verified — for cleaning up test
   // imports or dead contacts. Refuses anything already verified/active, so an
   // account with real activity can never be removed this way.
