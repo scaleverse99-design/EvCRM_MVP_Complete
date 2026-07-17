@@ -113,8 +113,34 @@ const STATUS_OPTIONS = ["IN_STOCK","BOOKED","SOLD","CANCELLED","DEAD_STOCK"]
 const STATUS_COLORS  = { IN_STOCK:C.green, BOOKED:C.orange, SOLD:C.red, CANCELLED:"#DC2626", DEAD_STOCK:C.ink3, RESERVED:C.orange, UNAVAILABLE:C.ink3 }
 const REASON_STATUSES = ["CANCELLED","DEAD_STOCK"]
 
-function emptyVehicle(dealership, dealerName) {
-  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", dealership, dealerName }
+const FUEL_TYPES = ["Electric","Petrol","Diesel","CNG","Hybrid"]
+const CONDITION_OPTIONS = ["new","used"]
+
+// Fixed inspection checklist for used-vehicle listings — same "hardcoded
+// lookup table" pattern as lib/evCatalog.js. A dealer must fill this in and
+// then explicitly approve it before the vehicle is visible on the marketplace.
+const INSPECTION_CHECKLIST = {
+  "Exterior":   ["Body panels & paint", "Dents / scratches", "Windshield & glass"],
+  "Interior":   ["Seats & upholstery", "Dashboard & electronics", "Odour / cleanliness"],
+  "Engine & Transmission": ["Engine/motor performance", "Gearbox / transmission", "Cooling & fluid leaks"],
+  "Electricals": ["Battery & charging", "Lights & indicators", "AC & climate control"],
+  "Tyres & Brakes": ["Tyre tread & condition", "Brakes", "Suspension"],
+  "Documents":  ["RC availability", "Insurance validity", "Service history"],
+}
+const RATING_OPTIONS = ["Good","Fair","Poor"]
+
+function emptyInspectionReport() {
+  return {
+    categories: Object.entries(INSPECTION_CHECKLIST).map(([name, items]) => ({
+      name, items: items.map(item => ({ item, rating: "Good", notes: "" }))
+    })),
+    overallGrade: "B",
+    approvalStatus: "PENDING",
+  }
+}
+
+function emptyVehicle(dealership, dealerName, dealerCategory) {
+  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, condition:"new", fuelType: dealerCategory === "ICE" ? "Petrol" : "Electric", color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", inspectionReport: null, dealership, dealerName }
 }
 
 /* ── Inventory Report Modal — 5.9 ── */
@@ -204,7 +230,7 @@ function InventorySection({ dealership, user }) {
 
   const [autofilled, setAutofilled] = useState(false)
 
-  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name)); setEditItem(null); setAddModal(true); setAutofilled(false); setLowResWarnings([]) }
+  const openAdd = () => { setForm(emptyVehicle(dealership, user?.name, user?.dealerCategory)); setEditItem(null); setAddModal(true); setAutofilled(false); setLowResWarnings([]) }
   const openEdit = (item) => {
     setForm({ ...item, features: Array.isArray(item.features) ? item.features.join(", ") : item.features, tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags })
     setEditItem(item)
@@ -344,6 +370,25 @@ function InventorySection({ dealership, user }) {
     loadInventory()
   }
 
+  const approveInspection = async (item) => {
+    if (!confirm(`Approve & publish ${item.brand} ${item.model}? It will go live on the marketplace immediately.`)) return
+    await authFetch("/api/dealer/inventory", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+      id: item.id,
+      inspectionReport: { ...item.inspectionReport, approvalStatus: "APPROVED", approvedAt: new Date().toISOString() },
+    }) })
+    loadInventory()
+  }
+
+  const rejectInspection = async (item) => {
+    const reason = window.prompt("Reason for rejecting this inspection (visible only to you):", "")
+    if (reason === null) return
+    await authFetch("/api/dealer/inventory", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+      id: item.id,
+      inspectionReport: { ...item.inspectionReport, approvalStatus: "REJECTED", dealerNotes: reason },
+    }) })
+    loadInventory()
+  }
+
   const handleDelete = async (id) => {
     if (!confirm("Remove this vehicle from inventory?")) return
     setDeleting(id)
@@ -353,7 +398,10 @@ function InventorySection({ dealership, user }) {
     } finally { setDeleting(null) }
   }
 
-  const displayed = filterStatus ? inventory.filter(v => v.status === filterStatus) : inventory
+  const displayed = filterStatus === "PENDING_APPROVAL"
+    ? inventory.filter(v => v.inspectionReport?.approvalStatus === "PENDING")
+    : filterStatus ? inventory.filter(v => v.status === filterStatus) : inventory
+  const pendingApprovalCount = inventory.filter(v => v.inspectionReport?.approvalStatus === "PENDING").length
   const inStock   = inventory.filter(v => v.status === "IN_STOCK").length
   const sold      = inventory.filter(v => v.status === "SOLD").length
 
@@ -435,6 +483,7 @@ function InventorySection({ dealership, user }) {
             style={{ background:C.card, border:`1px solid ${C.border}`, color:filterStatus?C.ink:C.ink2, borderRadius:20, padding:"8px 14px", fontSize:11, fontWeight:600, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
             <option value="">All Status</option>
             {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s.replace("_"," ")}</option>)}
+            {pendingApprovalCount > 0 && <option value="PENDING_APPROVAL">⏳ Pending Approval ({pendingApprovalCount})</option>}
           </select>
           <button onClick={()=>setReportOpen(true)}
             style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -523,6 +572,18 @@ function InventorySection({ dealership, user }) {
                     {v.createdAt ? new Date(v.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"}
                   </td>
                   <td style={{ padding:"11px 16px" }}>
+                    {v.inspectionReport?.approvalStatus === "PENDING" && (
+                      <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+                        <button onClick={()=>approveInspection(v)}
+                          style={{ background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                          ✓ Approve & Publish
+                        </button>
+                        <button onClick={()=>rejectInspection(v)}
+                          style={{ background:`${C.red}15`, border:`1px solid ${C.red}25`, color:C.red, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                          Reject
+                        </button>
+                      </div>
+                    )}
                     <div style={{ display:"flex", gap:6 }}>
                       <button onClick={()=>openEdit(v)}
                         style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}25`, color:C.blue, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -560,6 +621,17 @@ function InventorySection({ dealership, user }) {
             <F label="Colour"            field="color" form={form} setForm={setForm} />
             <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} form={form} setForm={setForm} />
             <F label="Body Type"         field="bodyType" opts={BODY_TYPES} form={form} setForm={setForm} />
+            <F label="Fuel Type"         field="fuelType" opts={FUEL_TYPES} form={form} setForm={setForm} />
+            <div>
+              <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>Condition</div>
+              <select value={form.condition || "new"} onChange={e => {
+                const val = e.target.value
+                setForm(f => ({ ...f, condition: val, inspectionReport: val === "used" ? (f.inspectionReport || emptyInspectionReport()) : null }))
+              }} style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, color:C.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+                <option value="new">New</option>
+                <option value="used">Used</option>
+              </select>
+            </div>
             <F label="Year"              field="year"        type="number" form={form} setForm={setForm} />
             <F label="KM Driven (0=new)" field="km"          type="number" form={form} setForm={setForm} />
             <F label="Range (km)"        field="range"       type="number" form={form} setForm={setForm} />
@@ -587,7 +659,47 @@ function InventorySection({ dealership, user }) {
             <F label="State"             field="state" form={form} setForm={setForm} />
             <F label="District"          field="district" form={form} setForm={setForm} />
             <F label="VIN"               field="vin" form={form} setForm={setForm} />
-            
+
+            {form.condition === "used" && form.inspectionReport && (
+              <div style={{ gridColumn: "span 2", marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>🔍 Vehicle Inspection Report</div>
+                <div style={{ fontSize: 11, color: C.ink3, marginBottom: 14 }}>
+                  Required for used vehicles — save first, then approve it from the inventory list before it goes live on the marketplace.
+                </div>
+                {form.inspectionReport.categories.map((cat, ci) => (
+                  <div key={cat.name} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: C.ink }}>{cat.name}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {cat.items.map((it, ii) => (
+                        <div key={it.item} style={{ display: "grid", gridTemplateColumns: "1.2fr 90px 1.4fr", gap: 8, alignItems: "center" }}>
+                          <div style={{ fontSize: 11.5, color: C.ink2 }}>{it.item}</div>
+                          <select value={it.rating} onChange={e => {
+                            const val = e.target.value
+                            setForm(f => ({ ...f, inspectionReport: { ...f.inspectionReport, categories: f.inspectionReport.categories.map((c, cidx) => cidx !== ci ? c : { ...c, items: c.items.map((x, xidx) => xidx !== ii ? x : { ...x, rating: val }) }) } }))
+                          }} style={{ background: it.rating === "Poor" ? "#FEF2F2" : it.rating === "Fair" ? "#FFFBEB" : "#F0FDF4", border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 8, padding: "6px 8px", fontSize: 11, fontFamily: "inherit", outline: "none" }}>
+                            {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                          <input value={it.notes} placeholder="Notes (optional)" onChange={e => {
+                            const val = e.target.value
+                            setForm(f => ({ ...f, inspectionReport: { ...f.inspectionReport, categories: f.inspectionReport.categories.map((c, cidx) => cidx !== ci ? c : { ...c, items: c.items.map((x, xidx) => xidx !== ii ? x : { ...x, notes: val }) }) } }))
+                          }} style={{ background: C.bg, border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5 }}>Overall Grade</div>
+                  <select value={form.inspectionReport.overallGrade} onChange={e => {
+                    const val = e.target.value
+                    setForm(f => ({ ...f, inspectionReport: { ...f.inspectionReport, overallGrade: val } }))
+                  }} style={{ width: 120, background: C.bg, border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 10, padding: "9px 12px", fontSize: 12, fontFamily: "inherit", outline: "none" }}>
+                    {["A", "B", "C", "D"].map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div style={{ gridColumn: "span 2", marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 8 }}>Vehicle Photos</div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

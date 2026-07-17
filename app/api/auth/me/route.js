@@ -28,6 +28,7 @@ export async function GET(req) {
         role:       user.role,
         name:       user.name,
         dealership: user.dealership,
+        dealerCategory: user.dealerCategory || "EV",
         phone:      user.phone || "",
         ...(user.repId ? { repId: user.repId } : {}),
         opsmanager_url: process.env.OPSMANAGER_URL,

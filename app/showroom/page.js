@@ -56,8 +56,14 @@ function VehicleCard({ v, onView, onBook }) {
         <div style={{ fontSize: 11, color: C.ink3, marginBottom: 4 }}>{v.brand} · {v.bodyType}</div>
         <div style={{ fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 10, cursor: "pointer" }} onClick={() => onView(v)}>{v.model}</div>
         <div style={{ display: "flex", gap: 12, fontSize: 11, color: C.ink3, marginBottom: 14, flexWrap: "wrap" }}>
-          <span>🔋 {v.range} km</span>
-          <span>⚡ {v.topSpeed} km/h</span>
+          {(!v.fuelType || v.fuelType === "Electric") ? (
+            <>
+              <span>🔋 {v.range} km</span>
+              <span>⚡ {v.topSpeed} km/h</span>
+            </>
+          ) : (
+            <span>⛽ {v.fuelType}</span>
+          )}
           {v.rating ? <span>⭐ {v.rating}</span> : null}
         </div>
         <div style={{ fontSize: 20, fontWeight: 900, color: C.ink, marginBottom: 2 }}>
@@ -452,6 +458,38 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
             </div>
           )}
 
+          {/* ── Inspection Report (used vehicles only) ── */}
+          {v.condition === "used" && v.inspectionReport?.categories && (
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: 20, marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111", margin: 0 }}>🔍 Inspection Report</h2>
+                {v.inspectionReport.overallGrade && (
+                  <span style={{ background: "#F0FDF4", color: "#059669", fontSize: 13, fontWeight: 800, padding: "5px 14px", borderRadius: 20, border: "1px solid #BBF7D0" }}>
+                    Overall Grade: {v.inspectionReport.overallGrade}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+                {v.inspectionReport.categories.map(cat => (
+                  <div key={cat.name}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#111", marginBottom: 8 }}>{cat.name}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {cat.items.map(it => {
+                        const color = it.rating === "Poor" ? "#DC2626" : it.rating === "Fair" ? "#D97706" : "#059669"
+                        return (
+                          <div key={it.item} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5 }}>
+                            <span style={{ color: "#4B5563" }}>{it.item}</span>
+                            <span style={{ color, fontWeight: 700 }}>{it.rating}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Tabs ── */}
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", overflow: "hidden", marginBottom: 20 }}>
             <div style={{ display: "flex", gap: 24, padding: "0 20px", borderBottom: "1px solid #F3F4F6" }}>
@@ -467,7 +505,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
                   <div className="sd-overview-row">
                     {[
                       { icon: "📅", label: "Reg. Year", val: v.year },
-                      { icon: "⚡", label: "EV Type", val: v.type === "4W" ? "Electric Car" : v.type === "2W" ? "Electric 2W" : "Electric 3W" },
+                      { icon: (!v.fuelType || v.fuelType === "Electric") ? "⚡" : "⛽", label: "Vehicle Type", val: (!v.fuelType || v.fuelType === "Electric") ? (v.type === "4W" ? "Electric Car" : v.type === "2W" ? "Electric 2W" : "Electric 3W") : `${v.fuelType} ${v.type === "4W" ? "Car" : v.type === "2W" ? "2W" : "3W"}` },
                       { icon: "📍", label: "KM Driven", val: v.condition === "new" ? "0 km (New)" : `${v.km?.toLocaleString()} km` },
                       { icon: "🎨", label: "Colour", val: v.color || "—" },
                       { icon: "🚘", label: "Body Type", val: v.bodyType || "—" },
@@ -669,6 +707,7 @@ export default function ShowroomPage() {
   const [loading, setLoading] = useState(true)
   const [type, setType] = useState("All")
   const [brand, setBrand] = useState("All Brands")
+  const [fuelType, setFuelType] = useState("All Fuel Types")
   const [viewing, setViewing] = useState(null)
   const [bookVehicle, setBookVehicle] = useState(null)
 
@@ -678,11 +717,12 @@ export default function ShowroomPage() {
       const params = new URLSearchParams()
       if (type !== "All") params.set("type", type)
       if (brand !== "All Brands") params.set("brand", brand)
+      if (fuelType !== "All Fuel Types") params.set("fuelType", fuelType)
       const res = await fetch(`/api/marketplace/vehicles?${params}`)
       const data = await res.json()
       if (data.success) { setVehicles(data.vehicles); setFilters(data.filters) }
     } finally { setLoading(false) }
-  }, [type, brand])
+  }, [type, brand, fuelType])
 
   useEffect(() => { load() }, [load])
 
@@ -707,6 +747,9 @@ export default function ShowroomPage() {
           </select>
           <select value={brand} onChange={e => setBrand(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 120 }}>
             {brands.map(b => <option key={b}>{b}</option>)}
+          </select>
+          <select value={fuelType} onChange={e => setFuelType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 130 }}>
+            {["All Fuel Types", "Electric", "Petrol", "Diesel", "CNG", "Hybrid"].map(f => <option key={f}>{f}</option>)}
           </select>
           <div style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.ink3, whiteSpace: "nowrap" }}>{vehicles.length} Models Found</div>
         </div>

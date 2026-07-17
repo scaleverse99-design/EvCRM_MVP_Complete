@@ -12,6 +12,7 @@ export async function POST(req) {
   try {
     const body = await req.json()
     const { name, email, password, role, phone, dealership, city } = body
+    const dealerCategory = ["EV", "ICE"].includes(body.dealerCategory) ? body.dealerCategory : "EV"
 
     // ── Validation ────────────────────────────────────────────────
     const errors = {}
@@ -70,6 +71,7 @@ export async function POST(req) {
         phone:         phone?.trim() || null,
         dealership:    role === "dealer" ? dealershipId : (dealership?.trim() || null),
         dealershipName: role === "dealer" ? nameForSlug : null,
+        dealerCategory: role === "dealer" ? dealerCategory : null,
         city:          city?.trim() || null,
         is_active:     true,
         trialStartDate: new Date().toISOString(),

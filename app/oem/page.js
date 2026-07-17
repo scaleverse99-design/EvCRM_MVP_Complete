@@ -532,7 +532,12 @@ export default function OEMDashboard() {
                   <div key={d.dealership} style={{ ...card, borderColor: d.access ? `${C.green}40` : C.border }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8, marginBottom:10 }}>
                       <div>
-                        <div style={{ fontSize:14, fontWeight:800 }}>{d.businessName || d.name}</div>
+                        <div style={{ fontSize:14, fontWeight:800, display:"flex", alignItems:"center", gap:6 }}>
+                          {d.businessName || d.name}
+                          <span style={{ fontSize:9.5, fontWeight:800, color:C.ink3, background:"#F3F4F6", borderRadius:6, padding:"2px 7px" }}>
+                            {d.dealerCategory === "ICE" ? "⛽ ICE" : "⚡ EV"}
+                          </span>
+                        </div>
                         <div style={{ fontSize:11, color:C.ink3, marginTop:2 }}>{d.dealership} · {d.email}</div>
                       </div>
                       {d.access ? (

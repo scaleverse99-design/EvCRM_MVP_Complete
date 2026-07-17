@@ -48,6 +48,7 @@ export async function GET(req) {
       email: d.email,
       phone: d.phone || "",
       businessName: d.dealershipName || d.name,
+      dealerCategory: d.dealerCategory || "EV",
       oemDistributed: !!d.oemDistributed,
       oemSponsored: !!d.oemSponsored,
       access,

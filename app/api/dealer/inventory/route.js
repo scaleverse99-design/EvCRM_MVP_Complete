@@ -49,7 +49,11 @@ export async function POST(req) {
     bodyType:    body.bodyType || "Sedan",
     year:        body.year || new Date().getFullYear(),
     km:          body.km || 0,
-    condition:   body.km > 0 ? "used" : "new",
+    // Dealer can now set this explicitly (Used-Car toggle in the Add/Edit form);
+    // falls back to the old km-based inference when not sent, so nothing already
+    // calling this API without the field changes behavior.
+    condition:   body.condition || (body.km > 0 ? "used" : "new"),
+    fuelType:    body.fuelType || "Electric",
     color:       body.color || "",
     range:       body.range || 0,
     batteryCapacity: body.batteryCapacity || "",
@@ -66,6 +70,12 @@ export async function POST(req) {
     tokenAmount: 1000,
     status:      body.status || "IN_STOCK",
     statusReason: body.statusReason || "",
+    // Used vehicles must be approved by the dealer before they're visible on the
+    // marketplace (see the approval gate in /api/marketplace/vehicles). New
+    // vehicles never get an inspectionReport, so this stays null for them.
+    inspectionReport: body.condition === "used" && body.inspectionReport
+      ? { ...body.inspectionReport, approvalStatus: "PENDING", submittedAt: new Date().toISOString() }
+      : null,
     vin:         body.vin || "",
     isDemo:      body.isDemo || false,
     demoMileage: body.isDemo ? (body.demoMileage || 0) : null,

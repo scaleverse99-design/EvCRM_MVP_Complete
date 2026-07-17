@@ -5,6 +5,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const type       = searchParams.get("type")       // 2W | 4W | 3W
   const brand      = searchParams.get("brand")
+  const fuelType   = searchParams.get("fuelType")    // Electric | Petrol | Diesel | CNG | Hybrid
+  const condition  = searchParams.get("condition")   // new | used
   const district   = searchParams.get("district")
   const state      = searchParams.get("state")
   const minPrice   = searchParams.get("minPrice")
@@ -16,10 +18,14 @@ export async function GET(req) {
   const sort       = searchParams.get("sort") || "default"
 
   const all = await readTable("inventory")
-  let items = all.filter(v => v.status === "IN_STOCK")
+  // Used vehicles must be dealer-approved (inspection report) before they're
+  // publicly visible; new vehicles are unaffected by this check.
+  let items = all.filter(v => v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED"))
 
   if (type)       items = items.filter(v => v.type === type)
   if (brand)      items = items.filter(v => v.brand.toLowerCase() === brand.toLowerCase())
+  if (fuelType)   items = items.filter(v => (v.fuelType || "Electric").toLowerCase() === fuelType.toLowerCase())
+  if (condition)  items = items.filter(v => (v.condition || "new").toLowerCase() === condition.toLowerCase())
   if (district)   items = items.filter(v => v.district?.toLowerCase() === district.toLowerCase())
   if (state)      items = items.filter(v => v.state?.toLowerCase() === state.toLowerCase())
   if (dealership) items = items.filter(v => v.dealership === dealership)

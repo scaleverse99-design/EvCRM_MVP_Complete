@@ -22,10 +22,12 @@ export default function RegisterPage() {
     businessName: "",
     gstin: "",
     address: "",
-    brands: []
+    brands: [],
+    dealerCategory: "EV"
   })
 
   const EV_BRANDS = ["Tata Motors", "Ather Energy", "Ola Electric", "TVS", "Bajaj", "MG", "Mahindra", "Okaya", "Ampere"]
+  const ICE_BRANDS = ["Maruti Suzuki", "Hyundai", "Honda", "Toyota", "Mahindra", "Tata Motors", "Kia", "Renault", "Volkswagen", "Skoda"]
 
   const validateGst = (gst) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst)
 
@@ -146,13 +148,30 @@ export default function RegisterPage() {
                 <p style={{ fontSize: 13, color: C.ink3, marginBottom: 24 }}>Verify your dealership to unlock the verified badge.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                   <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: C.ink3, marginBottom: 12, display: "block" }}>WHAT DO YOU DEAL IN?</label>
+                      <div style={{ display: "flex", gap: 10 }}>
+                         {[["EV", "⚡ Electric Vehicles"], ["ICE", "⛽ Petrol & Diesel"]].map(([val, label]) => (
+                           <button key={val} type="button" onClick={() => setForm({...form, dealerCategory: val, brands: []})} style={{
+                             flex: 1, padding: "14px 12px", borderRadius: 12,
+                             border: `2px solid ${form.dealerCategory === val ? "#1B4332" : C.border}`,
+                             background: form.dealerCategory === val ? "#E8F5E9" : "none",
+                             color: form.dealerCategory === val ? "#1B4332" : C.ink2,
+                             fontSize: 13, fontWeight: 800, cursor: "pointer"
+                           }}>
+                             {label}
+                           </button>
+                         ))}
+                      </div>
+                   </div>
+
                    <Input label="LEGAL BUSINESS NAME" placeholder="e.g. SRM EV Motors PVT LTD" value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})} error={errors.businessName} />
                    <Input label="GSTIN (OPTIONAL)" placeholder="22AAAAA0000A1Z5" value={form.gstin} onChange={e => setForm({...form, gstin: e.target.value})} error={errors.gstin} hint="Required for verified badge" />
-                   
+
                    <div>
                       <label style={{ fontSize: 11, fontWeight: 800, color: C.ink3, marginBottom: 12, display: "block" }}>BRANDS YOU SELL</label>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                         {EV_BRANDS.map(b => (
+                         {(form.dealerCategory === "ICE" ? ICE_BRANDS : EV_BRANDS).map(b => (
                            <button key={b} onClick={() => toggleBrand(b)} style={{ 
                              padding: "6px 12px", borderRadius: 10, 
                              border: `1.5px solid ${form.brands.includes(b) ? "#1B4332" : C.border}`,
