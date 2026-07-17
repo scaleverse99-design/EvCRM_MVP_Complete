@@ -1,17 +1,21 @@
 "use client"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { C, fmt } from "../../lib/constants"
 import { Btn, Input, Card, Tag } from "../../components/ui"
 import DISTRICTS from "../../data/districts.json"
 import { saveToken } from "../../lib/token-storage"
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // The login screen's "Used Car Dealer" tile links here with ?category=ICE
+  // so the toggle below is pre-selected instead of defaulting to EV.
+  const initialCategory = searchParams.get("category") === "ICE" ? "ICE" : "EV"
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
-  
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -23,7 +27,7 @@ export default function RegisterPage() {
     gstin: "",
     address: "",
     brands: [],
-    dealerCategory: "EV"
+    dealerCategory: initialCategory
   })
 
   const EV_BRANDS = ["Tata Motors", "Ather Energy", "Ola Electric", "TVS", "Bajaj", "MG", "Mahindra", "Okaya", "Ampere"]
@@ -243,5 +247,13 @@ export default function RegisterPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "60px 24px", textAlign: "center", color: "#64748b" }}>Loading…</div>}>
+      <RegisterPageContent />
+    </Suspense>
   )
 }

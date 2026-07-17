@@ -150,6 +150,7 @@ export default function LoginPage() {
 
   const [screen,   setScreen]   = useState("login")
   const [role,     setRole]     = useState("dealer")
+  const [dealerVariant, setDealerVariant] = useState("owner") // "owner" | "usedcar" — UI only, see ROLES
   const [loggedUser, setLoggedUser] = useState(null)
 
   // Founder tile is hidden from the public login screen — it's only revealed
@@ -188,13 +189,19 @@ export default function LoginPage() {
     }
   }, [cd, screen])
 
+  // Both dealer tiles submit role:"dealer" to the API (accounts are one role
+  // in the DB — see handoff.md "universal automobile CRM" note); dealerVariant
+  // is purely a UI selector so the two tiles can be distinguished/highlighted.
   const ROLES = [
-    { id:"dealer",     icon:"🏪", label:"Dealer Owner", sub:"Admin access",   color:ACCENT },
-    { id:"rep",        icon:"⚡", label:"Sales Rep",    sub:"Team access",    color:C.orange },
-    { id:"oem",        icon:"🏭", label:"OEM",          sub:"Network access", color:"#8B5CF6" },
-    { id:"superadmin", icon:"🔱", label:"Founder",      sub:"System access",  color:C.greenD  },
+    { key:"dealer-ev",  id:"dealer",     variant:"owner",   icon:"🏪", label:"EV Dealer",       sub:"Admin access",     color:ACCENT },
+    { key:"dealer-ice", id:"dealer",     variant:"usedcar", icon:"🚙", label:"Used Car Dealer",  sub:"New / Pre-owned",  color:"#0EA5E9" },
+    { key:"rep",        id:"rep",        icon:"⚡", label:"Sales Rep",    sub:"Team access",    color:C.orange },
+    { key:"oem",        id:"oem",        icon:"🏭", label:"OEM",          sub:"Network access", color:"#8B5CF6" },
+    { key:"superadmin", id:"superadmin", icon:"🔱", label:"Founder",      sub:"System access",  color:C.greenD  },
   ]
-  const activeColor = role==="dealer" ? ACCENT : role==="rep" ? C.orange : role==="oem" ? "#8B5CF6" : C.greenD
+  const isTileActive = r => role === r.id && (r.id !== "dealer" || dealerVariant === (r.variant || "owner"))
+  const activeTile = ROLES.find(isTileActive) || ROLES[0]
+  const activeColor = activeTile.color
   const visibleRoles = showFounder ? ROLES : ROLES.filter(r => r.id !== "superadmin")
 
   // ── Login ─────────────────────────────────────────────────────
@@ -332,27 +339,30 @@ export default function LoginPage() {
             <form onSubmit={(e)=>{ e.preventDefault(); handleLogin() }}>
               {/* Role tabs */}
               <div style={{ display:"flex", gap:8, marginBottom:24 }}>
-                {visibleRoles.map(r=>(
-                  <button key={r.id} type="button" onClick={()=>{ setRole(r.id); setLoginErr("") }}
-                    style={{ 
-                      flex:1, background:role===r.id?`${r.color}10`:C.bg, 
-                      border:`1.5px solid ${role===r.id?r.color:C.border}`, 
-                      borderRadius:14, padding:"12px 8px", cursor:"pointer", transition:"all 0.2s", 
-                      fontFamily:"inherit", boxShadow:role===r.id?`0 4px 12px ${r.color}15`:"none" 
+                {visibleRoles.map(r=>{
+                  const active = isTileActive(r)
+                  return (
+                  <button key={r.key} type="button" onClick={()=>{ setRole(r.id); setDealerVariant(r.variant || "owner"); setLoginErr("") }}
+                    style={{
+                      flex:1, background:active?`${r.color}10`:C.bg,
+                      border:`1.5px solid ${active?r.color:C.border}`,
+                      borderRadius:14, padding:"12px 8px", cursor:"pointer", transition:"all 0.2s",
+                      fontFamily:"inherit", boxShadow:active?`0 4px 12px ${r.color}15`:"none"
                     }}>
                     <div style={{ fontSize:20, marginBottom:4 }}>{r.icon}</div>
-                    <div style={{ fontSize:11, fontWeight:800, color:role===r.id?C.ink:C.ink3, textTransform:"uppercase", letterSpacing:"0.5px" }}>{r.label}</div>
-                    <div style={{ fontSize:9.5, color:role===r.id?r.color:C.ink3, marginTop:2, fontWeight: 700 }}>{r.sub}</div>
+                    <div style={{ fontSize:11, fontWeight:800, color:active?C.ink:C.ink3, textTransform:"uppercase", letterSpacing:"0.5px" }}>{r.label}</div>
+                    <div style={{ fontSize:9.5, color:active?r.color:C.ink3, marginTop:2, fontWeight: 700 }}>{r.sub}</div>
                   </button>
-                ))}
+                  )
+                })}
               </div>
 
               <div style={{ marginBottom:24 }}>
                 <h1 style={{ fontSize:20, fontWeight:900, color:C.ink, marginBottom:6, letterSpacing:"-0.5px" }}>
-                  {role==="dealer" ? "Dealer Sign In" : role==="rep" ? "Sales Rep Sign In" : role==="oem" ? "OEM Partner Sign In" : "Founder Sign In"}
+                  {role==="dealer" ? (dealerVariant==="usedcar" ? "Used Car Dealer Sign In" : "Dealer Sign In") : role==="rep" ? "Sales Rep Sign In" : role==="oem" ? "OEM Partner Sign In" : "Founder Sign In"}
                 </h1>
                 <p style={{ fontSize:13, color:C.ink3, lineHeight:1.5 }}>
-                  {role==="dealer" ? "Access your dealer command centre" : role==="rep" ? "Access your AI sales queue" : role==="oem" ? "Access your dealer network console" : "Manage the platform and cloud oversight"}
+                  {role==="dealer" ? (dealerVariant==="usedcar" ? "Access your used-car dealer command centre" : "Access your dealer command centre") : role==="rep" ? "Access your AI sales queue" : role==="oem" ? "Access your dealer network console" : "Manage the platform and cloud oversight"}
                 </p>
               </div>
 
@@ -381,7 +391,7 @@ export default function LoginPage() {
               {role==="dealer" && (
                 <div style={{ textAlign:"center", marginTop:12 }}>
                   <span style={{ fontSize:12, color:C.ink3 }}>New to Ev.CRM? </span>
-                  <button type="button" onClick={()=>router.push("/register")}
+                  <button type="button" onClick={()=>router.push(dealerVariant==="usedcar" ? "/register?category=ICE" : "/register")}
                     style={{ background:"none", border:"none", color:ACCENT, fontSize:12, cursor:"pointer", fontWeight:800, fontFamily:"inherit" }}>
                     Create dealer account →
                   </button>
