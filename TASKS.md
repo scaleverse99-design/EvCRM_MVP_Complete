@@ -2,10 +2,6 @@
 
 ## Pending (Priority Order)
 
-- [ ] **Run `prospects` table SQL in production Supabase** (§8.1d) — confirmed via direct
-  query 2026-07-17 that it does NOT exist yet; Prospects tab is silently non-persistent
-  until this runs. One-liner, see handoff.md §8.1d for the exact SQL.
-
 - [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
   - Current: whole-table reads/writes in `lib/store.js`
   - Goal: convert to row-level upsert/delete
@@ -60,8 +56,8 @@
     bulk-import; fixed in `lib/token-storage.js`
   - Full diagnosis + verification detail in handoff.md §7 (search "phone-only onboarding")
 
-- [x] **OEM Prospects tab** — ✅ LIVE on evcrm.in/oem (2026-07-16) — **⚠️ prospects table
-  missing in prod, see Pending list above**
+- [x] **OEM Prospects tab** — ✅ LIVE on evcrm.in/oem (2026-07-16), `prospects` Supabase
+  table confirmed created in prod (2026-07-17)
   - Import any contact list as a call queue without creating dealer accounts (for lists
     mixing dealers/OEMs/customers that shouldn't be onboarded wholesale)
   - Status pipeline, call/WhatsApp links, notes, "Onboard →" prefill into manual form
