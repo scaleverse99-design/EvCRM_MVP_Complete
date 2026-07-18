@@ -11,6 +11,20 @@
 
 ## 🔥 Top Priority (Blockers for Production)
 
+- [ ] **Vehicle Inspection Integration with Go-Mechanic (Phase 1: MVP)** (8-10 hours, **NEW FEATURE**)
+  - **Problem**: Used-car customers can't verify vehicle condition → low conversion, post-purchase disputes
+  - **Solution**: Integrate Go-Mechanic inspection booking + report display into EvCRM
+  - **Customer impact**: +30–50% used-car conversion (verified condition report on listing)
+  - **Revenue model**: Go-Mechanic charges dealer ₹500–1,200; EvCRM doesn't take commission; benefit = higher sales volume
+  - **Phase 1 scope**:
+    - [ ] Dealer inspection booking (`/api/dealer/inspection/book` + POST endpoint)
+    - [ ] Webhook receiver for Go-Mechanic reports (`/api/dealer/inspection/callback`)
+    - [ ] Dealer dashboard "Book Inspection" button + modal form
+    - [ ] Customer listing display: inspection badge, condition score, findings, PDF download
+    - [ ] Database schema: add `inspection` fields to vehicles
+  - **Next steps**: Contact Go-Mechanic for API access + sandbox; build MVP; beta with 5–10 dealers
+  - **See**: `VEHICLE_INSPECTION_INTEGRATION.md` (full spec + business case)
+
 - [ ] **Wire Razorpay live keys for domain billing** (3-4 hours, **BLOCKS deployment**)
   - Subdomains are free; custom domains need real ₹1K setup + ₹100/month charges
   - Code ready in `/api/dealer/domain-billing`; just needs live keys in `.env.production`
