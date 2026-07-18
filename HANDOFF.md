@@ -267,6 +267,31 @@ Showroom marketplace (`app/showroom/page.js`) gets a **Fuel Type filter** dropdo
 
 ---
 
+## 8.5 Cost Analysis (NEW - 2026-07-18)
+
+**See: `COST_ANALYSIS.md` (this repo)**
+
+EvCRM's financial model is **immediately profitable**:
+
+| Scenario | Monthly Cost | Monthly Revenue | Profit | Margin |
+|----------|------------|-----------------|--------|--------|
+| **MVP (10 dealers)** | ₹1,200–3,300 | ₹20,200 | ₹16,900–19,000 | 83–94% |
+| **Growth (50 dealers)** | ₹11,600–23,000 | ₹126,600 | ₹103,600–115,000 | 81–91% |
+| **Scale (500 dealers)** | ₹45,000–109,000 | ₹1,005,000 | ₹896,000–960,000 | 89–95% |
+
+**Key services & costs:**
+- Cloud Run: $10–50/mo (pay-as-you-go)
+- Supabase: ₹0 (free tier, $30 when >500MB)
+- Resend Email: ₹0 (free tier, ₹2K when >3K/mo)
+- Gemini API: ₹0 (free tier covers MVP)
+- Razorpay: 2.99% + ₹4.5 per transaction
+- Cloudflare: ₹0 (free tier adequate)
+- SMS/WhatsApp: ₹0 (not implemented, ₹5–30K if activated)
+
+**Profitability**: Profitable from MVP launch. Payback period: <1 month with 10 dealers.
+
+---
+
 ## 9. Development Workflow
 
 ```bash
