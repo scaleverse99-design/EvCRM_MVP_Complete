@@ -2093,19 +2093,26 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
       <Card style={{ gridColumn: "1 / -1" }}>
         <SectionHeading>🌐 Domains & Storefronts</SectionHeading>
         <div style={{ fontSize:10, color:C.ink3, marginBottom:16, lineHeight:1.5 }}>
-          Your storefront is available at <b>{dealer?.dealerSubdomain || "ramdealers"}.evcrm.in</b>. Optionally, point your own domain to evcrm.in via CNAME to create a branded storefront without showing "evcrm.in" in the URL.
+          Your storefront is live right now at <b>evcrm.in/{dealer?.dealerSubdomain || "ramdealers"}</b> — share this link anywhere. Optionally, point your own domain to evcrm.in via CNAME for a fully branded storefront without "evcrm.in" in the URL.
         </div>
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
-          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:12 }}>
-            <div style={{ fontSize:9.5, fontWeight:700, color:C.ink3, marginBottom:6 }}>FREE Subdomain</div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.ink, wordBreak:"break-all" }}>
-              {dealer?.dealerSubdomain || "ramdealers"}.evcrm.in
+          <div style={{ background:C.lightGreen, border:`1px solid ${C.green}`, borderRadius:8, padding:12 }}>
+            <div style={{ fontSize:9.5, fontWeight:700, color:C.ink3, marginBottom:6 }}>FREE Storefront Link</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <a href={`/${dealer?.dealerSubdomain || "ramdealers"}`} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize:13, fontWeight:700, color:C.green, wordBreak:"break-all", textDecoration:"none" }}>
+                evcrm.in/{dealer?.dealerSubdomain || "ramdealers"} ↗
+              </a>
+              <button onClick={() => { navigator.clipboard?.writeText(`https://evcrm.in/${dealer?.dealerSubdomain || "ramdealers"}`) }}
+                title="Copy link" style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>
+                Copy
+              </button>
             </div>
-            <div style={{ fontSize:9, color:C.ink3, marginTop:6 }}>Always available, no setup needed</div>
+            <div style={{ fontSize:9, color:C.ink3, marginTop:6 }}>Live now, no setup needed</div>
           </div>
 
-          <div style={{ background:C.lightGreen, border:`1px solid ${C.green}`, borderRadius:8, padding:12 }}>
+          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:12 }}>
             <div style={{ fontSize:9.5, fontWeight:700, color:C.ink3, marginBottom:6 }}>Custom Domain (Paid)</div>
             <div style={{ fontSize:11, fontWeight:700, color:C.ink }}>
               ₹1,000 setup + ₹100/month

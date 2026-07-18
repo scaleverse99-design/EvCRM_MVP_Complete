@@ -5,6 +5,19 @@ import { createSession, logLoginAttempt } from "../../../lib/db"
 import { sendWelcomeEmail } from "../../../lib/email"
 import supabaseAdmin from "../../../lib/db"
 
+// Top-level app route segments — a dealer's free storefront lives at
+// evcrm.in/{dealerSubdomain}, so the slug must never collide with a real
+// page (a colliding slug would make that dealer's storefront permanently
+// unreachable, since Next.js always matches the static route first).
+const RESERVED_SLUGS = new Set([
+  "admin", "api", "assign", "attendance", "best-ev", "blog", "buildprice",
+  "charging", "command", "commerce", "connect", "dealer", "dealer-storefront",
+  "leads", "login", "market-research", "marketplace", "mygarage", "news",
+  "oem", "profile", "pulse", "queue", "quote", "quotepro", "register",
+  "search", "service-centers", "showroom", "starter-kit", "subsidies",
+  "team", "vehicles", "favicon.ico", "robots.txt", "sitemap.xml",
+])
+
 // ── POST /api/register ────────────────────────────────────────────
 // Self-registration for dealers and sales reps
 // Body: { name, email, password, role, phone, dealership, city }
@@ -71,7 +84,7 @@ export async function POST(req) {
 
       const existingSubdomains = allUsers?.map(u => u.data?.dealerSubdomain?.toLowerCase()) || []
 
-      while (existingSubdomains.includes(subdomain.toLowerCase())) {
+      while (existingSubdomains.includes(subdomain.toLowerCase()) || RESERVED_SLUGS.has(subdomain.toLowerCase())) {
         subdomain = `${dealerSubdomain}${counter}`
         counter++
       }
