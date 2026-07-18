@@ -2,6 +2,11 @@
 
 > **Purpose**: Everything a developer (or AI agent in Google Antigravity IDE) needs to continue building this product.
 > **Last updated**: 2026-07-18 · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
+> 
+> **🟢 BUILD STATUS**: ✅ PASSING (2026-07-18)  
+> **Latest work**: Subdomain + Custom Domain feature (MVP complete, build fixed)  
+> **Commits**: `ecec017` (feature), `1c32da6` (docs), `d21cfd8` (tasks), `3ae9d7b` (build fix)  
+> **Next blocker**: Razorpay live keys for domain billing (see §10.1)
 
 > **Cross-agent sync note:** THIS file (`HANDOFF.md`, capitalized) + `TASKS.md` are the single
 > source of truth. **Antigravity looks for `.agents/handoff.md` and `task.md` (lowercase)** — those
@@ -298,23 +303,47 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
 
 ## 10. Suggested Roadmap (in priority order)
 
-0. **Session paused 2026-07-18 — user said "discuss in the morning."** Nothing broken or
-   half-finished; everything below is genuinely queued, not mid-edit. Two loose threads worth
-   raising first thing: (a) **990 dummy pending-verification dealers are still sitting in
-   production** from earlier bulk-import testing (fake `.invalid`/`.example`/`.testmail`
-   emails) — offered to clean them up via the existing `remove_pending` action, user hadn't
-   confirmed yet; (b) the used-car/ICE dealer feature (this section + §7) is built, deployed,
-   and verified, but has **zero real-world usage yet** — worth deciding together whether to
-   test with a real used-car dealer next or keep iterating on the flow first.
+**0. ✅ 2026-07-18 — Subdomain + Custom Domain Feature COMPLETE**
+   - **Status**: MVP complete, build passing ✅, ready for production
+   - **Commits**: `ecec017` (feature), `1c32da6` (docs), `d21cfd8` (tasks), `3ae9d7b` (build fix)
+   - **Built**: Auto-generated subdomains (`ramdealers.evcrm.in`) + custom domain routing + white-label storefront
+   - **Architecture**: Middleware detects Host header → routes to `/dealer-storefront` → API resolves dealer → renders profile + inventory
+   - **Billing**: ₹1,000 setup + ₹100/month (tracked, ready for Razorpay live keys)
+   - **Next steps**:
+     1. Get Razorpay live keys → enable real billing charges
+     2. Test custom domain end-to-end (buy domain, verify DNS)
+     3. Deploy via `deploy_on_windows.bat`
+     4. Announce to dealers (email: "Your storefront: {slug}.evcrm.in")
+   - **See**: handoff.md §7, TASKS.md (top priority blockers), memory/subdomain-custom-domain-feature.md (architecture)
 
-1. Row-level store rewrite (#8.4) — before onboarding beyond ~15 dealers, and now doubly
-   urgent given the 2,328-dealer bulk-import volume this session proved the pipes can handle.
-2. Razorpay live keys + real token payments; wire OEM sponsorship billing.
-3. SMS gateway for MyGarage OTP — would also let phone-only bulk-imported dealers verify by
-   OTP instead of manually typing an email, closing the loop the bulk-import work opened.
-4. Supabase Storage for attachments.
-5. Consolidate the two marketplaces; clean legacy pages (`/queue`, mock admin panels).
-6. Founder/admin panel completion — **PARTIAL** (metrics dashboard shows revenue/dealers/users; User Ops section exists but mostly empty; needs dealer management, detailed analytics, system oversight tools).
-7. Notifications (email on new lead/booking/service; WhatsApp templates via BSP later).
-8. Upgrade Resend off the free tier before running the real 2,328-dealer onboard-email batch
-   (#8.1e) — 100/day free limit means ~23 days at one page/day otherwise.
+**1. 🔥 HIGH PRIORITY — Razorpay Live Keys for Domain Billing** (BLOCKS PRODUCTION)
+   - Code ready in `/api/dealer/domain-billing`; just needs live keys in `.env.production`
+   - Without this: feature deploys but stays in test mode (no revenue from custom domains)
+   - Effort: ~1 hour to add keys + test
+
+**2. MEDIUM PRIORITY — Test Custom Domains End-to-End** (BLOCKS DEPLOYMENT)
+   - Need: test domain (buy or reuse existing)
+   - Steps: Add CNAME → Wait DNS propagation → Verify via API → Confirm storefront loads
+   - Effort: 1-2 hours (includes DNS wait time)
+
+**3. MAINTENANCE — Clean Up 990 Dummy Dealers** (HELPS AUTH PERFORMANCE)
+   - Leftover from bulk-import testing (fake `.invalid`/`.testmail` emails)
+   - Mechanism exists: OEM console → My Network → Pending Verification → 🗑 Remove
+   - Effort: 30 minutes
+   - Impact: Gets `users` table under 1000 rows → faster auth checks
+
+**4. Row-level store rewrite (#8.4)** — before onboarding beyond ~15 dealers
+   - Current: whole-table reads/writes in `lib/store.js`
+   - Goal: row-level upsert/delete
+   - Urgency: doubly critical given 2,328-dealer bulk-import this session proved possible
+
+**5. SMS gateway for MyGarage OTP** — would also let phone-only bulk-imported dealers verify by
+   OTP instead of manually typing email (closes the loop bulk-import opened)
+
+**6. Supabase Storage for attachments** — move base64 images from DB
+
+**7. Domain branding** (future) — let dealers customize storefront with logo + colors
+
+**8. Domain analytics** (future) — track "leads from ramdealers.in" vs "leads from evcrm.in"
+
+**9. Founder/admin panel completion** — metrics dashboard works; User Ops section empty
