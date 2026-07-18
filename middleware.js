@@ -17,14 +17,28 @@ export function middleware(request) {
   // Extract domain without port
   const domain = host.split(":")[0].toLowerCase()
 
-  // Check if this is a custom domain/subdomain request
-  // Subdomains: *.evcrm.in (but not evcrm.in itself)
-  // Custom domains: any domain that's not evcrm.in
-  const isSubdomain = domain.endsWith(".evcrm.in") && domain !== "evcrm.in"
-  const isCustomDomain = !domain.endsWith(".evcrm.in") && domain !== "localhost"
+  // Main/known domains that should NEVER be treated as dealer storefronts.
+  // This includes the bare domain, Firebase domains, Cloud Run domains,
+  // and localhost. Anything not explicitly a *.evcrm.in subdomain with a
+  // dealer slug should pass through to the normal app.
+  const isMainDomain =
+    domain === "evcrm.in" ||
+    domain === "www.evcrm.in" ||
+    domain === "localhost" ||
+    domain.endsWith(".web.app") ||
+    domain.endsWith(".firebaseapp.com") ||
+    domain.endsWith(".run.app") ||
+    domain.endsWith(".cloudfunctions.net") ||
+    domain === ""
+
+  // A subdomain is specifically "{slug}.evcrm.in" — e.g. ramdealers.evcrm.in
+  const isSubdomain = domain.endsWith(".evcrm.in") && domain !== "evcrm.in" && domain !== "www.evcrm.in"
+
+  // A custom domain is ONLY when we're sure it's not any known infrastructure domain.
+  // Must have at least one dot (valid domain), must not be any known host.
+  const isCustomDomain = !isMainDomain && !isSubdomain && domain.includes(".")
 
   if ((isSubdomain || isCustomDomain) && !pathname.startsWith("/dealer-storefront")) {
-    // Rewrite to dealer storefront (preserves URL)
     return NextResponse.rewrite(new URL("/dealer-storefront", request.url))
   }
 
@@ -33,13 +47,6 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 }
