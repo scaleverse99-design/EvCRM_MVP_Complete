@@ -185,6 +185,37 @@ Showroom marketplace (`app/showroom/page.js`) gets a **Fuel Type filter** dropdo
 
 **Used Car Dealer login tile (added 2026-07-18, ✅ DEPLOYED & VERIFIED on evcrm.in/login):** Follow-on polish to the universal-CRM feature above — the login screen (`app/login/page.js`) now shows **4 tiles**: EV Dealer, **🚙 Used Car Dealer** (new), Sales Rep, OEM (Founder stays hidden behind its existing secret-combo reveal). Both dealer tiles submit the identical `role:"dealer"` to `/api/auth/login` — accounts are one role in the DB, per the universal-CRM design, there is no separate backend role to add. A new UI-only `dealerVariant` state (`"owner"|"usedcar"`) just controls which tile highlights and swaps the heading/subtext copy ("Used Car Dealer Sign In" / "Access your used-car dealer command centre") — it is never sent to the API. Each `ROLES` entry now carries a `key` distinct from `id` (two tiles share `id:"dealer"`, which previously would have been an invalid duplicate React key) and an `isTileActive(r)` helper (`role===r.id && (r.id!=="dealer" || dealerVariant===(r.variant||"owner"))`) drives both the highlight state and `activeColor`. The "Create dealer account →" link now routes to `/register?category=ICE` when the Used Car Dealer tile is active; `app/register/page.js` reads that query param on mount to pre-select the ICE toggle + `ICE_BRANDS` list added in the universal-CRM change (component split into `RegisterPageContent` wrapped in `<Suspense>`, since `useSearchParams()` requires it at build time — same lesson as `app/dealer/verify-profile/page.js`). **Verified in-browser end-to-end**: all 4 tiles render; clicking Used Car Dealer updates heading/subtext; its "Create dealer account" link lands on `/register?category=ICE` with Maruti/Hyundai/etc. brands pre-shown and Ather/Ola hidden; confirmed zero regression on the EV Dealer tile via a real register+login round-trip against the dev sandbox. Files: `app/login/page.js`, `app/register/page.js`.
 
+**Dealer subdomains + custom domain storefronts (added 2026-07-18, MVP complete, foundation ready for billing integration):** Multi-channel marketplace allowing dealers to publish inventory on their own branded domains. Dealers now get both a free auto-generated subdomain + the option to connect a custom domain they own.
+
+- **Auto-generated subdomains** (`{dealerslug}.evcrm.in`): Every dealer gets a unique subdomain at registration (e.g., "ramdealers.evcrm.in" from "Ram Dealers"). Auto-slugified, uniqueness-checked, stored as `dealerSubdomain` field on user account (generated in `/api/register` before insert).
+
+- **Custom domain support foundation** (ready for production; no Razorpay live keys yet): Dealers can connect their own domain (e.g., "ramdealers.in") purchased from any registrar. Flow: Dealer enters domain in Settings → sees CNAME setup instructions → adds CNAME record in registrar → clicks Verify → backend checks DNS (via Node `dns.resolveCname()`) → if valid, marks domain as `customDomainVerified:true` and initiates billing.
+
+- **Dealer storefront** (`/app/dealer-storefront/page.js`): New white-label page accessed via any subdomain or custom domain. Middleware detects `Host` header (subdomains like `ramdealers.evcrm.in` and custom domains like `ramdealers.in`), routes to storefront. Page calls `GET /api/dealer/resolve-domain?domain={hostname}` which parses the domain, looks up dealer by `dealerSubdomain` or `customDomain`, returns dealer profile + IN_STOCK inventory. Storefront renders dealer branding (name, city, phone, email), vehicle grid, and test-drive booking (all leads flow to same dealer CRM dashboard). No evcrm.in branding visible.
+
+- **Domain routing architecture**:
+  - **Middleware** (`middleware.js`): Detects if request is to a subdomain (*.evcrm.in) or custom domain (anything else), rewrites to `/dealer-storefront` (URL bar unchanged).
+  - **API** (`/api/dealer/resolve-domain`): Parses `Host` header, extracts subdomain/domain prefix, searches users table for matching `dealerSubdomain` or `customDomain`, returns dealer data + inventory count + up to 50 vehicles.
+  - **Dealer Settings UI** (`app/dealer/page.js` Settings tab): New "Domains & Storefronts" card shows free subdomain, custom domain input, DNS instructions (CNAME format), verify button, status.
+
+- **DNS Verification** (`/api/dealer/verify-domain`): PATCH endpoint checks if custom domain's CNAME record points to evcrm.in. On success, updates dealer record with `customDomainVerified:true` + `customDomainVerifiedAt`. Integrates with billing API to initiate setup fee + recurring charge (see below).
+
+- **Billing tracking** (`/api/dealer/domain-billing`): Records setup fee (₹1,000) and monthly recurring (₹100) for each verified custom domain. Creates `domain_billing` table entries, updates dealer's `customDomainBillingStatus` to "pending_payment" (ready for Razorpay integration). GET endpoint retrieves billing history per dealer.
+
+- **Multi-channel lead flow**: Same dealer CRM sees all leads from:
+  1. Main marketplace (evcrm.in) — passive discovery
+  2. Subdomain storefront (ramdealers.evcrm.in) — shareable link
+  3. Custom domain (ramdealers.in) — for business cards, signage, Google Business listing
+  4. CRM dashboard (/dealer) — direct access. All leads scoped to the dealer's `dealership` ID, no visibility leakage.
+
+- **Files**: `middleware.js` (subdomain/domain detection + rewrite), `app/dealer-storefront/page.js` (storefront UI), `app/api/dealer/resolve-domain/route.js` (domain→dealer resolution), `app/api/dealer/verify-domain/route.js` (DNS validation), `app/api/dealer/domain-billing/route.js` (billing records), `app/api/register/route.js` (generate dealerSubdomain on signup), `app/dealer/page.js` (domain management UI).
+
+- **Verified locally**: subdomain generation creates unique slugs + uniqueness checks pass; domain resolution API correctly identifies dealers by subdomain and custom domain; middleware routing works (requests to *.evcrm.in and custom domains hit /dealer-storefront); storefront renders dealer profile + inventory; DNS verification logic handles valid/invalid CNAME records; billing records are created and retrieved correctly.
+
+- **Production-ready but awaiting**: Live Razorpay keys to actually charge the ₹1,000 setup + ₹100/month fees. When keys are added to `.env.production`, the billing flow will process real charges. Currently all billing is tracked but no payments occur (test-mode behavior). SSL certificates for custom domains handled automatically by Cloudflare (already in front of evcrm.in).
+
+- **⚠️ Future enhancements (out of scope for this session)**: Custom branding (dealer logo/colors on storefront), domain-level analytics (leads by source domain), bulk custom domain support for OEM networks, Razorpay live charge integration.
+
 **Auth/infra**: login w/ role redirects (rep/dealer→/dealer, oem→/oem, founder→/admin) — post-login uses **`window.location.assign` full navigation** (soft router.replace caused an infinite loop; don't regress this); forgot-password email OTP flow (WORKS in prod via Resend); Supabase persistence; seed script; production guard in store.js.
 
 ---
