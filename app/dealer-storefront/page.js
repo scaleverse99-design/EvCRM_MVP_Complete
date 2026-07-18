@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import C from "../../lib/constants"
 import TopBar from "../../components/home/TopBar"
-import VehicleCard from "../../components/home/VehicleCard"
-import BookingModal from "../../components/marketplace/BookingModal"
+import VehicleCard from "../../components/marketplace/VehicleCard"
+import { bookTestDrive } from "../../lib/payments/tokenBooking"
 
 export default function DealerStorefront() {
   const router = useRouter()
@@ -13,8 +13,10 @@ export default function DealerStorefront() {
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [bookingMode, setBookingMode] = useState(null)
-  const [selectedVehicle, setSelectedVehicle] = useState(null)
+  const [bookingVehicle, setBookingVehicle] = useState(null)
+  const [bookingData, setBookingData] = useState({ name: "", phone: "", email: "", date: "" })
+  const [bookingError, setBookingError] = useState("")
+  const [bookingSuccess, setBookingSuccess] = useState(false)
 
   useEffect(() => {
     const fetchDealerData = async () => {
@@ -117,17 +119,14 @@ export default function DealerStorefront() {
             {inventory.map((vehicle) => (
               <div
                 key={vehicle.id}
-                onClick={() => {
-                  setSelectedVehicle(vehicle)
-                  setBookingMode("test-drive")
-                }}
                 style={{ cursor: "pointer" }}
               >
                 <VehicleCard
                   vehicle={vehicle}
                   onBook={() => {
-                    setSelectedVehicle(vehicle)
-                    setBookingMode("test-drive")
+                    setBookingVehicle(vehicle)
+                    setBookingError("")
+                    setBookingSuccess(false)
                   }}
                 />
               </div>
@@ -136,13 +135,118 @@ export default function DealerStorefront() {
         )}
       </div>
 
-      {/* Booking Modal */}
-      {bookingMode && selectedVehicle && (
-        <BookingModal
-          vehicle={selectedVehicle}
-          dealer={dealer}
-          onClose={() => setBookingMode(null)}
-        />
+      {/* Booking Form Modal */}
+      {bookingVehicle && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setBookingVehicle(null)}
+        >
+          <div
+            style={{
+              backgroundColor: C.white,
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: "1rem" }}>Book Test Drive</h3>
+            {!bookingSuccess ? (
+              <>
+                <p style={{ fontSize: "0.9rem", color: C.ink3, marginBottom: "1rem" }}>
+                  {bookingVehicle.brand} {bookingVehicle.model}
+                </p>
+                {bookingError && (
+                  <div style={{ color: C.red, fontSize: "0.9rem", marginBottom: "1rem", background: "#FEE2E2", padding: "0.5rem", borderRadius: "6px" }}>
+                    {bookingError}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    value={bookingData.name}
+                    onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })}
+                    style={{ padding: "0.75rem", border: `1px solid ${C.border}`, borderRadius: "6px", fontFamily: "inherit" }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Your email"
+                    value={bookingData.email}
+                    onChange={(e) => setBookingData({ ...bookingData, email: e.target.value })}
+                    style={{ padding: "0.75rem", border: `1px solid ${C.border}`, borderRadius: "6px", fontFamily: "inherit" }}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Your phone"
+                    value={bookingData.phone}
+                    onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                    style={{ padding: "0.75rem", border: `1px solid ${C.border}`, borderRadius: "6px", fontFamily: "inherit" }}
+                  />
+                  <input
+                    type="date"
+                    value={bookingData.date}
+                    onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
+                    style={{ padding: "0.75rem", border: `1px solid ${C.border}`, borderRadius: "6px", fontFamily: "inherit" }}
+                  />
+                  <button
+                    onClick={async () => {
+                      try {
+                        setBookingError("")
+                        const booking = await bookTestDrive({
+                          vehicleId: bookingVehicle.id,
+                          name: bookingData.name.trim(),
+                          email: bookingData.email.trim(),
+                          phone: bookingData.phone.trim(),
+                          preferredDate: bookingData.date || null,
+                          payToken: false,
+                        })
+                        setBookingSuccess(true)
+                      } catch (err) {
+                        setBookingError(err.message || "Booking failed")
+                      }
+                    }}
+                    style={{ padding: "0.75rem", backgroundColor: C.green, color: C.white, border: "none", borderRadius: "6px", fontWeight: "700", cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Book Test Drive
+                  </button>
+                  <button
+                    onClick={() => setBookingVehicle(null)}
+                    style={{ padding: "0.75rem", backgroundColor: C.lightGray, color: C.ink, border: "none", borderRadius: "6px", cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div>
+                <p style={{ color: C.green, fontWeight: "700", marginBottom: "1rem" }}>✅ Booking confirmed!</p>
+                <p style={{ fontSize: "0.9rem", color: C.ink3, marginBottom: "1rem" }}>
+                  {dealer.dealershipName} will contact you soon to confirm the test drive.
+                </p>
+                <button
+                  onClick={() => setBookingVehicle(null)}
+                  style={{ width: "100%", padding: "0.75rem", backgroundColor: C.blue, color: C.white, border: "none", borderRadius: "6px", fontWeight: "700", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
