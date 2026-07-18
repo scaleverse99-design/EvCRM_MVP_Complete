@@ -1,42 +1,115 @@
-# Tasks
+# Tasks & Roadmap
 
-## Pending (Priority Order)
+> **Last updated:** 2026-07-18  
+> **Status:** Subdomain + Custom Domain feature MVP ✅ COMPLETE  
+> **Next:** Razorpay live keys for domain billing
 
-- [ ] **Decide on the 990 dummy pending-verification dealers in production** — leftover from
-  bulk-import testing (fake `.invalid`/`.example`/`.testmail` emails). Cleanup mechanism
-  (`remove_pending` PATCH action) already exists; just needs a go-ahead. Raised, not confirmed.
+---
 
-- [ ] **Test the used-car/ICE dealer flow with a real dealer** — feature is built, deployed,
-  verified (see handoff.md §7), but has zero real-world usage yet. Discuss next steps.
+## 🔥 Top Priority (Blockers for Production)
 
-- [ ] Row-level store rewrite (§8.4) — required before scaling beyond ~15 dealers
-  - Current: whole-table reads/writes in `lib/store.js`
-  - Goal: convert to row-level upsert/delete
-  - Impact: top engineering priority, affects performance
+- [ ] **Wire Razorpay live keys for domain billing** (3-4 hours, **BLOCKS deployment**)
+  - Subdomains are free; custom domains need real ₹1K setup + ₹100/month charges
+  - Code ready in `/api/dealer/domain-billing`; just needs live keys in `.env.production`
+  - Without this: feature deploys but billing stays in test mode (no revenue)
 
-- [ ] Razorpay live keys + real token payments (§8.2)
-  - Add live keys to `.env.production` + redeploy
-  - Currently: bookings fall back to no-payment mode
+- [ ] **Test custom domains end-to-end** (1-2 hours, **NEEDS test domain**)
+  - DNS verification logic complete; needs real domain + CNAME to verify
+  - Buy test domain OR use existing
+  - Steps: Add CNAME → Wait DNS → Verify via API → Confirm storefront loads
 
-- [ ] Wire SMS gateway for MyGarage OTP (§8.3)
-  - Current: demo-mode returns OTP in response
-  - Target: MSG91/Twilio via `SMS_GATEWAY_KEY` in `app/api/service/otp/route.js`
+- [ ] **Clean up 990 dummy dealers** (30 mins, helps auth performance)
+  - Leftover from bulk-import testing (fake `.invalid`/`.testmail` emails)
+  - Mechanism exists (`remove_pending` PATCH action)
+  - Impact: Gets `users` table under 1000 rows → faster auth checks
 
-- [ ] Move base64 attachments to Supabase Storage (§8.5)
+---
 
-- [ ] Push query filtering into Supabase (§8.6)
+## 📋 Upcoming Work (After Above)
 
-- [ ] Consolidate two marketplaces; clean legacy pages (§8.7)
-  - `/` vs `/buy-vehicles` — keep only one
-  - Remove `/queue`, mock admin pages
+- [ ] **Deploy subdomains + custom domain feature to production**
+  - Feature complete & locally tested; awaiting Razorpay keys (#1) + custom domain testing (#2)
+  - Deploy command: `deploy_on_windows.bat`
+  - Email dealers: "Your storefront: {slug}.evcrm.in"
 
-- [ ] Complete founder/admin panel (§8.8)
+- [ ] **Domain branding** (3-4 hours, future)
+  - Let dealers customize storefront with logo + colors
+  - Deferred: Requires image upload (Storage migration first)
+
+- [ ] **Domain analytics** (2-3 hours, future)
+  - Track "leads from ramdealers.in" vs "leads from evcrm.in"
+  - Just add `sourceChannel` field to leads
+
+- [ ] **Row-level store rewrite** (§8.4, high effort, top priority after domains)
+  - Current: `lib/store.js` reads/writes whole tables (scales poorly)
+  - Goal: Row-level upsert/delete
+  - Blocker for scaling beyond ~15 dealers
+
+- [ ] **Razorpay live keys + real payments** (§8.2, after domain billing wired)
+  - For test-drive token bookings (not just domains)
+
+- [ ] **SMS gateway for MyGarage OTP** (§8.3)
+  - Current: Demo mode returns OTP in response
+  - Target: MSG91/Twilio
+
+- [ ] **Move images to Supabase Storage** (§8.5, medium effort)
+  - Currently: base64 in DB (egress cost growing)
+  - Unlocks: domain branding (logo upload)
+
+- [ ] **Push query filtering to Supabase** (§8.6, medium effort)
+  - Current: reads whole table in JS
+  - Need: as data grows
+
+- [ ] **Complete admin/founder panel** (§8.8, lower priority)
+  - Metrics dashboard works; User Ops section empty
+
+---
+
+## 2026-07-18 Session: Subdomain + Custom Domain Feature ✅
+
+**COMPLETED THIS SESSION:**
+
+- [x] **Dealer subdomains + custom domain storefronts — MVP complete**
+  - Auto-generated subdomains (e.g., `ramdealers.evcrm.in`) — free, instant
+  - Custom domain support (e.g., `ramdealers.in` → evcrm.in CNAME) — ₹1K+₹100/month
+  - White-label dealer storefront page (`/app/dealer-storefront`)
+  - Domain resolution API (`/api/dealer/resolve-domain`)
+  - DNS verification API (`/api/dealer/verify-domain`) with CNAME checks
+  - Billing infrastructure (`/api/dealer/domain-billing`)
+  - Settings UI for domain management (Settings tab, new "Domains & Storefronts" card)
+  - Middleware for subdomain/domain routing (`middleware.js`)
+  - Multi-channel lead generation (main marketplace + subdomain + custom domain → same CRM)
+  
+**Files added:** `middleware.js`, `app/dealer-storefront/page.js`, `app/api/dealer/{resolve-domain,verify-domain,domain-billing}/route.js`
+**Files modified:** `app/api/register/route.js`, `app/dealer/page.js`, `handoff.md`
+**Commits:** `ecec017`, `1c32da6`
+**Status:** Production-ready; awaiting Razorpay live keys for billing; custom domain testing needed
+
+**How it works:**
+- Dealer signs up → auto-gets `{slug}.evcrm.in` subdomain
+- Optionally: adds custom domain, DNS verifies CNAME, billing initiated (₹1K+₹100/mo)
+- Both domain routes to same white-label storefront
+- All leads funnel to one CRM dashboard
+- Pricing: ₹1,000 setup (one-time) + ₹100/month (recurring)
+
+**Architecture:**
+```
+Middleware → detects domain → /dealer-storefront
+  ↓
+/api/dealer/resolve-domain → finds dealer by subdomain or custom domain
+  ↓
+Storefront renders dealer profile + inventory
+  ↓
+Test drive → lead in dealer's CRM
+```
+
+---
 
 ## In Progress
 
 (none)
 
-## Completed
+## Completed (Historical)
 
 - [x] **Universal automobile CRM — EV/ICE dealer category + used-vehicle inspection gate**
   — ✅ LIVE, verified end-to-end on evcrm.in (2026-07-17)
