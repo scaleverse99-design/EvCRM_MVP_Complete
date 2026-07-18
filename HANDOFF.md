@@ -341,6 +341,30 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
      4. Announce to dealers (email: "Your storefront: {slug}.evcrm.in")
    - **See**: handoff.md §7, TASKS.md (top priority blockers), memory/subdomain-custom-domain-feature.md (architecture)
 
+**0.5. 🔥 NEXT PRIORITY — Vehicle Inspection Integration with Go-Mechanic** (PHASE 1: MVP)
+   - **Problem**: Used-car sales fail because customers can't trust dealer claims about vehicle condition. Post-purchase disputes hurt both dealer and EvCRM reputation.
+   - **Solution**: Integrate third-party inspection services (Go-Mechanic, Cars24) directly into EvCRM. Dealer books inspection → report appears on listing → trust increases → conversion rates lift 30–50%.
+   - **Business Impact**: 
+     - Dealer: +30–50% conversion on used-car sales (faster deals, fewer disputes)
+     - EvCRM: Increased platform trust, reduced post-purchase liability, higher used-car sales volume
+     - Go-Mechanic: Recurring dealer bookings, brand exposure on every verified listing
+     - Customer: Verified condition report at point of purchase (zero extra cost)
+   - **Phase 1 Scope (1–2 weeks)**: 
+     1. API: `/api/dealer/inspection/book` (POST) — dealer books inspection with Go-Mechanic
+     2. Webhook: `/api/dealer/inspection/callback` (POST) — Go-Mechanic sends completed report
+     3. UI: Dealer dashboard "Book Inspection" button (modal form for date/time/type)
+     4. Display: Customer listing view shows inspection badge + condition score + key findings + PDF download
+     5. Database: Add `inspection` fields to vehicle schema (status, score, findings, report URL, expiry)
+   - **Revenue Model**: Go-Mechanic charges dealer ₹500–1,200 per inspection (direct); EvCRM doesn't take commission (partnership goodwill); benefit = higher used-car sales → higher CRM fees
+   - **Customer Journey After**: Photo matches report ✓ → No surprise issues ✓ → Report baseline for warranty/disputes ✓ → Higher confidence to buy ✓
+   - **Next Steps**:
+     1. Reach out to Go-Mechanic: "Want to integrate inspection reports into our dealer marketplace?"
+     2. Get API docs + sandbox access
+     3. Build Phase 1 MVP (dealer booking + report display)
+     4. Beta with 5–10 dealers on used-car inventory; measure conversion lift
+     5. Scale if validated
+   - **See**: `VEHICLE_INSPECTION_INTEGRATION.md` (this repo — comprehensive spec, 350+ lines)
+
 **1. 🔥 HIGH PRIORITY — Razorpay Live Keys for Domain Billing** (BLOCKS PRODUCTION)
    - Code ready in `/api/dealer/domain-billing`; just needs live keys in `.env.production`
    - Without this: feature deploys but stays in test mode (no revenue from custom domains)

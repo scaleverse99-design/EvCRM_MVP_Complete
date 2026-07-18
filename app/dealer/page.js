@@ -1437,7 +1437,7 @@ function BookingsSection({ dealership, reps=[] }) {
   return (
     <div>
       <div style={{ marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ fontSize:13, color:C.ink2 }}>Test drive bookings received from the marketplace</div>
+        <div style={{ fontSize:13, color:C.ink2 }}>Test drive bookings & inspection requests from the marketplace</div>
         <div style={{ display:"flex", gap:10, alignItems:"center" }}>
           <div style={{ display:"flex", background:C.bg, borderRadius:8, padding:2 }}>
             <button onClick={()=>setView("list")} style={{ background:view==="list"?C.card:"transparent", border:"none", borderRadius:6, padding:"5px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", color:view==="list"?C.ink:C.ink3 }}>☰ List</button>
@@ -1472,8 +1472,8 @@ function BookingsSection({ dealership, reps=[] }) {
                 <div key={b.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderTop:`1px solid ${C.border}` }}>
                   <Avatar name={b.name} size={28} />
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{b.name} — {b.vehicleName}</div>
-                    <div style={{ fontSize:10, color:C.ink3 }}>{b.scheduledTime ? new Date(b.scheduledTime).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}) : "Time TBD"} {b.assignedRep ? `· ${reps.find(r=>r.id===b.assignedRep)?.name || b.assignedRep}` : ""}</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.ink }}>{b.type === "INSPECTION" ? "🔍 " : ""}{b.name} — {b.vehicleName}</div>
+                    <div style={{ fontSize:10, color:C.ink3 }}>{b.type === "INSPECTION" ? (b.inspectionTime || "Time TBD") : (b.scheduledTime ? new Date(b.scheduledTime).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}) : "Time TBD")} {b.type === "INSPECTION" ? "· Customer's mechanic" : ""}{b.assignedRep ? `· ${reps.find(r=>r.id===b.assignedRep)?.name || b.assignedRep}` : ""}</div>
                   </div>
                   {b.outcome && <span style={{ background:`${OUTCOME_COLORS[b.outcome]||C.ink3}15`, color:OUTCOME_COLORS[b.outcome]||C.ink3, fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:8 }}>{b.outcome}</span>}
                 </div>
@@ -1485,7 +1485,7 @@ function BookingsSection({ dealership, reps=[] }) {
         <Card noPad>
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead><tr style={{ background:C.bg }}>
-              {["Customer","Vehicle","Schedule","Rep","Outcome","Token","Payment","Actions"].map(h=>(
+              {["Customer","Vehicle","Type","Schedule","Rep","Outcome","Token","Payment","Actions"].map(h=>(
                 <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:700, color:C.ink2, textTransform:"uppercase" }}>{h}</th>
               ))}
             </tr></thead>
@@ -1499,6 +1499,16 @@ function BookingsSection({ dealership, reps=[] }) {
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <td style={{ padding:"10px 16px" }}><div style={{ fontWeight:700, color:C.ink }}>{b.name}</div><div style={{ fontSize:10, color:C.ink3 }}>{b.phone}</div>{!b.assignedRep && b.paymentStatus==="PAID" && b.status!=="CANCELLED" && <div style={{ display:"inline-block", marginTop:4, background:`${C.red}15`, color:C.red, fontSize:9, fontWeight:800, padding:"1px 7px", borderRadius:8 }}>⚠ NEEDS ASSIGNMENT</div>}</td>
                     <td style={{ padding:"10px 16px", color:C.ink2 }}>{b.vehicleName}</td>
+                    <td style={{ padding:"10px 16px" }}>
+                      {b.type === "INSPECTION" ? (
+                        <span style={{ background:"#EFF6FF", color:"#2563EB", fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:8, whiteSpace:"nowrap" }}>🔍 Inspection</span>
+                      ) : (
+                        <span style={{ background:"#F0FDF4", color:"#059669", fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:8, whiteSpace:"nowrap" }}>🚗 Test Drive</span>
+                      )}
+                      {b.type === "INSPECTION" && b.inspectionTime && (
+                        <div style={{ fontSize:9, color:"#2563EB", marginTop:4 }}>{b.inspectionTime}</div>
+                      )}
+                    </td>
                     <td style={{ padding:"10px 16px" }}>
                       <input type="datetime-local" defaultValue={b.scheduledTime ? new Date(b.scheduledTime).toISOString().slice(0,16) : ""}
                         onBlur={e => e.target.value && runAction(b, "schedule", { scheduledTime: new Date(e.target.value).toISOString() })}
@@ -1521,7 +1531,7 @@ function BookingsSection({ dealership, reps=[] }) {
                         <option value="Ready to Book">Ready to Book</option>
                       </select>
                     </td>
-                    <td style={{ padding:"10px 16px", color:C.green, fontWeight:700 }}>₹{(b.tokenAmount||1000).toLocaleString()}</td>
+                    <td style={{ padding:"10px 16px", color: b.type === "INSPECTION" ? C.ink3 : C.green, fontWeight:700 }}>{b.type === "INSPECTION" ? "Free" : `₹${(b.tokenAmount||1000).toLocaleString()}`}</td>
                     <td style={{ padding:"10px 16px" }}><span style={{ background:`${ps.color}15`, color:ps.color, fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:8 }}>{ps.label}</span></td>
                     <td style={{ padding:"10px 16px" }}>
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>

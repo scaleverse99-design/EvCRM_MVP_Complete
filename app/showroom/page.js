@@ -250,6 +250,159 @@ function BookingModal({ vehicle, mode = "testdrive", onClose }) {
   )
 }
 
+/* ── Inspection booking modal ────────────────────────────────────── */
+function InspectionModal({ vehicle, onClose }) {
+  const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [inspDate, setInspDate] = useState("")
+  const [inspTime, setInspTime] = useState("")
+  const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(null)
+  const [error, setError] = useState("")
+
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
+  const maxDate = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]
+
+  const TIME_SLOTS = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"]
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("evcrm_customer")
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          setName(parsed.name || "")
+          setPhone(parsed.phone || "")
+          setEmail(parsed.email || "")
+        } catch (e) { /* ignore */ }
+      }
+    }
+  }, [])
+
+  const handleBook = async () => {
+    if (!name.trim() || !phone.trim()) { setError("Name and Phone are required"); return }
+    if (phone.replace(/\D/g, "").length < 10) { setError("Enter a valid 10-digit phone number"); return }
+    if (!inspDate) { setError("Please select an inspection date"); return }
+    if (!inspTime) { setError("Please select a time slot"); return }
+    setError(""); setLoading(true)
+    try {
+      const res = await fetch("/api/marketplace/inspection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vehicleId: vehicle.id, name: name.trim(), phone: phone.trim(), email: email.trim(), inspectionDate: inspDate, inspectionTime: inspTime, message: message.trim() })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Booking failed")
+      localStorage.setItem("evcrm_customer", JSON.stringify({ name: name.trim(), phone: phone.trim(), email: email.trim() }))
+      setSuccess(data.booking)
+    } catch (e) { setError(e.message || "Booking failed") }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(6px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 480, overflow: "hidden", boxShadow: "0 30px 100px rgba(0,0,0,0.25)", maxHeight: "90vh", overflowY: "auto" }}>
+        {success ? (
+          <div style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>🔍</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 8 }}>Inspection Visit Booked!</div>
+            <div style={{ fontSize: 14, color: C.ink3, marginBottom: 20, lineHeight: 1.6 }}>
+              Your mechanic inspection for <b style={{ color: C.ink }}>{success.vehicleName}</b> is confirmed.<br />
+              Visit <b style={{ color: C.ink }}>{success.dealerName}</b> with your mechanic on the scheduled date.
+            </div>
+            <div style={{ background: "#EFF6FF", border: "1px solid #3B82F6", borderRadius: 14, padding: "14px 20px", marginBottom: 16, textAlign: "left" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, color: "#6B7280" }}>Date</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#2563EB" }}>{new Date(success.inspectionDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 11, color: "#6B7280" }}>Time</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#2563EB" }}>{success.inspectionTime}</span>
+              </div>
+            </div>
+            <div style={{ background: "#FEF3C7", border: "1px solid #F59E0B", borderRadius: 12, padding: "10px 16px", marginBottom: 24, fontSize: 12, color: "#92400E", textAlign: "left" }}>
+              🔧 Bring your trusted mechanic to the dealership. The dealer will make the vehicle available for inspection. No charges from EvCRM or the dealer.
+            </div>
+            <button onClick={onClose} style={{ background: C.ink, border: "none", color: "#fff", borderRadius: 14, padding: "14px 40px", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "100%", fontFamily: "inherit" }}>Done</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: C.ink }}>🔍 Book Mechanic Inspection</div>
+                <div style={{ fontSize: 12, color: C.ink3, marginTop: 2 }}>{vehicle.brand} {vehicle.model} · {vehicle.dealerName}</div>
+              </div>
+              <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", color: C.ink3, borderRadius: 10, width: 32, height: 32, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>✕</button>
+            </div>
+
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 14, padding: "12px 16px", marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#1E40AF", marginBottom: 4 }}>How it works</div>
+                <div style={{ fontSize: 11, color: "#3B82F6", lineHeight: 1.5 }}>
+                  1. Pick a date & time below<br/>
+                  2. Bring your own trusted mechanic<br/>
+                  3. The dealer will keep the vehicle ready<br/>
+                  4. No charges from the dealer or EvCRM
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                {[
+                  { label: "Your Name *", val: name, set: setName, ph: "Full name" },
+                  { label: "Phone Number *", val: phone, set: setPhone, ph: "10-digit mobile number", type: "tel" },
+                  { label: "Email (for confirmation)", val: email, set: setEmail, ph: "yourname@gmail.com", type: "email" },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginBottom: 5 }}>{f.label}</div>
+                    <input type={f.type || "text"} value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph}
+                      style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 12, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                ))}
+
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginBottom: 5 }}>Inspection Date *</div>
+                  <input type="date" value={inspDate} min={tomorrow} max={maxDate} onChange={e => setInspDate(e.target.value)}
+                    style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 12, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginBottom: 5 }}>Preferred Time Slot *</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {TIME_SLOTS.map(slot => (
+                      <button key={slot} onClick={() => setInspTime(slot)}
+                        style={{ background: inspTime === slot ? "#2563EB" : "#F3F4F6", color: inspTime === slot ? "#fff" : C.ink2, border: inspTime === slot ? "1.5px solid #2563EB" : `1.5px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginBottom: 5 }}>Message to dealer (optional)</div>
+                  <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Any specific concerns about the vehicle..."
+                    rows={2} style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 12, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }} />
+                </div>
+              </div>
+
+              {error && <div style={{ fontSize: 12, color: C.red, marginTop: 12, background: "#FEE2E2", padding: "8px 12px", borderRadius: 10 }}>⚠ {error}</div>}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button onClick={onClose} style={{ flex: 1, background: "transparent", border: `1.5px solid ${C.border}`, color: C.ink3, borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                <button onClick={handleBook} disabled={loading}
+                  style={{ flex: 2, background: loading ? C.ink3 : "#2563EB", border: "none", color: "#fff", borderRadius: 12, padding: 12, fontSize: 13, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+                  {loading ? "Booking..." : "Confirm Inspection Visit"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── EMI calculator — pure client-side, standard reducing-balance formula ── */
 // Feature flag: EMI figures are illustrative only and we have no finance-provider
 // tie-up yet, so the whole EMI surface (calculator card + "EMI starts at" panel
@@ -350,6 +503,7 @@ const DETAIL_STYLES = `
 function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
   const [activeImg, setActiveImg] = useState(0)
   const [bookingMode, setBookingMode] = useState(null)
+  const [showInspection, setShowInspection] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
   const [showBreakup, setShowBreakup] = useState(false)
   const validImages = Array.isArray(v.images) ? v.images.filter(x => x !== "🚗" && x !== "🛵" && x !== "🛺") : []
@@ -380,7 +534,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
       <nav className="sd-nav">
         <button onClick={onBack} style={{ background: "none", border: "1px solid #E5E7EB", color: "#374151", borderRadius: 10, padding: "7px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>← Back</button>
         <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#111" }}>EV<span style={{ color: "#22C55E" }}>.CRM</span> <span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>Marketplace</span></div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: "#111" }}>EvCRM <span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>Marketplace</span></div>
       </nav>
 
       <div className="sd-body">
@@ -416,7 +570,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
 
           {/* Title + Tags */}
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: "20px 20px 0", marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, marginBottom: 6 }}>EV.CRM CERTIFIED STOCK</div>
+            <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, marginBottom: 6 }}>{(v.fuelType && v.fuelType !== "Electric") ? "CERTIFIED STOCK" : "EV.CRM CERTIFIED STOCK"}</div>
             <h1 style={{ fontSize: 26, fontWeight: 900, color: "#111", margin: "0 0 10px", letterSpacing: "-0.5px" }}>
               {v.year && <span style={{ fontWeight: 500 }}>{v.year} </span>}{v.brand} {v.model} <span style={{ fontWeight: 500, color: "#6B7280" }}>{v.variant}</span>
             </h1>
@@ -445,7 +599,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
           {/* ── Great Things About This EV ── */}
           {highlights.length > 0 && (
             <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB", padding: 20, marginBottom: 20 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>Great things about this EV</h2>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>{(v.fuelType && v.fuelType !== "Electric") ? "Great things about this Vehicle" : "Great things about this EV"}</h2>
               <div className="sd-highlights">
                 {highlights.map((h, i) => (
                   <div key={i} className="sd-highlight-card">
@@ -662,8 +816,16 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
               <button className="sd-reserve-btn" onClick={() => setBookingMode("reserve")}>
                 ⚡ Reserve Vehicle (₹1,000)
               </button>
+              {v.condition !== "new" && (
+                <button onClick={() => setShowInspection(true)}
+                  style={{ width: "100%", background: "#EFF6FF", color: "#2563EB", border: "1.5px solid #BFDBFE", borderRadius: 14, padding: "14px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s" }}>
+                  🔍 Book Mechanic Inspection
+                </button>
+              )}
               <p style={{ textAlign: "center", fontSize: 10, color: "#9CA3AF", margin: "4px 0 0", lineHeight: 1.5 }}>
-                Token of ₹1,000 is fully adjustable against the final purchase price
+                {v.condition !== "new"
+                  ? "Bring your own mechanic to inspect before you buy"
+                  : "Token of ₹1,000 is fully adjustable against the final purchase price"}
               </p>
             </div>
           </div>
@@ -673,7 +835,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
       {/* ── Similar EVs ── */}
       {similar.length > 0 && (
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 20px 60px" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#111", marginBottom: 16 }}>Similar EVs You Might Like</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#111", marginBottom: 16 }}>{(v.fuelType && v.fuelType !== "Electric") ? "Similar Vehicles You Might Like" : "Similar EVs You Might Like"}</h2>
           <div className="sd-similar-grid">
             {similar.map(s => (
               <div key={s.id} onClick={() => onView(s)} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "box-shadow 0.15s" }}>
@@ -696,6 +858,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
 
       {/* Booking Modal */}
       {bookingMode && <BookingModal vehicle={v} mode={bookingMode} onClose={() => setBookingMode(null)} />}
+      {showInspection && <InspectionModal vehicle={v} onClose={() => setShowInspection(false)} />}
     </div>
   )
 }
