@@ -1,7 +1,8 @@
 # EvCRM Vehicle Inspection Integration Model
 
 > **Problem**: Customers don't trust dealer claims about vehicle condition. Used car sales fail because buyers can't verify condition before purchase.  
-> **Solution**: Integrate third-party inspection services (Go-Mechanic, Cars24, etc.) directly into EvCRM. Dealers book inspection, report appears on listing, trust increases.  
+> **Solution (IMPLEMENTED — Phase 1)**: Customer-initiated mechanic inspection booking. Customer books a visit slot directly from the showroom listing, brings their own trusted mechanic to the dealer. Zero cost for dealer, zero liability for EvCRM. Builds trust through transparency — if the car is genuinely good, the dealer has nothing to hide.  
+> **Future phases**: Third-party integration (Go-Mechanic, Cars24) for standardized reports that appear on listings.  
 > **Goal**: Increase used-car conversion rates by 30–50% while reducing post-purchase disputes.
 
 ---
