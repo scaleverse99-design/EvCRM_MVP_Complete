@@ -7,6 +7,7 @@ import { C } from "../../lib/constants"
 import { authFetch, clearToken } from "../../lib/token-storage"
 import { getBillingState, MONTHLY_PRICE_INR } from "../../lib/billing"
 import { loadRazorpayScript } from "../../lib/payments/razorpayScript"
+import DomainsStorefrontCard from "../../components/dealer/DomainsStorefrontCard"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -215,6 +216,12 @@ export default function ProfilePage() {
             )}
           </div>
         </Card>
+
+        {/* Domains & Storefronts — same card as the dealer dashboard's
+            Settings tab, surfaced here too so it's easy to find. */}
+        {isDealer && user.dealership && (
+          <DomainsStorefrontCard dealership={user.dealership} dealerSubdomain={user.dealerSubdomain} customDomain={user.customDomain} />
+        )}
 
         {/* Subscription details for Dealer */}
         {isDealer && user && (() => {

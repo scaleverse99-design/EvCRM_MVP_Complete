@@ -27,6 +27,38 @@ const DEFAULT_SETTINGS = {
   oemIntegrations: {}, // { tata: {enabled:false}, ather: {enabled:false}, mahindra: {enabled:false} } — reserved for OEM phase
 }
 
+// Self-registration (app/api/register/route.js) only ever created a `users`
+// row for a new dealer, never a matching row in the separate `dealers`
+// table that this route (and everything else keyed by dealership id) reads
+// from. That left every self-registered dealer's Settings tab permanently
+// stuck on "Loading settings…" (app/dealer/page.js SettingsSection bails
+// out to that placeholder whenever `!settings`, and a 404 here left
+// `settings` null forever). Rather than require a backfill for accounts
+// already affected, self-heal by creating a minimal default row the first
+// time it's needed, using whatever the owner's own account already has.
+async function ensureDealerRow(dealership) {
+  const dealers = await readTable("dealers")
+  let dealer = dealers.find(d => d.id === dealership)
+  if (dealer) return dealer
+
+  const users = await readTable("users")
+  const owner = users.find(u => u.dealership === dealership && u.role === "dealer")
+
+  dealer = {
+    id: dealership,
+    name: owner?.dealershipName || owner?.name || "My Dealership",
+    address: "",
+    state: "",
+    district: owner?.city || "",
+    whatsapp: owner?.phone || "",
+    gstNumber: "",
+    createdAt: new Date().toISOString(),
+  }
+  dealers.push(dealer)
+  await writeTable("dealers", dealers)
+  return dealer
+}
+
 // GET: dealership profile + settings (with sensible defaults merged in)
 export async function GET(req) {
   const user = await getUser(req)
@@ -34,10 +66,9 @@ export async function GET(req) {
 
   const { searchParams } = new URL(req.url)
   const dealership = user.dealership || searchParams.get("dealership")
+  if (!dealership) return NextResponse.json({ error: "No dealership on this account" }, { status: 400 })
 
-  const dealers = await readTable("dealers")
-  const dealer = dealers.find(d => d.id === dealership)
-  if (!dealer) return NextResponse.json({ error: "Dealership not found" }, { status: 404 })
+  const dealer = await ensureDealerRow(dealership)
 
   return NextResponse.json({
     success: true,
@@ -72,6 +103,9 @@ export async function PATCH(req) {
 
   const body = await req.json()
   const dealership = user.dealership || body.dealership
+  if (!dealership) return NextResponse.json({ error: "No dealership on this account" }, { status: 400 })
+
+  await ensureDealerRow(dealership)
 
   const dealers = await readTable("dealers")
   const idx = dealers.findIndex(d => d.id === dealership)

@@ -5,6 +5,7 @@ import { createSession, logLoginAttempt } from "../../../lib/db"
 import { sendWelcomeEmail } from "../../../lib/email"
 import supabaseAdmin from "../../../lib/db"
 import { RESERVED_SLUGS } from "../../../lib/reservedSlugs"
+import { readTable, writeTable } from "../../../lib/store"
 
 // ── POST /api/register ────────────────────────────────────────────
 // Self-registration for dealers and sales reps
@@ -107,6 +108,32 @@ export async function POST(req) {
       .single()
 
     if (insertError) throw insertError
+
+    // ── Create matching `dealers` table row ─────────────────────────
+    // Everything keyed by dealership id (Settings, storefronts, etc.)
+    // reads from this separate table, not from `users` — without this row
+    // a dealer's own Settings tab 404s forever. Best-effort: registration
+    // must still succeed even if this write fails (mirrors the welcome
+    // email's try/catch below); GET /api/dealer/settings self-heals a
+    // missing row anyway, so this isn't a hard dependency.
+    if (role === "dealer") {
+      try {
+        const dealers = await readTable("dealers")
+        dealers.push({
+          id: dealershipId,
+          name: nameForSlug,
+          address: "",
+          state: "",
+          district: city?.trim() || "",
+          whatsapp: phone?.trim() || "",
+          gstNumber: "",
+          createdAt: new Date().toISOString(),
+        })
+        await writeTable("dealers", dealers)
+      } catch (dealerRowErr) {
+        console.error("Failed to create dealers row:", dealerRowErr.message)
+      }
+    }
 
     // ── Send welcome email ────────────────────────────────────────
     try {
