@@ -3,6 +3,14 @@
 > **Purpose**: Everything a developer (or AI agent in Google Antigravity IDE) needs to continue building this product.
 > **Last updated**: 2026-07-18 · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
 
+> **Cross-agent sync note:** THIS file (`HANDOFF.md`, capitalized) + `TASKS.md` are the single
+> source of truth. **Antigravity looks for `.agents/handoff.md` and `task.md` (lowercase)** — those
+> are redirect/snapshot files pointing back here (added 2026-07-18). When you make a meaningful
+> update here, refresh the dated snapshot in `.agents/handoff.md` + `task.md` too, and **`git push
+> origin main`** — Antigravity syncs via GitHub, so unpushed local commits are invisible to it (that
+> was the actual cause of the "Antigravity isn't syncing" report; the whole session had been
+> committed + deployed but never pushed).
+
 ---
 
 ## 1. What This Product Is
