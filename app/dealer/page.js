@@ -502,7 +502,7 @@ function InventorySection({ dealership, user }) {
             style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             📦 Request Stock
           </button>
-          <Link href="/buy-vehicles" target="_blank"
+          <Link href="/showroom" target="_blank"
             style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}25`, color:C.blue, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, textDecoration:"none" }}>
             🌐 View Marketplace
           </Link>
@@ -1443,7 +1443,7 @@ function BookingsSection({ dealership, reps=[] }) {
             <button onClick={()=>setView("list")} style={{ background:view==="list"?C.card:"transparent", border:"none", borderRadius:6, padding:"5px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", color:view==="list"?C.ink:C.ink3 }}>☰ List</button>
             <button onClick={()=>setView("calendar")} style={{ background:view==="calendar"?C.card:"transparent", border:"none", borderRadius:6, padding:"5px 12px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", color:view==="calendar"?C.ink:C.ink3 }}>📅 Calendar</button>
           </div>
-          <Link href="/buy-vehicles" target="_blank" style={{ fontSize:12, fontWeight:600, color:C.accent, textDecoration:"none" }}>🌐 View Marketplace →</Link>
+          <Link href="/showroom" target="_blank" style={{ fontSize:12, fontWeight:600, color:C.accent, textDecoration:"none" }}>🌐 View Marketplace →</Link>
         </div>
       </div>
 
@@ -1456,7 +1456,7 @@ function BookingsSection({ dealership, reps=[] }) {
           <div style={{ fontSize:12, color:C.ink3, marginTop:6, marginBottom:20 }}>
             When customers book test drives from the marketplace, they appear here automatically.
           </div>
-          <Link href="/buy-vehicles" target="_blank" style={{ display:"inline-block", background:C.accent||C.green, color:"#fff", fontWeight:700, fontSize:12, padding:"10px 24px", borderRadius:20, textDecoration:"none" }}>
+          <Link href="/showroom" target="_blank" style={{ display:"inline-block", background:C.accent||C.green, color:"#fff", fontWeight:700, fontSize:12, padding:"10px 24px", borderRadius:20, textDecoration:"none" }}>
             Preview Marketplace →
           </Link>
         </Card>
@@ -3708,7 +3708,7 @@ function DealerDashboard() {
     { icon:"🌩", label:"Import Data",   desc:"Upload Excel/CSV",    color:C.purple, onClick:()=>setImportModal(true) },
     { icon:"⚡", label:"Today's Queue", desc:"AI-selected leads",   color:C.orange, href:"/queue" },
     { icon:"💬", label:"Connect",       desc:"WhatsApp + email",    color:C.teal,   href:"/connect" },
-    { icon:"🌐", label:"Marketplace",   desc:"View your listings",  color:C.green,  href:"/buy-vehicles" },
+    { icon:"🌐", label:"Marketplace",   desc:"View your listings",  color:C.green,  href:"/showroom" },
   ]
 
   const maxS   = Math.max(...SALES_MOCK)
@@ -3740,7 +3740,7 @@ function DealerDashboard() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <span style={{ fontSize:11, color:C.ink3 }}>{isRep ? "My Pipeline" : "Live CRM Dashboard"}</span>
-          <Link href="/buy-vehicles" target="_blank" style={{ fontSize:11, fontWeight:700, color:C.accent||C.green, textDecoration:"none", background:`${C.green}10`, border:`1px solid ${C.green}25`, borderRadius:20, padding:"4px 12px" }}>🌐 Marketplace</Link>
+          <Link href="/showroom" target="_blank" style={{ fontSize:11, fontWeight:700, color:C.accent||C.green, textDecoration:"none", background:`${C.green}10`, border:`1px solid ${C.green}25`, borderRadius:20, padding:"4px 12px" }}>🌐 Marketplace</Link>
         </div>
       </div>
 

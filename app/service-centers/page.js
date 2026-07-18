@@ -103,7 +103,7 @@ function ServiceCentersPage() {
             <span style={{ fontSize:18, fontWeight:800, color:T.ink }}>EV<span style={{ color:T.accent }}>.CRM</span></span>
           </Link>
           <div style={{ display:"flex", gap:10 }}>
-            <Link href="/buy-vehicles" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", padding:"8px 14px", border:`1px solid ${T.border}`, borderRadius:20 }}>🚗 Buy Vehicles</Link>
+            <Link href="/showroom" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", padding:"8px 14px", border:`1px solid ${T.border}`, borderRadius:20 }}>🚗 Buy Vehicles</Link>
             <Link href="/charging" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", padding:"8px 14px", border:`1px solid ${T.border}`, borderRadius:20 }}>⚡ Chargers</Link>
           </div>
         </div>

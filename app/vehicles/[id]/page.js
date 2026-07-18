@@ -67,7 +67,7 @@ function VehicleDetailPage() {
       <div style={{ textAlign:"center" }}>
         <div style={{ fontSize:48, marginBottom:16 }}>🚫</div>
         <div style={{ fontSize:20, fontWeight:800, color:T.ink }}>Vehicle not found</div>
-        <Link href="/buy-vehicles" style={{ display:"inline-block", marginTop:16, color:T.accent, fontWeight:700 }}>← Back to marketplace</Link>
+        <Link href="/showroom" style={{ display:"inline-block", marginTop:16, color:T.accent, fontWeight:700 }}>← Back to marketplace</Link>
       </div>
     </div>
   )
@@ -91,7 +91,7 @@ function VehicleDetailPage() {
       {/* Nav */}
       <nav style={{ position:"sticky", top:0, zIndex:100, background:"rgba(10,12,16,0.92)", backdropFilter:"blur(16px)", borderBottom:`1px solid ${T.border}`, padding:"0 24px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto", height:60, display:"flex", alignItems:"center", gap:16 }}>
-          <Link href="/buy-vehicles" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", display:"flex", alignItems:"center", gap:6 }}>← Back to Marketplace</Link>
+          <Link href="/showroom" style={{ color:T.ink2, fontSize:13, fontWeight:600, textDecoration:"none", display:"flex", alignItems:"center", gap:6 }}>← Back to Marketplace</Link>
           <div style={{ flex:1 }}/>
           <div style={{ fontSize:13, color:T.ink2 }}>{vehicle.brand} {vehicle.model} {vehicle.variant}</div>
         </div>
@@ -193,7 +193,7 @@ function VehicleDetailPage() {
                     ✓ Held securely by Razorpay — released to the dealer only once your test drive is confirmed, refunded automatically if you cancel.
                   </div>
                 )}
-                <Link href="/buy-vehicles" style={{ display:"block", background:"transparent", border:`1.5px solid ${T.border}`, color:T.ink2, borderRadius:14, padding:"12px", fontSize:13, fontWeight:600, textDecoration:"none", textAlign:"center" }}>Browse more vehicles</Link>
+                <Link href="/showroom" style={{ display:"block", background:"transparent", border:`1.5px solid ${T.border}`, color:T.ink2, borderRadius:14, padding:"12px", fontSize:13, fontWeight:600, textDecoration:"none", textAlign:"center" }}>Browse more vehicles</Link>
               </div>
             ) : (
               /* Booking form */
