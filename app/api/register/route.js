@@ -4,19 +4,7 @@ import { hashPassword, generateToken, hashToken, buildCookieHeader, ok, err } fr
 import { createSession, logLoginAttempt } from "../../../lib/db"
 import { sendWelcomeEmail } from "../../../lib/email"
 import supabaseAdmin from "../../../lib/db"
-
-// Top-level app route segments — a dealer's free storefront lives at
-// evcrm.in/{dealerSubdomain}, so the slug must never collide with a real
-// page (a colliding slug would make that dealer's storefront permanently
-// unreachable, since Next.js always matches the static route first).
-const RESERVED_SLUGS = new Set([
-  "admin", "api", "assign", "attendance", "best-ev", "blog", "buildprice",
-  "charging", "command", "commerce", "connect", "dealer", "dealer-storefront",
-  "leads", "login", "market-research", "marketplace", "mygarage", "news",
-  "oem", "profile", "pulse", "queue", "quote", "quotepro", "register",
-  "search", "service-centers", "showroom", "starter-kit", "subsidies",
-  "team", "vehicles", "favicon.ico", "robots.txt", "sitemap.xml",
-])
+import { RESERVED_SLUGS } from "../../../lib/reservedSlugs"
 
 // ── POST /api/register ────────────────────────────────────────────
 // Self-registration for dealers and sales reps
