@@ -58,6 +58,30 @@ export async function POST(req) {
     const slug = nameForSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "dealer"
     const dealershipId = `${slug}-${Math.random().toString(36).slice(2, 6)}`
 
+    // Generate unique subdomain for dealer (e.g., "ramdealers" from "Ram Dealers")
+    // Read all users to check subdomain uniqueness (store.js handles pagination)
+    let dealerSubdomain = slug
+    let subdomain = dealerSubdomain
+    let counter = 1
+
+    try {
+      const { data: allUsers } = await supabaseAdmin
+        .from("evcrm_users")
+        .select("data")
+
+      const existingSubdomains = allUsers?.map(u => u.data?.dealerSubdomain?.toLowerCase()) || []
+
+      while (existingSubdomains.includes(subdomain.toLowerCase())) {
+        subdomain = `${dealerSubdomain}${counter}`
+        counter++
+      }
+    } catch (e) {
+      // If subdomain check fails, continue with generated slug
+      console.warn("Subdomain uniqueness check failed, using generated slug", e.message)
+    }
+
+    dealerSubdomain = subdomain
+
     // ── Insert user ───────────────────────────────────────────────
     // Self-serve trial: dealers are activated immediately (the 30-day trial
     // + billing system gates them later). No manual approval step.
@@ -72,6 +96,7 @@ export async function POST(req) {
         dealership:    role === "dealer" ? dealershipId : (dealership?.trim() || null),
         dealershipName: role === "dealer" ? nameForSlug : null,
         dealerCategory: role === "dealer" ? dealerCategory : null,
+        dealerSubdomain: role === "dealer" ? dealerSubdomain : null,
         city:          city?.trim() || null,
         is_active:     true,
         trialStartDate: new Date().toISOString(),
@@ -89,6 +114,7 @@ export async function POST(req) {
         name:         name.trim(),
         role,
         tempPassword: password,
+        dealerCategory: newUser.dealerCategory,
       })
     } catch (emailErr) {
       console.error("Welcome email failed:", emailErr.message)
