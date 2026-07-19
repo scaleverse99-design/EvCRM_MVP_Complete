@@ -8,6 +8,7 @@ import { readTable } from "../../../../lib/store"
 export async function GET(req) {
   try {
     const url = new URL(req.url)
+    const pathname = url.pathname
     let domain = url.searchParams.get("domain")
 
     // If no domain param, try to get from Host header (fallback for direct requests)
@@ -76,6 +77,7 @@ export async function GET(req) {
         dealerSubdomain: dealer.dealerSubdomain,
         customDomain: dealer.customDomain,
         customDomainVerified: dealer.customDomainVerified || false,
+        dealerCategory: dealer.dealerCategory || "EV",
       },
       inventoryCount: dealerInventory.length,
       inventoryItems: dealerInventory.slice(0, 50), // Return up to 50 for storefront

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { C } from "../../lib/constants"
 import TopBar from "../home/TopBar"
 import VehicleCard from "../marketplace/VehicleCard"
+import SellCarModal from "../marketplace/SellCarModal"
 import { bookTestDrive } from "../../lib/payments/tokenBooking"
 
 // Renders a dealer's white-label storefront. `domainOverride`, when given,
@@ -21,6 +22,7 @@ export default function DealerStorefrontView({ domainOverride }) {
   const [bookingData, setBookingData] = useState({ name: "", phone: "", email: "", date: "" })
   const [bookingError, setBookingError] = useState("")
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [showSellCar, setShowSellCar] = useState(false)
 
   useEffect(() => {
     const fetchDealerData = async () => {
@@ -91,6 +93,12 @@ export default function DealerStorefrontView({ domainOverride }) {
           <div style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
             📧 {dealer.email}
           </div>
+        )}
+        {dealer.dealerCategory === "ICE" && (
+          <button onClick={() => setShowSellCar(true)}
+            style={{ marginTop: "1rem", background: C.green, border: "none", color: "#fff", borderRadius: 24, padding: "10px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+            💰 Sell Your Car to {dealer.dealershipName}
+          </button>
         )}
       </div>
 
@@ -251,6 +259,8 @@ export default function DealerStorefrontView({ domainOverride }) {
           </div>
         </div>
       )}
+
+      {showSellCar && <SellCarModal dealership={dealer.dealership} dealerName={dealer.dealershipName} onClose={() => setShowSellCar(false)} />}
     </div>
   )
 }
