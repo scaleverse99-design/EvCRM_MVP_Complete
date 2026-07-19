@@ -83,6 +83,7 @@ const DEALER_ID  = "hyd-d01"
 const TABS = [
   { id:"dashboard",  icon:"📊", label:"Dashboard"  },
   { id:"leads",      icon:"👥", label:"Leads"       },
+  { id:"procurement", icon:"🔑", label:"Procurement", iceOnly:true },
   { id:"inventory",  icon:"🚗", label:"Inventory"   },
   { id:"bookings",   icon:"📅", label:"Bookings"    },
   { id:"customers",  icon:"🧑‍🤝‍🧑", label:"Customers"  },
@@ -1563,6 +1564,214 @@ function BookingsSection({ dealership, reps=[] }) {
           </table>
         </Card>
       )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   PROCUREMENT SECTION — Used Car Dealer only:
+   sellers offering a vehicle TO the dealer, the
+   reverse pipeline of Leads (buyers).
+───────────────────────────────────────────── */
+const PROC_STATUSES = ["NEW", "INSPECTION_SCHEDULED", "INSPECTED", "OFFER_MADE", "NEGOTIATING", "PURCHASED", "REJECTED"]
+const PROC_STATUS_LABELS = {
+  NEW: "New Inquiry", INSPECTION_SCHEDULED: "Inspection Scheduled", INSPECTED: "Inspected",
+  OFFER_MADE: "Offer Made", NEGOTIATING: "Negotiating", PURCHASED: "Purchased", REJECTED: "Rejected",
+}
+const PROC_STATUS_COLORS = {
+  NEW: C.blue, INSPECTION_SCHEDULED: C.orange, INSPECTED: C.orange,
+  OFFER_MADE: C.orange, NEGOTIATING: C.orange, PURCHASED: C.green, REJECTED: C.red,
+}
+const PROC_SOURCES = ["Walk-in", "Phone Inquiry", "Referral", "OLX", "Website", "Other"]
+
+function emptyProcLead() {
+  return { sellerName:"", sellerPhone:"", sellerEmail:"", brand:"", model:"", variant:"", year:new Date().getFullYear(), km:"", fuelType:"Petrol", color:"", condition:"Good", askingPrice:"", source:"Walk-in" }
+}
+
+function AddProcurementModal({ onClose, onAdded }) {
+  const [form, setForm] = useState(emptyProcLead())
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState("")
+
+  const submit = async () => {
+    if (!form.sellerName.trim() || !form.sellerPhone.trim() || !form.brand.trim() || !form.model.trim()) {
+      setErr("Seller name, phone, brand and model are required"); return
+    }
+    setSaving(true); setErr("")
+    try {
+      const res = await authFetch("/api/dealer/procurement", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(form) })
+      const data = await res.json()
+      if (!res.ok) { setErr(data.error || "Failed to add"); return }
+      onAdded?.()
+      onClose()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Modal title="🔑 New Seller Inquiry" onClose={onClose} width={560}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        <Input label="Seller Name *" value={form.sellerName} onChange={e=>setForm(f=>({...f,sellerName:e.target.value}))} />
+        <Input label="Seller Phone *" value={form.sellerPhone} onChange={e=>setForm(f=>({...f,sellerPhone:e.target.value}))} />
+        <Input label="Seller Email" value={form.sellerEmail} onChange={e=>setForm(f=>({...f,sellerEmail:e.target.value}))} />
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>Source</div>
+          <select value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}
+            style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"9px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+            {PROC_SOURCES.map(s=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <Input label="Brand *" value={form.brand} onChange={e=>setForm(f=>({...f,brand:e.target.value}))} />
+        <Input label="Model *" value={form.model} onChange={e=>setForm(f=>({...f,model:e.target.value}))} />
+        <Input label="Variant" value={form.variant} onChange={e=>setForm(f=>({...f,variant:e.target.value}))} />
+        <Input label="Year" type="number" value={form.year} onChange={e=>setForm(f=>({...f,year:e.target.value}))} />
+        <Input label="KM Driven" type="number" value={form.km} onChange={e=>setForm(f=>({...f,km:e.target.value}))} />
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>Fuel Type</div>
+          <select value={form.fuelType} onChange={e=>setForm(f=>({...f,fuelType:e.target.value}))}
+            style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"9px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+            {FUEL_TYPES.map(f=><option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <Input label="Colour" value={form.color} onChange={e=>setForm(f=>({...f,color:e.target.value}))} />
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:C.ink2, marginBottom:5 }}>Seller's Self-Rated Condition</div>
+          <select value={form.condition} onChange={e=>setForm(f=>({...f,condition:e.target.value}))}
+            style={{ width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"9px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+            {RATING_OPTIONS.map(r=><option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <Input label="Asking Price (₹)" type="number" value={form.askingPrice} onChange={e=>setForm(f=>({...f,askingPrice:e.target.value}))} />
+      </div>
+      {err && <div style={{ fontSize:12, color:C.red, marginTop:10, background:"#FEE2E2", padding:"8px 12px", borderRadius:8 }}>⚠ {err}</div>}
+      <div style={{ display:"flex", gap:10, marginTop:20 }}>
+        <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={submit} loading={saving}>Add Seller Inquiry</Btn>
+      </div>
+    </Modal>
+  )
+}
+
+function ProcurementSection({ dealership, reps=[] }) {
+  const [rows,    setRows]    = useState([])
+  const [loading, setLoading] = useState(true)
+  const [acting,  setActing]  = useState(null)
+  const [filterStatus, setFilterStatus] = useState("")
+  const [showAdd, setShowAdd] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await authFetch(`/api/dealer/procurement?dealership=${dealership}`).then(r=>r.json())
+      if (data.success) setRows(data.procurement || [])
+    } finally { setLoading(false) }
+  }, [dealership])
+
+  useEffect(() => { load() }, [load])
+
+  const patch = async (row, updates) => {
+    setActing(row.id)
+    try {
+      const res = await authFetch("/api/dealer/procurement", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id:row.id, ...updates }) })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || "Update failed"); return }
+      load()
+    } finally { setActing(null) }
+  }
+
+  const markPurchased = (row) => {
+    if (!row.offeredPrice && !row.finalPrice) { alert("Enter an offered/final price before marking as purchased"); return }
+    if (!confirm(`Mark as purchased and add "${row.brand} ${row.model}" to your Inventory as a used vehicle?`)) return
+    patch(row, { status:"PURCHASED", finalPrice: row.finalPrice || row.offeredPrice })
+  }
+
+  const displayed = filterStatus ? rows.filter(r => r.status === filterStatus) : rows
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, gap:10, flexWrap:"wrap" }}>
+        <div style={{ fontSize:13, color:C.ink2 }}>Vehicles sellers are offering to sell you — buy pipeline, feeds straight into Inventory once purchased</div>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
+            style={{ background:C.card, border:`1px solid ${C.border}`, color:filterStatus?C.ink:C.ink2, borderRadius:20, padding:"8px 14px", fontSize:11, fontWeight:600, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
+            <option value="">All Status</option>
+            {PROC_STATUSES.map(s=><option key={s} value={s}>{PROC_STATUS_LABELS[s]}</option>)}
+          </select>
+          <Btn onClick={()=>setShowAdd(true)}>+ New Seller Inquiry</Btn>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ padding:60, textAlign:"center", color:C.ink3 }}>Loading procurement pipeline…</div>
+      ) : displayed.length === 0 ? (
+        <Card style={{ padding:60, textAlign:"center" }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🔑</div>
+          <div style={{ fontSize:16, fontWeight:700, color:C.ink }}>No seller inquiries yet</div>
+          <div style={{ fontSize:12, color:C.ink3, marginTop:6, marginBottom:20 }}>
+            Log every seller who walks in or calls wanting to sell you their car — track inspection, your offer, and convert straight to inventory once purchased.
+          </div>
+          <Btn onClick={()=>setShowAdd(true)}>+ New Seller Inquiry</Btn>
+        </Card>
+      ) : (
+        <Card noPad>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+            <thead><tr style={{ background:C.bg }}>
+              {["Seller","Vehicle","Asking","Offered","Status","Actions"].map(h=>(
+                <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:700, color:C.ink2, textTransform:"uppercase" }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {displayed.map(row => {
+                const canPurchase = !["PURCHASED","REJECTED"].includes(row.status)
+                const canReject   = !["PURCHASED","REJECTED"].includes(row.status)
+                return (
+                  <tr key={row.id} style={{ borderTop:`1px solid ${C.border}` }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{ padding:"10px 16px" }}>
+                      <div style={{ fontWeight:700, color:C.ink }}>{row.sellerName}</div>
+                      <div style={{ fontSize:10, color:C.ink3 }}>{row.sellerPhone} · {row.source}</div>
+                    </td>
+                    <td style={{ padding:"10px 16px", color:C.ink2 }}>
+                      {row.brand} {row.model} {row.variant}
+                      <div style={{ fontSize:10, color:C.ink3 }}>{row.year || "—"} · {row.km ? `${row.km.toLocaleString()} km` : "—"} · {row.fuelType} · {row.condition}</div>
+                      {row.convertedToInventoryId && <div style={{ fontSize:9, color:C.green, fontWeight:700, marginTop:2 }}>✓ In Inventory</div>}
+                    </td>
+                    <td style={{ padding:"10px 16px", color:C.ink2 }}>{row.askingPrice ? `₹${row.askingPrice.toLocaleString()}` : "—"}</td>
+                    <td style={{ padding:"10px 16px" }}>
+                      <input type="number" defaultValue={row.offeredPrice || ""} placeholder="₹ offer"
+                        onBlur={e => e.target.value && Number(e.target.value) !== row.offeredPrice && patch(row, { offeredPrice: e.target.value, status: row.status === "NEW" ? "OFFER_MADE" : row.status })}
+                        style={{ width:100, background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 6px", fontSize:10, color:C.ink, fontFamily:"inherit", outline:"none" }} />
+                    </td>
+                    <td style={{ padding:"10px 16px" }}>
+                      <select value={row.status} onChange={e=>patch(row, { status:e.target.value })} disabled={acting===row.id}
+                        style={{ background:`${PROC_STATUS_COLORS[row.status]||C.ink3}15`, color:PROC_STATUS_COLORS[row.status]||C.ink3, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 8px", fontSize:10, fontWeight:700, outline:"none", fontFamily:"inherit", cursor:"pointer" }}>
+                        {PROC_STATUSES.map(s=><option key={s} value={s}>{PROC_STATUS_LABELS[s]}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding:"10px 16px" }}>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        {canPurchase && (
+                          <button onClick={()=>markPurchased(row)} disabled={acting===row.id}
+                            style={{ background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            {acting===row.id ? "…" : "✓ Purchased"}
+                          </button>
+                        )}
+                        {canReject && (
+                          <button onClick={()=>patch(row, { status:"REJECTED" })} disabled={acting===row.id}
+                            style={{ background:`${C.red}15`, border:`1px solid ${C.red}25`, color:C.red, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                            ✕ Reject
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {showAdd && <AddProcurementModal onClose={()=>setShowAdd(false)} onAdded={load} />}
     </div>
   )
 }
@@ -3569,7 +3778,10 @@ function DealerDashboard() {
   // KPIs, inventory, bookings, customers, team/billing settings — is hidden.
   const isRep = user?.role === "rep"
   const REP_TAB_IDS = ["leads", "buildprice", "quotepro"]
-  const visibleTabs = isRep ? TABS.filter(t => REP_TAB_IDS.includes(t.id)) : TABS
+  // Procurement (buying used vehicles from sellers) only applies to Used Car
+  // Dealers — EV dealers sell new manufacturer stock, not sourced trade-ins.
+  const visibleTabs = (isRep ? TABS.filter(t => REP_TAB_IDS.includes(t.id)) : TABS)
+    .filter(t => !t.iceOnly || user?.dealerCategory === "ICE")
 
   // Auth guard
   useEffect(() => {
@@ -3988,6 +4200,8 @@ function DealerDashboard() {
       )}
 
       {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} reps={reps} bookings={bookings} quotes={quotes} onGoToBuildPrice={(lead) => { setBuildPricePrefill(lead); setActiveTab("buildprice") }} />}
+
+      {activeTab === "procurement" && <ProcurementSection dealership={dealership} reps={reps} />}
 
       {activeTab === "inventory" && <InventorySection dealership={dealership} user={user} />}
 

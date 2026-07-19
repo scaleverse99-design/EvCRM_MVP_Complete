@@ -88,3 +88,13 @@ alter table bulk_imports enable row level security;
 -- Run in the production Supabase SQL Editor (same §8.0 lesson as bulk_imports).
 create table if not exists prospects (id text primary key, data jsonb not null, created_at timestamptz default now());
 alter table prospects enable row level security;
+
+-- Used-car dealer Procurement pipeline — sellers offering a vehicle to the
+-- dealer, tracked NEW -> INSPECTION_SCHEDULED -> INSPECTED -> OFFER_MADE ->
+-- NEGOTIATING -> PURCHASED|REJECTED (added 2026-07-19). Run in the
+-- production Supabase SQL Editor (same §8.0 lesson as bulk_imports/prospects
+-- — without this, store.js silently falls back to the Cloud Run instance's
+-- ephemeral disk and every procurement lead is lost on restart).
+create table if not exists procurement (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_procurement_dealership on procurement ((data->>'dealership'));
+alter table procurement enable row level security;
