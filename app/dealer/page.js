@@ -1651,12 +1651,19 @@ function AddProcurementModal({ onClose, onAdded }) {
   )
 }
 
-function ProcurementSection({ dealership, reps=[] }) {
+function ProcurementSection({ dealership, reps=[], dealerSubdomain }) {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [acting,  setActing]  = useState(null)
   const [filterStatus, setFilterStatus] = useState("")
   const [showAdd, setShowAdd] = useState(false)
+
+  const shareViaWhatsApp = () => {
+    if (!dealerSubdomain) { alert("Set up your storefront link in Settings first."); return }
+    const shareUrl = `https://evcrm.in/${dealerSubdomain}/sell`
+    const message = `Hi! Please share your vehicle's details here and I'll get back to you with an offer: ${shareUrl}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank")
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1696,6 +1703,10 @@ function ProcurementSection({ dealership, reps=[] }) {
             <option value="">All Status</option>
             {PROC_STATUSES.map(s=><option key={s} value={s}>{PROC_STATUS_LABELS[s]}</option>)}
           </select>
+          <button onClick={shareViaWhatsApp} title="Share a self-fill link with an offline customer over WhatsApp"
+            style={{ background:"#25D36615", border:"1px solid #25D36640", color:"#128C4A", borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
+            📲 Share via WhatsApp
+          </button>
           <Btn onClick={()=>setShowAdd(true)}>+ New Seller Inquiry</Btn>
         </div>
       </div>
@@ -1733,6 +1744,15 @@ function ProcurementSection({ dealership, reps=[] }) {
                     <td style={{ padding:"10px 16px", color:C.ink2 }}>
                       {row.brand} {row.model} {row.variant}
                       <div style={{ fontSize:10, color:C.ink3 }}>{row.year || "—"} · {row.km ? `${row.km.toLocaleString()} km` : "—"} · {row.fuelType} · {row.condition}</div>
+                      {Array.isArray(row.photos) && row.photos.length > 0 && (
+                        <div style={{ display:"flex", gap:4, marginTop:6 }}>
+                          {row.photos.slice(0,4).map((p,i) => (
+                            <img key={i} src={p} alt="" onClick={()=>window.open(p, "_blank")}
+                              style={{ width:32, height:32, objectFit:"cover", borderRadius:6, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                          ))}
+                          {row.photos.length > 4 && <span style={{ fontSize:9, color:C.ink3, alignSelf:"center" }}>+{row.photos.length - 4}</span>}
+                        </div>
+                      )}
                       {row.convertedToInventoryId && <div style={{ fontSize:9, color:C.green, fontWeight:700, marginTop:2 }}>✓ In Inventory</div>}
                     </td>
                     <td style={{ padding:"10px 16px", color:C.ink2 }}>{row.askingPrice ? `₹${row.askingPrice.toLocaleString()}` : "—"}</td>
@@ -4201,7 +4221,7 @@ function DealerDashboard() {
 
       {activeTab === "leads"     && <LeadsSection leads={leads} loading={loading} onRefresh={loadAll} reps={reps} bookings={bookings} quotes={quotes} onGoToBuildPrice={(lead) => { setBuildPricePrefill(lead); setActiveTab("buildprice") }} />}
 
-      {activeTab === "procurement" && <ProcurementSection dealership={dealership} reps={reps} />}
+      {activeTab === "procurement" && <ProcurementSection dealership={dealership} reps={reps} dealerSubdomain={user?.dealerSubdomain} />}
 
       {activeTab === "inventory" && <InventorySection dealership={dealership} user={user} />}
 

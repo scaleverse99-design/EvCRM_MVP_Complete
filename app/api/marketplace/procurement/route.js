@@ -10,9 +10,11 @@ export const dynamic = "force-dynamic"
 // /api/marketplace/book and /api/marketplace/inspection). Lands directly
 // in that dealer's Procurement pipeline (app/dealer/page.js
 // ProcurementSection), status NEW, source "Website".
+const MAX_PHOTOS = 6
+
 export async function POST(req) {
   const body = await req.json()
-  const { dealership, sellerName, sellerPhone, sellerEmail, brand, model, variant, year, km, fuelType, color, condition, askingPrice, message } = body
+  const { dealership, sellerName, sellerPhone, sellerEmail, brand, model, variant, year, km, fuelType, color, condition, askingPrice, message, photos, source } = body
 
   if (!dealership || !sellerName?.trim() || !sellerPhone?.trim() || !brand?.trim() || !model?.trim()) {
     return NextResponse.json({ error: "dealership, sellerName, sellerPhone, brand and model are required" }, { status: 400 })
@@ -20,6 +22,9 @@ export async function POST(req) {
   if (sellerPhone.replace(/\D/g, "").length < 10) {
     return NextResponse.json({ error: "Enter a valid 10-digit phone number" }, { status: 400 })
   }
+  const safePhotos = Array.isArray(photos)
+    ? photos.filter(p => typeof p === "string" && p.startsWith("data:image/")).slice(0, MAX_PHOTOS)
+    : []
 
   const users = await readTable("users")
   const dealer = users.find(u => u.dealership === dealership && u.role === "dealer" && u.is_active !== false)
@@ -44,7 +49,8 @@ export async function POST(req) {
     offeredPrice: null,
     finalPrice: null,
     status: "NEW",
-    source: "Website",
+    source: source === "Shared Link" ? "Shared Link" : "Website",
+    photos: safePhotos,
     assignedRep: null,
     inspectionDate: null,
     convertedToInventoryId: null,
@@ -64,7 +70,7 @@ export async function POST(req) {
     type: "PROCUREMENT_INQUIRY",
     label: "💰 SELLER WANTS TO SELL",
     msg: `${sellerName} wants to sell their ${brand} ${model}`,
-    sub: `${askingPrice ? `Asking ₹${Number(askingPrice).toLocaleString("en-IN")}` : "No asking price given"} · Website`,
+    sub: `${askingPrice ? `Asking ₹${Number(askingPrice).toLocaleString("en-IN")}` : "No asking price given"} · ${row.source}`,
     icon: "🔑",
     color: "#2563EB",
     actionLabel: "Call",
