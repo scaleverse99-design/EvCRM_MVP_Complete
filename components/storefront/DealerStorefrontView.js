@@ -94,7 +94,7 @@ export default function DealerStorefrontView({ domainOverride }) {
             📧 {dealer.email}
           </div>
         )}
-        {dealer.dealerCategory === "ICE" && (
+        {dealer.dealerCategory === "ICE" && dealer.sellCarEnabled && (
           <button onClick={() => setShowSellCar(true)}
             style={{ marginTop: "1rem", background: C.green, border: "none", color: "#fff", borderRadius: 24, padding: "10px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
             💰 Sell Your Car to {dealer.dealershipName}

@@ -34,12 +34,20 @@ export async function PATCH(req) {
       return Response.json({ error: "Invalid domain format" }, { status: 400 })
     }
 
-    // Read dealer to verify ownership
+    // Read dealer to verify ownership. Ownership is checked against the
+    // JWT's `dealership` claim, not a user-id match — generateToken()
+    // (lib/auth.js) signs the id under the standard `sub` claim, not
+    // `userId`, so a `decoded.userId` comparison here always failed with a
+    // false 403 (found while building the sell-car-toggle endpoint, which
+    // copied this exact pattern — see app/api/dealer/sell-car-toggle).
+    if (!dealership || decoded.dealership !== dealership) {
+      return Response.json({ error: "Dealer not found or unauthorized" }, { status: 403 })
+    }
+
     const users = await readTable("users")
     const dealer = users.find(u => u.dealership === dealership && u.role === "dealer")
-
-    if (!dealer || dealer.id !== decoded.userId) {
-      return Response.json({ error: "Dealer not found or unauthorized" }, { status: 403 })
+    if (!dealer) {
+      return Response.json({ error: "Dealer not found" }, { status: 404 })
     }
 
     // Check if domain is already taken by another dealer

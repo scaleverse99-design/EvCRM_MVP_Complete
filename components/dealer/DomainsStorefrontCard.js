@@ -9,12 +9,32 @@ import { authFetch } from "../../lib/token-storage"
 // and manage their free storefront link / custom domain from either place.
 // Fetches nothing on mount and needs no parent-managed settings state; it
 // only needs the dealer's own dealership id + current domain fields.
-export default function DomainsStorefrontCard({ dealership, dealerSubdomain, customDomain: initialCustomDomain }) {
+export default function DomainsStorefrontCard({ dealership, dealerSubdomain, customDomain: initialCustomDomain, dealerCategory, sellCarEnabled: initialSellCarEnabled }) {
   const [customDomain, setCustomDomain] = useState(initialCustomDomain || "")
   const [domainVerifying, setDomainVerifying] = useState(false)
   const [domainMessage, setDomainMessage] = useState("")
+  const [sellCarEnabled, setSellCarEnabled] = useState(!!initialSellCarEnabled)
+  const [sellCarSaving, setSellCarSaving] = useState(false)
 
   const slug = dealerSubdomain || "ramdealers"
+
+  const toggleSellCar = async () => {
+    const next = !sellCarEnabled
+    setSellCarEnabled(next) // optimistic
+    setSellCarSaving(true)
+    try {
+      const res = await authFetch("/api/dealer/sell-car-toggle", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dealership, sellCarEnabled: next }),
+      })
+      if (!res.ok) setSellCarEnabled(!next) // revert on failure
+    } catch {
+      setSellCarEnabled(!next)
+    } finally {
+      setSellCarSaving(false)
+    }
+  }
 
   const verifyCustomDomain = async () => {
     if (!customDomain.trim()) { setDomainMessage("Please enter a domain"); return }
@@ -70,6 +90,22 @@ export default function DomainsStorefrontCard({ dealership, dealerSubdomain, cus
           <div style={{ fontSize: 9, color: C.ink3, marginTop: 6 }}>Your branded domain (e.g., ramdealers.in)</div>
         </div>
       </div>
+
+      {dealerCategory === "ICE" && (
+        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>💰 "Sell Your Car" button on your storefront</div>
+            <div style={{ fontSize: 9.5, color: C.ink3, marginTop: 2 }}>
+              Lets visitors on <b>evcrm.in/{slug}</b> offer you their vehicle directly — lands in your Procurement tab. Off by default; only visible on your own storefront, never on the shared marketplace.
+            </div>
+          </div>
+          <button onClick={toggleSellCar} disabled={sellCarSaving}
+            title={sellCarEnabled ? "Click to disable" : "Click to enable"}
+            style={{ flexShrink: 0, width: 44, height: 24, borderRadius: 12, border: "none", background: sellCarEnabled ? C.green : C.border, position: "relative", cursor: sellCarSaving ? "not-allowed" : "pointer", padding: 0, opacity: sellCarSaving ? 0.6 : 1 }}>
+            <span style={{ position: "absolute", top: 2, left: sellCarEnabled ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+          </button>
+        </div>
+      )}
 
       <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Connect Your Custom Domain</div>

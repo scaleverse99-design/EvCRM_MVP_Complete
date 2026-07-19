@@ -32,6 +32,7 @@ export async function GET(req) {
         dealerSubdomain: user.dealerSubdomain || null,
         customDomain: user.customDomain || null,
         customDomainVerified: user.customDomainVerified || false,
+        sellCarEnabled: user.sellCarEnabled || false,
         phone:      user.phone || "",
         ...(user.repId ? { repId: user.repId } : {}),
         opsmanager_url: process.env.OPSMANAGER_URL,

@@ -26,12 +26,15 @@ export async function POST(req) {
       return Response.json({ error: "Custom domain required" }, { status: 400 })
     }
 
-    // Read dealer to verify
-    const users = await readTable("users")
-    const dealer = users.find(u => u.dealership === dealership && u.id === decoded.userId)
-
-    if (!dealer) {
+    // Ownership check against the JWT's `dealership` claim — see
+    // app/api/dealer/verify-domain for why this isn't a decoded.userId match.
+    if (!dealership || decoded.dealership !== dealership) {
       return Response.json({ error: "Dealer not found" }, { status: 403 })
+    }
+    const users = await readTable("users")
+    const dealer = users.find(u => u.dealership === dealership && u.role === "dealer")
+    if (!dealer) {
+      return Response.json({ error: "Dealer not found" }, { status: 404 })
     }
 
     // Check if already has billing record for this domain
@@ -120,11 +123,8 @@ export async function GET(req) {
       return Response.json({ error: "Dealership required" }, { status: 400 })
     }
 
-    // Verify dealer owns this dealership
-    const users = await readTable("users")
-    const dealer = users.find(u => u.dealership === dealership && u.id === decoded.userId)
-
-    if (!dealer) {
+    // Verify dealer owns this dealership (JWT dealership claim — see verify-domain)
+    if (decoded.dealership !== dealership) {
       return Response.json({ error: "Unauthorized" }, { status: 403 })
     }
 

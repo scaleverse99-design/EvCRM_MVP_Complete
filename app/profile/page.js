@@ -220,7 +220,7 @@ export default function ProfilePage() {
         {/* Domains & Storefronts — same card as the dealer dashboard's
             Settings tab, surfaced here too so it's easy to find. */}
         {isDealer && user.dealership && (
-          <DomainsStorefrontCard dealership={user.dealership} dealerSubdomain={user.dealerSubdomain} customDomain={user.customDomain} />
+          <DomainsStorefrontCard dealership={user.dealership} dealerSubdomain={user.dealerSubdomain} customDomain={user.customDomain} dealerCategory={user.dealerCategory} sellCarEnabled={user.sellCarEnabled} />
         )}
 
         {/* Subscription details for Dealer */}

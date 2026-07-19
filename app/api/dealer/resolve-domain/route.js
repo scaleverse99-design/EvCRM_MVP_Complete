@@ -78,6 +78,7 @@ export async function GET(req) {
         customDomain: dealer.customDomain,
         customDomainVerified: dealer.customDomainVerified || false,
         dealerCategory: dealer.dealerCategory || "EV",
+        sellCarEnabled: dealer.sellCarEnabled || false,
       },
       inventoryCount: dealerInventory.length,
       inventoryItems: dealerInventory.slice(0, 50), // Return up to 50 for storefront

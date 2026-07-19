@@ -2273,7 +2273,7 @@ function SettingsSection({ dealership, dealer, reps, onRepsRefresh }) {
       </Card>
 
       {/* 10.1b Domains & Storefronts */}
-      <DomainsStorefrontCard dealership={dealership} dealerSubdomain={dealer?.dealerSubdomain} customDomain={dealer?.customDomain} />
+      <DomainsStorefrontCard dealership={dealership} dealerSubdomain={dealer?.dealerSubdomain} customDomain={dealer?.customDomain} dealerCategory={dealer?.dealerCategory} sellCarEnabled={dealer?.sellCarEnabled} />
 
       {/* 10.2 Team Management — rep logins (dealer-controlled provisioning) */}
       <Card>

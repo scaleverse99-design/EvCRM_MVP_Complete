@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { C } from "../../lib/constants"
 
 const FUEL_TYPES = ["Petrol", "Diesel", "CNG", "Hybrid", "Electric"]
@@ -9,16 +9,13 @@ const CONDITIONS = ["Good", "Fair", "Poor"]
 // dealer with zero login required. Lands directly in that dealer's
 // Procurement pipeline (see app/api/marketplace/procurement/route.js).
 //
-// Two usage modes:
-//  - dealership prop given (dealer storefront — single-dealer context):
-//    submits straight to that dealer, no picker shown.
-//  - dealership prop omitted (main marketplace — multi-dealer context):
-//    fetches the public Used Car Dealer directory and shows a picker.
-export default function SellCarModal({ dealership: fixedDealership, dealerName: fixedDealerName, onClose }) {
-  const [dealerList, setDealerList] = useState([])
-  const [loadingDealers, setLoadingDealers] = useState(!fixedDealership)
-  const [dealership, setDealership] = useState(fixedDealership || "")
-
+// Only ever rendered on a dealer's own storefront (single-dealer context,
+// and only when that dealer has opted in via their sellCarEnabled
+// setting) — deliberately NOT offered on the shared marketplace, since
+// EvCRM has no fair way to route an unscoped submission to one of many
+// dealers, and dealers would have no way to trust the platform is
+// distributing those leads fairly.
+export default function SellCarModal({ dealership, dealerName: fixedDealerName, onClose }) {
   const [sellerName, setSellerName] = useState("")
   const [sellerPhone, setSellerPhone] = useState("")
   const [sellerEmail, setSellerEmail] = useState("")
@@ -36,16 +33,7 @@ export default function SellCarModal({ dealership: fixedDealership, dealerName: 
   const [success, setSuccess] = useState(null)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    if (fixedDealership) return
-    fetch("/api/marketplace/dealers?category=ICE")
-      .then(r => r.json())
-      .then(d => { if (d.success) setDealerList(d.dealers || []) })
-      .finally(() => setLoadingDealers(false))
-  }, [fixedDealership])
-
   const handleSubmit = async () => {
-    if (!dealership) { setError("Please select a dealer"); return }
     if (!sellerName.trim() || !sellerPhone.trim()) { setError("Name and phone are required"); return }
     if (sellerPhone.replace(/\D/g, "").length < 10) { setError("Enter a valid 10-digit phone number"); return }
     if (!brand.trim() || !model.trim()) { setError("Brand and model are required"); return }
@@ -81,27 +69,13 @@ export default function SellCarModal({ dealership: fixedDealership, dealerName: 
             <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: C.ink }}>💰 Sell Your Car</div>
-                <div style={{ fontSize: 12, color: C.ink3, marginTop: 2 }}>{fixedDealerName ? `To ${fixedDealerName}` : "Get an offer from a trusted dealer"}</div>
+                <div style={{ fontSize: 12, color: C.ink3, marginTop: 2 }}>To {fixedDealerName}</div>
               </div>
               <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", color: C.ink3, borderRadius: 10, width: 32, height: 32, cursor: "pointer", fontSize: 16, fontFamily: "inherit" }}>✕</button>
             </div>
 
             <div style={{ padding: "20px 24px" }}>
               <div style={{ display: "grid", gap: 12 }}>
-                {!fixedDealership && (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: C.ink3, marginBottom: 5 }}>Sell To *</div>
-                    <select value={dealership} onChange={e => setDealership(e.target.value)} disabled={loadingDealers}
-                      style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.border}`, color: C.ink, borderRadius: 12, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                      <option value="">{loadingDealers ? "Loading dealers…" : "Select a dealer"}</option>
-                      {dealerList.map(d => <option key={d.dealership} value={d.dealership}>{d.dealershipName}{d.city ? ` — ${d.city}` : ""}</option>)}
-                    </select>
-                    {!loadingDealers && dealerList.length === 0 && (
-                      <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>No used-car dealers available right now.</div>
-                    )}
-                  </div>
-                )}
-
                 {[
                   { label: "Your Name *", val: sellerName, set: setSellerName, ph: "Full name" },
                   { label: "Phone Number *", val: sellerPhone, set: setSellerPhone, ph: "10-digit mobile number", type: "tel" },

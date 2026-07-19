@@ -5,7 +5,6 @@ import { C, fmt } from "../../lib/constants"
 import { bookTestDrive } from "../../lib/payments/tokenBooking"
 import TopBar from "../../components/home/TopBar"
 import Footer from "../../components/home/Footer"
-import SellCarModal from "../../components/marketplace/SellCarModal"
 
 /* ── Responsive styles injected once ──────────────────────────────── */
 const MOBILE_STYLES = `
@@ -874,7 +873,6 @@ export default function ShowroomPage() {
   const [fuelType, setFuelType] = useState("All Fuel Types")
   const [viewing, setViewing] = useState(null)
   const [bookVehicle, setBookVehicle] = useState(null)
-  const [showSellCar, setShowSellCar] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -902,10 +900,6 @@ export default function ShowroomPage() {
       <div style={{ background: C.ink, padding: "48px 20px", textAlign: "center", color: "#fff" }}>
         <h1 className="showroom-hero-title">Expert Vetted Marketplace</h1>
         <p className="showroom-hero-subtitle">Discover high-performance electric mobility, hand-picked by EV.OS intelligence for the Indian road.</p>
-        <button onClick={() => setShowSellCar(true)}
-          style={{ marginTop: 20, background: C.green, border: "none", color: "#fff", borderRadius: 24, padding: "12px 28px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-          💰 Sell Your Car — Get an Offer
-        </button>
       </div>
 
       <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 56, zIndex: 80 }}>
@@ -938,7 +932,6 @@ export default function ShowroomPage() {
       <Footer />
 
       {bookVehicle && <BookingModal vehicle={bookVehicle.vehicle} mode={bookVehicle.mode} onClose={() => { setBookVehicle(null); load() }} />}
-      {showSellCar && <SellCarModal onClose={() => setShowSellCar(false)} />}
     </div>
   )
 }
