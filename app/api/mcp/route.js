@@ -284,14 +284,20 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS })
 }
 
-// GET is reserved by the MCP spec for opening a server-push SSE stream —
-// this server never initiates messages to the client, so per spec it
-// correctly returns 405 rather than pretending to support it.
+// GET is reserved by the MCP spec for opening a server-push SSE stream,
+// which this stateless server doesn't use — spec-wise a 405 here would be
+// defensible. In practice several client "reachability" probes hit GET (or
+// HEAD, which Next.js auto-derives from this) before ever trying the real
+// POST-based protocol, and treat any non-2xx as "server unreachable" rather
+// than "this server just doesn't support GET" — a false negative that broke
+// Claude Desktop's connector setup. Returning 200 with basic server info
+// here is harmless (no client relies on GET for anything functional) and
+// meaningfully more compatible in the wild.
 export async function GET() {
-  return new Response("Method Not Allowed — this MCP server only supports POST (no server-initiated streaming).", {
-    status: 405,
-    headers: { ...CORS_HEADERS, Allow: "POST, OPTIONS" },
-  })
+  return Response.json(
+    { server: SERVER_INFO, protocolVersion: PROTOCOL_VERSION, transport: "POST (Streamable HTTP, JSON responses — no SSE)", tools: TOOLS.length },
+    { headers: CORS_HEADERS }
+  )
 }
 
 export async function POST(req) {
