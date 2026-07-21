@@ -136,6 +136,7 @@ export default function TopBar({ location, setLocation }) {
           <nav className="topbar-nav">
             <div className="topbar-nav-links">
               <Link href="/showroom" style={{ textDecoration: "none", color: "inherit", opacity: 0.8 }}>Buy Vehicles</Link>
+              <Link href="/learn" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Learn</Link>
               <Link href="/charging" style={{ textDecoration: "none", color: "inherit", opacity: 0.6 }}>Charge Stations</Link>
             </div>
 
@@ -179,6 +180,7 @@ export default function TopBar({ location, setLocation }) {
               </form>
             </div>
             <Link href="/showroom" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>🚗 Buy Vehicles</Link>
+            <Link href="/learn" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>📘 Learn</Link>
             <Link href="/charging" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>⚡ Charge Stations</Link>
             <Link href="/shortlisted" onClick={() => setMobileMenuOpen(false)} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, textDecoration: "none", color: C.ink, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>♡ Shortlisted</Link>
             <button onClick={() => { setShowLocPicker(true); setMobileMenuOpen(false); }} style={{ padding: "14px 20px", borderTop: `1px solid ${C.border}`, background: "none", border: "none", textAlign: "left", color: C.ink, fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "inherit" }}>📍 {location?.district || "Set Location"}</button>

@@ -51,6 +51,7 @@ export default function Footer() {
           <div>
             <h5 style={columnTitleStyle}>About evcrm.in</h5>
             <Link href="/blog" style={linkStyle}>EV Research Blog</Link>
+            <Link href="/learn" style={linkStyle}>Learn: EV & Auto Guides</Link>
             <Link href="/marketplace" style={linkStyle}>Vehicle Marketplace</Link>
             <Link href="/subsidies" style={linkStyle}>State-wise Subsidies</Link>
             <Link href="/charging" style={linkStyle}>Charging Stations</Link>

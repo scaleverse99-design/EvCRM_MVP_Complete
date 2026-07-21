@@ -11,7 +11,7 @@ export async function GET(req, { params }) {
   const lng = parseFloat(searchParams.get("lng") || "0")
 
   const posts = await readTable("blog_posts")
-  const post = posts.find(p => p.slug === slug && p.status === "published")
+  const post = posts.find(p => p.slug === slug && p.status === "published" && p.type !== "knowledge")
   if (!post) return Response.json({ error: "Post not found" }, { status: 404 })
 
   // Fetch all vehicles linked to this article via article_vehicles junction table

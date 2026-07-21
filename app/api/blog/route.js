@@ -6,7 +6,7 @@ import { readTable } from "../../../lib/store"
 export async function GET() {
   const all = await readTable("blog_posts")
   const published = all
-    .filter(p => p.status === "published")
+    .filter(p => p.status === "published" && p.type !== "knowledge")
     .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt))
     .map(p => ({
       slug: p.slug,

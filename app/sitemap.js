@@ -17,6 +17,7 @@ export default async function sitemap() {
     "",
     "/showroom",
     "/blog",
+    "/learn",
     "/charging",
     "/service-centers",
     "/subsidies",
@@ -33,6 +34,7 @@ export default async function sitemap() {
   let vehicleRoutes = []
   let dealerRoutes = []
   let blogRoutes = []
+  let learnRoutes = []
   try {
     const [inventory, users, blogPosts] = await Promise.all([readTable("inventory"), readTable("users"), readTable("blog_posts").catch(() => [])])
 
@@ -57,12 +59,24 @@ export default async function sitemap() {
       }))
 
     blogRoutes = (blogPosts || [])
-      .filter(p => p.status === "published")
+      .filter(p => p.status === "published" && p.type !== "knowledge")
       .map(p => ({
         url: `${baseUrl}/blog/${p.slug}`,
         lastModified: p.updatedAt || p.publishedAt || now,
         changeFrequency: "weekly",
         priority: 0.75,
+      }))
+
+    // Knowledge-hub articles roll out staggered (a few per day) — only
+    // advertise ones whose publishedAt has actually passed, so the sitemap
+    // never points a crawler at a page that still 404s.
+    learnRoutes = (blogPosts || [])
+      .filter(p => p.status === "published" && p.type === "knowledge" && new Date(p.publishedAt) <= new Date(now))
+      .map(p => ({
+        url: `${baseUrl}/learn/${p.slug}`,
+        lastModified: p.updatedAt || p.publishedAt || now,
+        changeFrequency: "monthly",
+        priority: 0.7,
       }))
   } catch (e) {
     // A data-layer hiccup should degrade to the static sitemap, not a 500 —
@@ -70,5 +84,5 @@ export default async function sitemap() {
     console.error("[sitemap] dynamic section failed:", e.message)
   }
 
-  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes, ...blogRoutes]
+  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes, ...blogRoutes, ...learnRoutes]
 }
