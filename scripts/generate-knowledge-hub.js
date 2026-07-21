@@ -103,12 +103,20 @@ Requirements:
 - 500-700 words, structured with 3-4 clear sections
 - End with why this knowledge helps a buyer make a better decision
 
+Also produce, to make the page visual instead of a wall of text:
+- keyTakeaways: 3-5 short punchy points (each under 12 words), each with one representative emoji
+- pullQuote: one striking, standalone sentence pulled or adapted from the article (under 20 words)
+- comparisonTable: ONLY if the topic is naturally comparative (e.g. "X vs Y", transmission/engine/battery types) — a small table with a title, 2-4 short column headers, and 2-5 rows (use a word, short phrase, or 🟢/🟡/🔴). Set to null if not naturally comparative.
+
 Return STRICTLY valid JSON, no markdown fences:
 {
   "title": "a clear, search-friendly title (max 70 chars)",
   "excerpt": "1-2 sentence summary for search snippets (max 160 chars)",
   "body": "the full article as plain text with double-newline paragraph breaks. Use '## ' at the start of a line for section headings.",
-  "coverEmoji": "one emoji that best represents this specific topic"
+  "coverEmoji": "one emoji that best represents this specific topic",
+  "keyTakeaways": [{"icon": "⚙️", "text": "short punchy point"}],
+  "pullQuote": "one striking sentence, or empty string if nothing fits",
+  "comparisonTable": {"title": "short title", "headers": ["", "Option A", "Option B"], "rows": [["Metric", "value", "value"]]}
 }`
 
   let lastError = null
@@ -168,6 +176,9 @@ async function run() {
           excerpt: draft.excerpt || "",
           body: draft.body || "",
           coverEmoji: draft.coverEmoji || coverEmoji,
+          keyTakeaways: Array.isArray(draft.keyTakeaways) ? draft.keyTakeaways.slice(0, 5) : [],
+          pullQuote: draft.pullQuote || "",
+          comparisonTable: draft.comparisonTable && draft.comparisonTable.rows?.length ? draft.comparisonTable : null,
           status: "published",
           createdAt: now,
           updatedAt: now,

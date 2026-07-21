@@ -22,6 +22,61 @@ function ArticleBody({ text }) {
   )
 }
 
+// Icon-illustrated "get the gist in 5 seconds" box — no real image needed,
+// makes the page feel visual instead of a wall of text.
+function KeyTakeaways({ items }) {
+  if (!items?.length) return null
+  return (
+    <div style={{ background: "#fff", border: `1.5px solid ${C.green}30`, borderRadius: 16, padding: "20px 22px", marginBottom: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12 }}>🔑 Key Takeaways</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {items.map((t, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{t.icon || "•"}</span>
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: C.ink }}>{t.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PullQuote({ text }) {
+  if (!text) return null
+  return (
+    <div style={{ borderLeft: `4px solid ${C.green}`, background: `${C.green}08`, borderRadius: "0 12px 12px 0", padding: "18px 22px", margin: "0 0 20px" }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: C.ink, lineHeight: 1.5, fontStyle: "italic" }}>"{text}"</div>
+    </div>
+  )
+}
+
+function ComparisonTable({ table }) {
+  if (!table?.rows?.length) return null
+  return (
+    <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 22px", marginBottom: 20, overflowX: "auto" }}>
+      {table.title && <div style={{ fontSize: 13.5, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{table.title}</div>}
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr>
+            {(table.headers || []).map((h, i) => (
+              <th key={i} style={{ textAlign: i === 0 ? "left" : "center", padding: "8px 10px", fontSize: 10.5, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: 0.4, borderBottom: `2px solid ${C.border}` }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, ri) => (
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={{ textAlign: ci === 0 ? "left" : "center", padding: "10px", fontSize: ci === 0 ? 12.5 : 14, fontWeight: ci === 0 ? 700 : 500, color: C.ink, borderBottom: `1px solid ${C.border}` }}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function LearnArticlePage() {
   const { slug } = useParams()
   const [post, setPost] = useState(null)
@@ -82,6 +137,10 @@ export default function LearnArticlePage() {
         <div style={{ fontSize: 12, color: C.ink3, marginBottom: 24, textAlign: "center" }}>
           By EvCRM · {new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
         </div>
+
+        <KeyTakeaways items={post.keyTakeaways} />
+        <PullQuote text={post.pullQuote} />
+        <ComparisonTable table={post.comparisonTable} />
 
         <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: "28px 28px 12px" }}>
           <ArticleBody text={post.body} />

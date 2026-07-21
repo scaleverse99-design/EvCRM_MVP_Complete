@@ -41,6 +41,9 @@ export async function GET(req, { params }) {
       coverEmoji: post.coverEmoji,
       authorName: post.authorName,
       publishedAt: post.publishedAt,
+      keyTakeaways: post.keyTakeaways || [],
+      pullQuote: post.pullQuote || "",
+      comparisonTable: post.comparisonTable || null,
     },
     related,
   })
