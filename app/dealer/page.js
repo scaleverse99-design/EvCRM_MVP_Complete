@@ -560,7 +560,9 @@ function InventorySection({ dealership, user }) {
                     <span style={{ background:`${C.blue}15`, color:C.blue, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:8 }}>{v.type}</span>
                     <div style={{ fontSize:10, color:C.ink3, marginTop:2 }}>{v.bodyType}</div>
                   </td>
-                  <td style={{ padding:"11px 16px", fontWeight:700, color:C.ink }}>⚡ {v.range} km</td>
+                  <td style={{ padding:"11px 16px", fontWeight:700, color:C.ink }}>
+                    {v.fuelType === "Electric" ? `⚡ ${v.range || 0} km` : `${(v.km || 0).toLocaleString()} km driven`}
+                  </td>
                   <td style={{ padding:"11px 16px" }}>
                     <div style={{ fontWeight:700, color:C.ink }}>{fmt.currency(v.exShowroom)}</div>
                     <div style={{ fontSize:10, color:C.ink3 }}>{v.emi ? `₹${v.emi?.toLocaleString()}/mo EMI` : "—"}</div>

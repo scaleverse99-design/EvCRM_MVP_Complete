@@ -11,6 +11,7 @@ import { NextResponse } from "next/server"
 import { verifyToken } from "../../../../lib/auth"
 import { readTable, writeTable } from "../../../../lib/store"
 import { createTask } from "../../../../lib/marketplace"
+import { ensureModelArticle, linkVehicleToArticle } from "../../../../lib/blog"
 
 async function getUser(req) {
   const auth = req.headers.get("authorization") || ""
@@ -141,12 +142,21 @@ export async function PATCH(req) {
   // marketplace rather than skipping that step just because it came from
   // procurement.
   if (updates.status === "PURCHASED" && !row.convertedToInventoryId) {
+    // The JWT payload only carries { sub, email, role, dealership } — it never
+    // has a display name — so user.name is always undefined here. Look up the
+    // dealer's actual business name from their user record instead (same field
+    // the manual Add-Vehicle form reads via /api/dealer/settings), otherwise
+    // every procurement-converted listing shows a blank dealer name on the
+    // public marketplace.
+    const users = await readTable("users")
+    const dealerUser = users.find(u => u.dealership === row.dealership && u.role === "dealer")
+
     const inv = await readTable("inventory")
     const vehicleId = `inv_${Date.now()}`
     inv.unshift({
       id: vehicleId,
       dealership: row.dealership,
-      dealerName: user.name || "",
+      dealerName: dealerUser?.dealershipName || dealerUser?.name || "",
       brand: row.brand,
       model: row.model,
       variant: row.variant || "",
@@ -162,16 +172,26 @@ export async function PATCH(req) {
       vin: "",
       isDemo: false,
       features: "",
-      state: "",
-      district: "",
+      state: dealerUser?.state || "",
+      district: dealerUser?.city || "",
       tags: "",
-      images: [],
+      images: ["🚗"],
       inspectionReport: { categories: [], overallGrade: "B", approvalStatus: "PENDING" },
       procurementSourceId: row.id,
       createdAt: new Date().toISOString(),
     })
     await writeTable("inventory", inv)
     row.convertedToInventoryId = vehicleId
+
+    // Same model-hub auto-generation as manual Add Vehicle (app/api/dealer/
+    // inventory/route.js) — without this, used-car dealers' purchased stock
+    // never gets an SEO article, even though Procurement is the primary
+    // inventory-entry path for that whole dealer segment.
+    const newVehicle = inv.find(v => v.id === vehicleId)
+    const articleId = await ensureModelArticle(newVehicle, { dealership: row.dealership, name: dealerUser?.dealershipName || dealerUser?.name })
+    if (articleId) {
+      await linkVehicleToArticle(vehicleId, articleId)
+    }
   }
 
   rows[idx] = row

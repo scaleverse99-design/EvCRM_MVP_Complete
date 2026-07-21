@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { C, fmt } from "../../lib/constants"
 import { bookTestDrive } from "../../lib/payments/tokenBooking"
 import TopBar from "../../components/home/TopBar"
@@ -865,6 +866,7 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
 
 /* ── Main page ─────────────────────────────────────────────────────── */
 export default function ShowroomPage() {
+  const searchParams = useSearchParams()
   const [vehicles, setVehicles] = useState([])
   const [filters, setFilters] = useState({ brands: [], districts: [] })
   const [loading, setLoading] = useState(true)
@@ -888,6 +890,16 @@ export default function ShowroomPage() {
   }, [type, brand, fuelType])
 
   useEffect(() => { load() }, [load])
+
+  // Deep-link support: /showroom?vehicleId=X (shared from blog articles,
+  // dealer inventory "View" links, sitemap/IndexNow) opens straight into
+  // that vehicle's detail view instead of the generic list.
+  useEffect(() => {
+    const vehicleId = searchParams?.get("vehicleId")
+    if (!vehicleId || vehicles.length === 0) return
+    const match = vehicles.find(v => v.id === vehicleId)
+    if (match) setViewing(match)
+  }, [searchParams, vehicles])
 
   const brands = ["All Brands", ...(filters.brands || [])]
 

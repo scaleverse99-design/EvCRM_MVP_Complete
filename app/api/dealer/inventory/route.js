@@ -2,114 +2,12 @@ import { NextResponse } from "next/server"
 import { verifyToken } from "../../../../lib/auth"
 import { readTable, writeTable } from "../../../../lib/store"
 import { pingIndexNow } from "../../../../lib/indexnow"
-import { slugify } from "../../../../lib/blog"
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
-const MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
+import { ensureModelArticle, linkVehicleToArticle } from "../../../../lib/blog"
 
 // A vehicle is publicly visible (and therefore worth telling the search
 // engines about) under the same rule /api/marketplace/vehicles applies.
 const isPubliclyVisible = (v) =>
   v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED")
-
-// Generate model key from brand+model (e.g. "Tata Nexon EV Max" → "tata-nexon-ev-max")
-const getModelKey = (brand, model) => {
-  if (!brand || !model) return null
-  return `${brand} ${model}`.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "")
-}
-
-// Auto-generate article for a vehicle model if one doesn't already exist.
-// Called internally after a dealer uploads a vehicle.
-async function ensureModelArticle(vehicle, user) {
-  if (!GEMINI_API_KEY) return null // AI not configured, skip silently
-
-  const modelKey = getModelKey(vehicle.brand, vehicle.model)
-  if (!modelKey) return null
-
-  const posts = await readTable("blog_posts")
-  const existing = posts.find(p => p.modelKey === modelKey && p.status === "published")
-  if (existing) return existing.id // Article already exists for this model
-
-  // Generate new article via Gemini
-  const prompt = `You are an automotive content writer for an Indian vehicle marketplace (evcrm.in). Write a helpful, SEO-friendly buyer's guide for: "${vehicle.brand} ${vehicle.model}"${vehicle.year ? ` (${vehicle.year})` : ""}.
-
-Requirements:
-- Indian market context: prices in ₹/lakhs, charging time for EVs, service network, resale value
-- Natural, trustworthy tone. NO invented specs or prices you're unsure of.
-- 400-600 words, structured with 3-4 short sections.
-- Focus on WHY buyers choose this model, key features, and practical considerations
-
-Return STRICTLY valid JSON, no markdown fences:
-{
-  "title": "an SEO-friendly title (max 70 chars) like 'Best reasons to buy the ${vehicle.brand} ${vehicle.model}'",
-  "excerpt": "1-2 sentence summary for search snippets (max 160 chars)",
-  "body": "the full article as plain text with double-newline paragraph breaks. Use '## ' at the start of a line for section headings."
-}`
-
-  let lastError = null
-  for (const model of MODELS) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { response_mime_type: "application/json", temperature: 0.7 },
-        }),
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error.message)
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text) throw new Error("Empty AI response")
-
-      const parsed = JSON.parse(text)
-      const slug = slugify(`${vehicle.brand} ${vehicle.model}`)
-      const now = new Date().toISOString()
-
-      const article = {
-        id: `blog_${Date.now()}`,
-        slug,
-        modelKey,
-        dealership: user.dealership,
-        authorName: user.name || "EvCRM",
-        title: parsed.title || `${vehicle.brand} ${vehicle.model}: Buyer's Guide`,
-        excerpt: parsed.excerpt || "",
-        body: parsed.body || "",
-        status: "published",
-        createdAt: now,
-        updatedAt: now,
-        publishedAt: now
-      }
-
-      posts.unshift(article)
-      await writeTable("blog_posts", posts)
-
-      // Ping search engines about the new article
-      pingIndexNow([`https://evcrm.in/blog/${article.slug}`, "https://evcrm.in/blog", "https://evcrm.in/sitemap.xml"])
-
-      return article.id
-    } catch (e) {
-      lastError = e.message
-    }
-  }
-
-  // If generation fails, continue silently (don't block vehicle creation)
-  console.error(`Failed to auto-generate article for ${modelKey}: ${lastError}`)
-  return null
-}
-
-// Link a vehicle to its model article in the junction table
-async function linkVehicleToArticle(vehicleId, articleId) {
-  const links = await readTable("article_vehicles")
-  const link = {
-    id: `link_${Date.now()}`,
-    articleId,
-    vehicleId,
-    createdAt: new Date().toISOString()
-  }
-  links.unshift(link)
-  await writeTable("article_vehicles", links)
-}
 
 async function getUser(req) {
   const auth = req.headers.get("authorization") || ""
