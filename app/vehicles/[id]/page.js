@@ -84,8 +84,41 @@ function VehicleDetailPage() {
     ["🛡 Warranty",       vehicle.warranty || "—"],
   ]
 
+  // Structured data for search engines — this is what powers rich results
+  // (price, availability, condition, dealer) on Google/Bing for the listing.
+  // Base64 images are deliberately excluded (they'd bloat the HTML by 50KB+
+  // each and engines can't use data URIs anyway); only real URLs go in.
+  const httpImages = (vehicle.images || []).filter(i => typeof i === "string" && i.startsWith("http"))
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": vehicle.type === "2W" ? "Motorcycle" : "Car",
+    name: `${vehicle.brand} ${vehicle.model} ${vehicle.variant || ""}`.trim(),
+    brand: { "@type": "Brand", name: vehicle.brand },
+    model: vehicle.model,
+    vehicleModelDate: String(vehicle.year || ""),
+    fuelType: vehicle.fuelType || "Electric",
+    ...(vehicle.color ? { color: vehicle.color } : {}),
+    ...(httpImages.length ? { image: httpImages } : {}),
+    itemCondition: vehicle.condition === "used" ? "https://schema.org/UsedCondition" : "https://schema.org/NewCondition",
+    ...(vehicle.km ? { mileageFromOdometer: { "@type": "QuantitativeValue", value: vehicle.km, unitCode: "KMT" } } : {}),
+    offers: {
+      "@type": "Offer",
+      price: vehicle.exShowroom || 0,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+      url: `https://evcrm.in/vehicles/${vehicle.id}`,
+      seller: {
+        "@type": "AutoDealer",
+        name: vehicle.dealerName || "EvCRM Dealer",
+        url: vehicle.dealerSubdomain ? `https://evcrm.in/${vehicle.dealerSubdomain}` : "https://evcrm.in",
+        ...(vehicle.district ? { address: { "@type": "PostalAddress", addressLocality: vehicle.district, ...(vehicle.state ? { addressRegion: vehicle.state } : {}), addressCountry: "IN" } } : {}),
+      },
+    },
+  }
+
   return (
     <div style={{ minHeight:"100vh", background:T.bg, fontFamily:"'Inter',-apple-system,sans-serif" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'); * { box-sizing:border-box; }`}</style>
 
       {/* Nav */}
@@ -121,7 +154,13 @@ function VehicleDetailPage() {
                 <span style={{ color:"#f59e0b", fontSize:14 }}>{"★".repeat(Math.round(vehicle.rating||4))}</span>
                 <span style={{ fontSize:12, color:T.ink2 }}>{vehicle.rating} · {vehicle.reviews} reviews</span>
                 <span style={{ fontSize:12, color:T.ink3 }}>|</span>
-                <span style={{ fontSize:12, color:T.ink2 }}>🏪 {vehicle.dealerName}</span>
+                {vehicle.dealerSubdomain ? (
+                  <Link href={`/${vehicle.dealerSubdomain}`} style={{ fontSize:12, color:T.accent, fontWeight:700, textDecoration:"none" }}>
+                    🏪 {vehicle.dealerName} — visit storefront →
+                  </Link>
+                ) : (
+                  <span style={{ fontSize:12, color:T.ink2 }}>🏪 {vehicle.dealerName}</span>
+                )}
               </div>
             </div>
 

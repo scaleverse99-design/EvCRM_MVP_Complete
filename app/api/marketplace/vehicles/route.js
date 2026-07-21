@@ -22,6 +22,19 @@ export async function GET(req) {
   // publicly visible; new vehicles are unaffected by this check.
   let items = all.filter(v => v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED"))
 
+  // Attach each vehicle's dealer storefront slug so consumer pages can route
+  // visitors onward to the dealer's page on the main domain (the hub model:
+  // external traffic lands on evcrm.in, then flows to the dealer surface).
+  try {
+    const users = await readTable("users")
+    const slugByDealership = new Map(
+      users.filter(u => u.role === "dealer" && u.dealerSubdomain).map(u => [u.dealership, u.dealerSubdomain])
+    )
+    items = items.map(v => ({ ...v, dealerSubdomain: slugByDealership.get(v.dealership) || null }))
+  } catch (e) {
+    console.error("[/api/marketplace/vehicles] slug join failed:", e.message)
+  }
+
   if (type)       items = items.filter(v => v.type === type)
   if (brand)      items = items.filter(v => v.brand.toLowerCase() === brand.toLowerCase())
   if (fuelType)   items = items.filter(v => (v.fuelType || "Electric").toLowerCase() === fuelType.toLowerCase())

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server"
 import { verifyToken } from "../../../../lib/auth"
 import { readTable, writeTable } from "../../../../lib/store"
+import { pingIndexNow } from "../../../../lib/indexnow"
+
+// A vehicle is publicly visible (and therefore worth telling the search
+// engines about) under the same rule /api/marketplace/vehicles applies.
+const isPubliclyVisible = (v) =>
+  v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED")
 
 async function getUser(req) {
   const auth = req.headers.get("authorization") || ""
@@ -93,6 +99,12 @@ export async function POST(req) {
   inv.unshift(item)
   await writeTable("inventory", inv)
 
+  // Tell the search engines about the new listing immediately (free
+  // instant indexing — fire-and-forget, never blocks the response).
+  if (isPubliclyVisible(item)) {
+    pingIndexNow([`https://evcrm.in/vehicles/${item.id}`, "https://evcrm.in/sitemap.xml"])
+  }
+
   return NextResponse.json({ success:true, item })
 }
 
@@ -125,8 +137,16 @@ export async function PATCH(req) {
     inv[idx].stockLog.unshift({ event: updates.status.toLowerCase(), note: `Status changed ${inv[idx].status} → ${updates.status}${updates.statusReason ? ` (${updates.statusReason})` : ""}`, date: new Date().toISOString() })
   }
 
+  const wasVisible = isPubliclyVisible(inv[idx])
   inv[idx] = { ...inv[idx], ...updates, updatedAt: new Date().toISOString() }
   await writeTable("inventory", inv)
+
+  // Ping on any visibility change or edit of a visible listing — covers a
+  // used vehicle's inspection getting approved (newly visible) and a sold
+  // vehicle leaving the marketplace (engines should re-crawl and see it gone).
+  if (wasVisible || isPubliclyVisible(inv[idx])) {
+    pingIndexNow([`https://evcrm.in/vehicles/${inv[idx].id}`, "https://evcrm.in/sitemap.xml"])
+  }
 
   return NextResponse.json({ success:true, item:inv[idx] })
 }

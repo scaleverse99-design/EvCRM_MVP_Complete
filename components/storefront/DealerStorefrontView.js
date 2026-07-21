@@ -84,8 +84,31 @@ export default function DealerStorefrontView({ domainOverride }) {
     )
   }
 
+  // AutoDealer/LocalBusiness structured data — powers the dealer's rich
+  // result (name, location, what they sell) in search. The canonical URL is
+  // the main-domain storefront (evcrm.in/{slug}) per the hub model: all
+  // published/discovery URLs live on evcrm.in.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AutoDealer",
+    name: dealer.dealershipName,
+    url: dealer.dealerSubdomain ? `https://evcrm.in/${dealer.dealerSubdomain}` : "https://evcrm.in",
+    ...(dealer.phone && dealer.phone !== "Not provided" ? { telephone: dealer.phone } : {}),
+    ...(dealer.city && dealer.city !== "Not specified"
+      ? { address: { "@type": "PostalAddress", addressLocality: dealer.city, addressCountry: "IN" } }
+      : {}),
+    makesOffer: inventory.slice(0, 20).map(v => ({
+      "@type": "Offer",
+      itemOffered: { "@type": v.type === "2W" ? "Motorcycle" : "Car", name: `${v.brand} ${v.model}` },
+      price: v.exShowroom || 0,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+    })),
+  }
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: C.white }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TopBar />
 
       {justBooked && (
