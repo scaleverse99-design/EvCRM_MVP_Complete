@@ -98,3 +98,25 @@ alter table prospects enable row level security;
 create table if not exists procurement (id text primary key, data jsonb not null, created_at timestamptz default now());
 create index if not exists idx_procurement_dealership on procurement ((data->>'dealership'));
 alter table procurement enable row level security;
+
+-- Dealer-authored blog/article content, published to the evcrm.in hub for
+-- SEO (added 2026-07-21, refactored 2026-07-21 for model-hub architecture).
+-- One article per vehicle MODEL (e.g. "tata-nexon-ev-max"), auto-generated on
+-- first dealer upload of that model. Subsequent uploads of the same model
+-- link to the same article via article_vehicles junction table.
+-- Run in the production Supabase SQL Editor (same §8.0 lesson as
+-- procurement/prospects — without it, store.js falls back to ephemeral disk
+-- and every post is lost on restart).
+create table if not exists blog_posts (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_blog_posts_slug on blog_posts ((data->>'slug'));
+create index if not exists idx_blog_posts_modelKey on blog_posts ((data->>'modelKey'));
+create index if not exists idx_blog_posts_status on blog_posts ((data->>'status'));
+alter table blog_posts enable row level security;
+
+-- Junction table: links vehicles to their model's article. Many vehicles →
+-- one article. Used to show all variants + dealers on the model hub page,
+-- sorted by customer location.
+create table if not exists article_vehicles (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_article_vehicles_articleId on article_vehicles ((data->>'articleId'));
+create index if not exists idx_article_vehicles_vehicleId on article_vehicles ((data->>'vehicleId'));
+alter table article_vehicles enable row level security;

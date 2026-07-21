@@ -236,6 +236,81 @@ Showroom marketplace (`app/showroom/page.js`) gets a **Fuel Type filter** dropdo
 - **⚠️ robots.txt MUST stay a static `public/robots.txt` file** — three other approaches all 404 on production even though they work locally (incl. under a local `next start`): the `firebase-frameworks` wrapper inside the Cloud Run function refuses to serve `/robots.txt` as a metadata route, a force-static route handler, or a force-dynamic route handler. The static public file is served by Firebase Hosting directly and is the only mechanism proven to work in this stack. Don't "modernize" it back into `app/`.
 - **⚠️ ACTION NEEDED (Cloudflare dashboard, not code): managed robots.txt (AI Crawl Control) currently REPLACES the served robots.txt on evcrm.in** with Cloudflare's content-signals block — classic search crawlers are still allowed everything (so no ranking harm), but our `Sitemap:` line and disallows are dropped, and AI crawlers (GPTBot, ClaudeBot, CCBot…) are blocked, which works against the "get cited by AI answers" goal. Turn the managed robots.txt off (or to prepend mode) in Cloudflare → AI Crawl Control for zone evcrm.in. Also: **submit https://evcrm.in/sitemap.xml in Google Search Console + Bing Webmaster Tools** (one-time manual step).
 
+**Dealer-authored content / Blog articles with model-hub architecture (added 2026-07-21, ✅ COMPLETE & READY FOR DEPLOYMENT):** Dealers can now create SEO-optimized articles that rank on evcrm.in/blog. **Key innovation**: one article per vehicle MODEL (not per vehicle), so 50 dealers listing "Tata Nexon EV Max" all link to the same hub page with all their listings sorted by nearest dealer to customer. Articles auto-generate on first upload of a model, then reuse forever — zero manual effort, Gemini API called only once per unique model.
+
+**Architecture overview:**
+- **One article per model** (e.g., `/blog/tata-nexon-ev-max`) → auto-generated via Gemini on first dealer upload of that model, then reused for all future uploads of the same model
+- **Auto-generated on first upload**: Dealer uploads "Tata Nexon EV Max 2024" → system checks if article exists for "tata-nexon-ev-max" model → doesn't exist → calls Gemini ONCE → article published → vehicle linked → done
+- **Auto-linked on subsequent uploads**: Dealer #2 uploads "Tata Nexon EV Max 2024" → system finds existing article → links vehicle → done (no API call)
+- **Junction table** (`article_vehicles`): links many vehicles to one article, enables showing all variants + all dealers on the hub page
+- **Sorted by location**: API returns vehicles sorted by nearest dealer to customer's geolocation (if lat/lng provided), then by price
+- **Multiple variants on one page**: Article shows all Nexon variants (base, mid, top trim) from all dealers, customer picks the one nearest to them
+
+- **Backend APIs (all ✅ complete):**
+  - `POST /api/dealer/blog/generate` — Gemini 2.5-flash AI drafting from a topic or inventory vehicle. Accepts vehicle specs (brand/model/variant/year/fuelType/exShowroom/city) for guaranteed relevance; prompt forbids inventing specs; returns {title, excerpt, body} for dealer review.
+  - `GET /api/dealer/blog` — dealer's own posts (draft + published), newest first, full data.
+  - `POST /api/dealer/blog` — create a new post (draft or published immediately). Caller provides {title, excerpt, blogBody, matchModels[], tags[], coverEmoji, status}. Server generates slug from title, sets createdAt/publishedAt/dealership. On publish, fires IndexNow pings.
+  - `PATCH /api/dealer/blog` — edit title/excerpt/body/models/tags/status/emoji on an existing post. Can flip between draft ↔ published. IndexNow pings fire on any publish or unpublish.
+  - `DELETE /api/dealer/blog?id=...` — soft-delete a post (removes from table, resets that article URL to 404).
+  - `GET /api/blog` — public: all published posts, newest first, metadata only (no bodies).
+  - `GET /api/blog/[slug]` — public: one published post + matched inventory (same `matchInventoryForModels` used by sitemap, returns vehicles dealer has in stock that match any of the article's `matchModels`, up to 12, sorted by `exShowroom` ascending, dealer name + district attached).
+- **Auto-generation on vehicle upload** (`app/api/dealer/inventory/route.js`):
+  - On `POST /api/dealer/inventory` (dealer uploads new vehicle):
+    1. Save vehicle to inventory
+    2. Extract model key from brand+model (e.g., "tata-nexon-ev-max")
+    3. Check if article exists for this model (query `blog_posts` by `modelKey`)
+    4. If article exists → link vehicle via `article_vehicles` junction table, done
+    5. If article doesn't exist → call `ensureModelArticle()` → Gemini generates one article → publish → link vehicle
+  - Calls are fire-and-forget (don't block response); if Gemini fails, log it and continue (vehicle still saves)
+  - **Efficiency**: Gemini called only once per unique model, reused for all future uploads
+
+- **Model-hub public page** (`app/api/blog/[slug]/route.js`):
+  - Fetches one article by slug
+  - Queries `article_vehicles` junction table for all vehicles linked to this article
+  - Filters by visibility rules (IN_STOCK, inspection-approved for used)
+  - Joins with `users` table to get dealer location + subdomain
+  - **Sorts by distance** (if customer location provided via lat/lng params) then by price
+  - Returns article + up to 50 vehicles, all variants of the same model, nearest dealers first
+  - Example response: "Tata Nexon EV Max" article + 20 vehicles across 15 dealers sorted by customer distance + price
+
+- **Data model**:
+  - `blog_posts` table: id, slug, modelKey (unique per model), dealership (author's dealership), status:"published", title, excerpt, body, authorName, createdAt, publishedAt
+  - `article_vehicles` table (new): id, articleId, vehicleId, createdAt (junction linking many vehicles to one article per model)
+  - Indexes: `blog_posts(modelKey, status)` for fast "does article exist for this model?" checks; `article_vehicles(articleId)` for fetching all vehicles for an article
+
+- **Frontend UI** (`app/dealer/page.js` — BlogSection component, ✅ built & compiled earlier this session):
+  - Not needed for auto-gen, but dealers can still manually create articles if they want
+  - "Write Article" button → AI draft from topic or vehicle → review/edit → publish (same as before)
+  - Manually-published articles show in their Content tab, but auto-generated ones also appear there
+
+- **Sitemap integration**: `app/sitemap.js` (force-dynamic) already lists all published blog posts as `/blog/{slug}` entries
+
+- **IndexNow pings**: Fire on vehicle upload if article is auto-generated or linked
+
+- **Verified**: Inventory route compiles without errors; new functions (`ensureModelArticle`, `linkVehicleToArticle`, `getModelKey`) all wired correctly.
+
+- **Schema required for production** — run in Supabase SQL Editor:
+```sql
+create table if not exists article_vehicles (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_article_vehicles_articleId on article_vehicles ((data->>'articleId'));
+create index if not exists idx_article_vehicles_vehicleId on article_vehicles ((data->>'vehicleId'));
+alter table article_vehicles enable row level security;
+```
+
+- **Files changed**:
+  - `app/api/dealer/inventory/route.js` (auto-generation on POST, new functions: `getModelKey()`, `ensureModelArticle()`, `linkVehicleToArticle()`)
+  - `app/api/blog/[slug]/route.js` (model-hub page: fetch article + linked vehicles sorted by distance)
+  - `scripts/supabase-schema.sql` (added `article_vehicles` table definition)
+  - `app/dealer/page.js` (BlogSection component, unchanged from prior session)
+  - `scripts/backfill-blog-articles.js` (new: one-time backfill for existing inventory)
+
+- **Deployment checklist**:
+  1. ✅ Code complete and compiles
+  2. Run SQL in Supabase SQL Editor: create `article_vehicles` table
+  3. Deploy via `deploy_on_windows.bat`
+  4. Run backfill: `node scripts/backfill-blog-articles.js` (generates articles for all existing vehicle models, links all vehicles)
+  5. Test: Visit `/blog` → should see articles for all models; click article → should see all variants sorted by location + price
+
 **Customer-initiated mechanic inspection booking (added 2026-07-18, build passing):** For used/pre-owned vehicles, customers can now book a mechanic inspection visit directly from the vehicle detail page on the showroom. The customer brings their own trusted mechanic to the dealership — EvCRM has **zero liability**, dealer pays **nothing**. Flow: Customer sees used vehicle listing → clicks "🔍 Book Mechanic Inspection" (button only appears when `condition !== "new"`) → picks date + time slot (7 slots from 10 AM–5 PM, up to 7 days out) → enters name/phone/email/optional message → confirmed → dealer gets notified in their Bookings tab. Files: `app/api/marketplace/inspection/route.js` (new POST endpoint — creates booking with `type:"INSPECTION"`, lead with `source_context:"inspection"`, feed event, auto-task, confirmation email), `app/showroom/page.js` (new `InspectionModal` component + blue "Book Mechanic Inspection" CTA button in ProductDetail sidebar), `app/dealer/page.js` (BookingsSection table gains "Type" column with blue "🔍 Inspection" / green "🚗 Test Drive" badges; calendar view shows "Customer's mechanic" for inspection visits; token column shows "Free" for inspections), `lib/email.js` (`sendInspectionBookingEmail` — includes date/time/location, "bring your own mechanic" instructions). **API verified**: `POST /api/marketplace/inspection` returns `{success:true, booking:{type:"INSPECTION", status:"CONFIRMED"}}` with correct vehicle name, date, and time slot. **Note**: All test data vehicles are `condition:"new"`, so the button is invisible in the local dev sandbox — it only renders for used vehicles (which exist in production via the ICE dealer flow). No used vehicle test data exists locally.
 
 **Auth/infra**: login w/ role redirects (rep/dealer→/dealer, oem→/oem, founder→/admin) — post-login uses **`window.location.assign` full navigation** (soft router.replace caused an infinite loop; don't regress this); forgot-password email OTP flow (WORKS in prod via Resend); Supabase persistence; seed script; production guard in store.js.

@@ -91,6 +91,7 @@ const TABS = [
   { id:"service",    icon:"🔧", label:"Service"     },
   { id:"buildprice", icon:"₹",  label:"BuildPrice"  },
   { id:"quotepro",   icon:"📋", label:"QuotePro"    },
+  { id:"content",    icon:"📝", label:"Content"     },
   { id:"settings",   icon:"⚙️", label:"Settings"    },
 ]
 
@@ -3758,6 +3759,372 @@ function QuoteSection({ dealership, dealer, prefill }) {
 }
 
 /* ─────────────────────────────────────────────
+   BLOG SECTION — Dealer content authoring
+───────────────────────────────────────────── */
+function BlogSection({ dealership, inventory=[], dealerSubdomain }) {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [generatingId, setGeneratingId] = useState(null)
+  const [showGenerate, setShowGenerate] = useState(false)
+  const [generateTopic, setGenerateTopic] = useState("")
+  const [generateVehicle, setGenerateVehicle] = useState(null)
+
+  const [form, setForm] = useState({
+    title: "",
+    excerpt: "",
+    blogBody: "",
+    matchModels: [],
+    tags: [],
+    coverEmoji: "🚗",
+    status: "draft"
+  })
+
+  const loadPosts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await authFetch(`/api/dealer/blog`).then(r => r.json())
+      if (data.success) setPosts(data.posts || [])
+    } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { loadPosts() }, [loadPosts])
+
+  const startEdit = (post) => {
+    setEditingId(post.id)
+    setForm({
+      title: post.title,
+      excerpt: post.excerpt,
+      blogBody: post.body,
+      matchModels: post.matchModels || [],
+      tags: post.tags || [],
+      coverEmoji: post.coverEmoji || "🚗",
+      status: post.status
+    })
+  }
+
+  const clearForm = () => {
+    setEditingId(null)
+    setForm({
+      title: "",
+      excerpt: "",
+      blogBody: "",
+      matchModels: [],
+      tags: [],
+      coverEmoji: "🚗",
+      status: "draft"
+    })
+  }
+
+  const generateDraft = async () => {
+    if (!generateTopic.trim() && !generateVehicle) {
+      alert("Enter a topic or pick a vehicle from your inventory")
+      return
+    }
+    setGeneratingId(true)
+    try {
+      const payload = {
+        topic: generateTopic.trim(),
+        vehicle: generateVehicle ? {
+          brand: generateVehicle.brand,
+          model: generateVehicle.model,
+          variant: generateVehicle.variant,
+          year: generateVehicle.year,
+          fuelType: generateVehicle.fuelType,
+          exShowroom: generateVehicle.exShowroom,
+          city: generateVehicle.city
+        } : null
+      }
+      const res = await authFetch("/api/dealer/blog/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if (!data.success) {
+        alert(data.error || "AI generation failed")
+        return
+      }
+      const draft = data.draft
+      setForm({
+        title: draft.title,
+        excerpt: draft.excerpt,
+        blogBody: draft.body,
+        matchModels: draft.matchModels || [],
+        tags: draft.tags || [],
+        coverEmoji: "🚗",
+        status: "draft"
+      })
+      setEditingId("new")
+      setShowGenerate(false)
+      setGenerateTopic("")
+      setGenerateVehicle(null)
+    } catch (e) {
+      alert("Error: " + e.message)
+    } finally { setGeneratingId(false) }
+  }
+
+  const saveDraft = async (status="draft") => {
+    if (!form.title.trim() || !form.blogBody.trim()) {
+      alert("Title and content are required")
+      return
+    }
+    setSaving(true)
+    try {
+      const method = editingId && editingId !== "new" ? "PATCH" : "POST"
+      const url = editingId && editingId !== "new" ? "/api/dealer/blog" : "/api/dealer/blog"
+      const payload = {
+        ...(editingId && editingId !== "new" && { id: editingId }),
+        title: form.title.trim(),
+        excerpt: form.excerpt.trim(),
+        blogBody: form.blogBody.trim(),
+        matchModels: form.matchModels.filter(Boolean),
+        tags: form.tags.filter(Boolean),
+        coverEmoji: form.coverEmoji,
+        status
+      }
+      const res = await authFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || "Save failed")
+        return
+      }
+      loadPosts()
+      clearForm()
+    } catch (e) {
+      alert("Error: " + e.message)
+    } finally { setSaving(false) }
+  }
+
+  const deletePost = async (id) => {
+    if (!confirm("Delete this post?")) return
+    try {
+      const res = await authFetch(`/api/dealer/blog?id=${id}`, { method: "DELETE" })
+      if (res.ok) {
+        loadPosts()
+      } else {
+        alert("Delete failed")
+      }
+    } catch (e) {
+      alert("Error: " + e.message)
+    }
+  }
+
+  const published = posts.filter(p => p.status === "published")
+  const drafts = posts.filter(p => p.status === "draft")
+
+  return (
+    <div>
+      {/* Header + CTA */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 13, color: C.ink2 }}>
+          Create dealer-authored articles that rank in search, with live inventory matched below. AI drafts help you get started fast.
+        </div>
+        {!editingId && (
+          <Btn onClick={() => setShowGenerate(true)}>✍️ Write Article</Btn>
+        )}
+      </div>
+
+      {/* Generate Modal */}
+      {showGenerate && (
+        <Modal title="Generate Article Draft" onClose={() => { setShowGenerate(false); setGenerateTopic(""); setGenerateVehicle(null) }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Topic (or leave blank and pick a vehicle below)</label>
+            <input
+              type="text"
+              value={generateTopic}
+              onChange={e => setGenerateTopic(e.target.value)}
+              placeholder="e.g., Ertiga vs Innova, EV charging near me, best SUVs under 10 lakhs"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Or pick a vehicle from your inventory</label>
+            <select
+              value={generateVehicle ? JSON.stringify(generateVehicle) : ""}
+              onChange={e => setGenerateVehicle(e.target.value ? JSON.parse(e.target.value) : null)}
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }}
+            >
+              <option value="">Select a vehicle…</option>
+              {inventory.map((v, i) => (
+                <option key={i} value={JSON.stringify(v)}>
+                  {v.brand} {v.model} {v.variant ? `(${v.variant})` : ""} · {fmt.currency(v.exShowroom)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={generateDraft} disabled={generatingId}>
+              {generatingId ? "Generating…" : "Generate Draft"}
+            </Btn>
+            <button onClick={() => { setShowGenerate(false); setGenerateTopic(""); setGenerateVehicle(null) }}
+              style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, color: C.ink2, borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit/Create Form */}
+      {editingId && (
+        <Card style={{ marginBottom: 24, padding: "20px" }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Cover Emoji</label>
+            <input
+              type="text"
+              maxLength="2"
+              value={form.coverEmoji}
+              onChange={e => setForm(f => ({ ...f, coverEmoji: e.target.value }))}
+              style={{ width: 60, padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 18, textAlign: "center", fontFamily: "inherit" }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Title</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="SEO-friendly title (max 70 chars)"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Excerpt (Search snippet)</label>
+            <textarea
+              value={form.excerpt}
+              onChange={e => setForm(f => ({ ...f, excerpt: e.target.value }))}
+              placeholder="1-2 sentences for search results (max 160 chars)"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", minHeight: 60, resize: "none" }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Article Body</label>
+            <textarea
+              value={form.blogBody}
+              onChange={e => setForm(f => ({ ...f, blogBody: e.target.value }))}
+              placeholder="Use double-newlines to split paragraphs. Start lines with '## ' for section headings."
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", minHeight: 200, resize: "none" }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Vehicle Models to Match (comma-separated, up to 3)</label>
+            <input
+              type="text"
+              value={form.matchModels.join(", ")}
+              onChange={e => setForm(f => ({ ...f, matchModels: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }))}
+              placeholder="e.g., Ertiga, Innova, Creta"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Tags (comma-separated, up to 8)</label>
+            <input
+              type="text"
+              value={form.tags.join(", ")}
+              onChange={e => setForm(f => ({ ...f, tags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }))}
+              placeholder="e.g., comparison, buyers-guide, EV, affordability"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Btn onClick={() => saveDraft("draft")} disabled={saving === "draft"} style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.ink }}>
+              {saving === "draft" ? "Saving…" : "💾 Save as Draft"}
+            </Btn>
+            <Btn onClick={() => saveDraft("published")} disabled={saving === "published"}>
+              {saving === "published" ? "Publishing…" : "✨ Publish"}
+            </Btn>
+            <button onClick={clearForm}
+              style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, color: C.ink2, borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Cancel
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* Published Posts */}
+      {!editingId && published.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 12 }}>📰 Published ({published.length})</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+            {published.map(p => (
+              <Card key={p.id} style={{ padding: "16px", display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{p.coverEmoji}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{p.title}</div>
+                <div style={{ fontSize: 12, color: C.ink3, marginBottom: 8, flexGrow: 1 }}>{p.excerpt}</div>
+                <div style={{ fontSize: 10, color: C.ink3, marginBottom: 12 }}>Published {new Date(p.publishedAt).toLocaleDateString("en-IN")}</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                  {p.tags?.slice(0, 2).map(t => (
+                    <Tag key={t} style={{ fontSize: 10 }}>{t}</Tag>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Link href={`/blog/${p.slug}`} style={{ flex: 1, textAlign: "center", background: C.green, color: "#fff", borderRadius: 6, padding: "8px 0", fontSize: 11, fontWeight: 700, textDecoration: "none" }}>
+                    Read on evcrm.in →
+                  </Link>
+                  <button onClick={() => startEdit(p)} title="Edit"
+                    style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.ink2, borderRadius: 6, padding: "8px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    ✏️
+                  </button>
+                  <button onClick={() => deletePost(p.id)} title="Delete"
+                    style={{ background: "#FEE2E2", border: "1px solid #FECACA", color: "#DC2626", borderRadius: 6, padding: "8px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    🗑️
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Draft Posts */}
+      {!editingId && drafts.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 12 }}>✏️ Drafts ({drafts.length})</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+            {drafts.map(p => (
+              <Card key={p.id} style={{ padding: "16px", display: "flex", flexDirection: "column", opacity: 0.8 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>{p.coverEmoji}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{p.title}</div>
+                <div style={{ fontSize: 12, color: C.ink3, marginBottom: 8, flexGrow: 1 }}>{p.excerpt}</div>
+                <div style={{ fontSize: 10, color: C.ink3, marginBottom: 12 }}>Saved {new Date(p.updatedAt).toLocaleDateString("en-IN")}</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => startEdit(p)} style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, color: C.ink, borderRadius: 6, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    Continue Editing
+                  </button>
+                  <button onClick={() => deletePost(p.id)} title="Delete"
+                    style={{ background: "#FEE2E2", border: "1px solid #FECACA", color: "#DC2626", borderRadius: 6, padding: "8px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    🗑️
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {loading ? (
+        <div style={{ padding: 60, textAlign: "center", color: C.ink3 }}>Loading articles…</div>
+      ) : (posts.length === 0 && !editingId) ? (
+        <Card style={{ padding: 60, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 6 }}>No articles yet</div>
+          <div style={{ fontSize: 12, color: C.ink3, marginBottom: 20 }}>
+            Write articles about your vehicles, topics buyers search for, comparisons. They show up on evcrm.in/blog with your live inventory matched below each post.
+          </div>
+          <Btn onClick={() => setShowGenerate(true)}>✍️ Write Your First Article</Btn>
+        </Card>
+      ) : null}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    MAIN DEALER DASHBOARD
 ───────────────────────────────────────────── */
 function DealerDashboard() {
@@ -4235,6 +4602,8 @@ function DealerDashboard() {
       {activeTab === "buildprice" && <BuildPriceSection user={user} prefill={buildPricePrefill} quotes={quotes} onBuildQuote={(data) => { setQuotePrefill(data); setActiveTab("quotepro") }} />}
 
       {activeTab === "quotepro"  && <QuoteSection dealership={dealership} dealer={user} prefill={quotePrefill} />}
+
+      {activeTab === "content"   && <BlogSection dealership={dealership} inventory={inventory} dealerSubdomain={user?.dealerSubdomain} />}
 
       {activeTab === "settings"  && <SettingsSection dealership={dealership} dealer={user} reps={reps} onRepsRefresh={loadAll} />}
 
