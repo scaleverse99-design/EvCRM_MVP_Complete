@@ -167,6 +167,8 @@ export async function PATCH(req) {
       condition: "used",
       fuelType: row.fuelType || "Petrol",
       color: row.color || "",
+      transmission: "",
+      engineDetails: "",
       exShowroom: row.finalPrice || row.offeredPrice || row.askingPrice || 0,
       status: "IN_STOCK",
       vin: "",

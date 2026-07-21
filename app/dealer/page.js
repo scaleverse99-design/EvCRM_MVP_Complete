@@ -118,6 +118,7 @@ const REASON_STATUSES = ["CANCELLED","DEAD_STOCK"]
 
 const FUEL_TYPES = ["Electric","Petrol","Diesel","CNG","Hybrid"]
 const CONDITION_OPTIONS = ["new","used"]
+const TRANSMISSION_TYPES = ["Manual","Automatic","AMT","CVT","DCT","Single-Speed"]
 
 // Fixed inspection checklist for used-vehicle listings — same "hardcoded
 // lookup table" pattern as lib/evCatalog.js. A dealer must fill this in and
@@ -143,7 +144,7 @@ function emptyInspectionReport() {
 }
 
 function emptyVehicle(dealership, dealerName, dealerCategory) {
-  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, condition:"new", fuelType: dealerCategory === "ICE" ? "Petrol" : "Electric", color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", inspectionReport: null, dealership, dealerName }
+  return { brand:"", model:"", variant:"", type:"4W", bodyType:"SUV", year:2024, km:0, condition:"new", fuelType: dealerCategory === "ICE" ? "Petrol" : "Electric", color:"", range:0, batteryCapacity:"", topSpeed:0, chargingTime:"", seatingCapacity:"", bootSpace:"", groundClearance:"", warrantyYears:"", transmission:"", engineDetails:"", certified:false, exShowroom:0, emi:0, status:"IN_STOCK", vin:"", isDemo:false, features:"", state:"Telangana", district:"Hyderabad", tags:"", inspectionReport: null, dealership, dealerName }
 }
 
 /* ── Inventory Report Modal — 5.9 ── */
@@ -639,6 +640,8 @@ function InventorySection({ dealership, user }) {
             </div>
             <F label="Year"              field="year"        type="number" form={form} setForm={setForm} />
             <F label="KM Driven (0=new)" field="km"          type="number" form={form} setForm={setForm} />
+            <F label="Transmission"      field="transmission" opts={TRANSMISSION_TYPES} form={form} setForm={setForm} />
+            <F label="Engine / Motor Details" field="engineDetails" form={form} setForm={setForm} />
             <F label="Range (km)"        field="range"       type="number" form={form} setForm={setForm} />
             <F label="Battery Capacity"  field="batteryCapacity" form={form} setForm={setForm} />
             <F label="Top Speed (km/h)"  field="topSpeed"    type="number" form={form} setForm={setForm} />
@@ -778,6 +781,8 @@ function InventorySection({ dealership, user }) {
             <F label="Colour"            field="color" form={reviewForm} setForm={setReviewForm} />
             <F label="Vehicle Type"      field="type"     opts={VEHICLE_TYPES} form={reviewForm} setForm={setReviewForm} />
             <F label="Body Type"         field="bodyType" opts={BODY_TYPES} form={reviewForm} setForm={setReviewForm} />
+            <F label="Transmission"      field="transmission" opts={TRANSMISSION_TYPES} form={reviewForm} setForm={setReviewForm} />
+            <F label="Engine / Motor Details" field="engineDetails" form={reviewForm} setForm={setReviewForm} />
             <F label="Range (km)"        field="range"       type="number" form={reviewForm} setForm={setReviewForm} />
             <F label="Battery Capacity"  field="batteryCapacity" form={reviewForm} setForm={setReviewForm} />
             <F label="Top Speed (km/h)"  field="topSpeed"    type="number" form={reviewForm} setForm={setReviewForm} />

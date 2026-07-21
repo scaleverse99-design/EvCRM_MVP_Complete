@@ -66,6 +66,8 @@ export async function POST(req) {
     batteryCapacity: body.batteryCapacity || "",
     topSpeed:    body.topSpeed || 0,
     chargingTime:    body.chargingTime || "",
+    transmission:    body.transmission || "",
+    engineDetails:   body.engineDetails || "",
     seatingCapacity: body.seatingCapacity || "",
     bootSpace:       body.bootSpace || "",
     groundClearance: body.groundClearance || "",
