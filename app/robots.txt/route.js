@@ -11,7 +11,14 @@
 // contained "Disallow: /vehicles", blocking Google from every vehicle
 // listing page. /vehicles and dealer storefront slugs MUST stay crawlable
 // — they're the whole point of the SEO hub model.
-export const dynamic = "force-static"
+//
+// force-dynamic (NOT force-static): even as a route handler, a
+// statically-prerendered /robots.txt 404'd on the deployed Cloud Run
+// function — "robots.txt" is a reserved metadata filename and its
+// prerender-manifest entry doesn't resolve there. Serving it dynamically
+// per-request bypasses the manifest entirely — the same mechanism that
+// makes /sitemap.xml work in production.
+export const dynamic = "force-dynamic"
 
 const BODY = `User-Agent: *
 Allow: /
