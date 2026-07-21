@@ -1,7 +1,7 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { C, fmt } from "../../lib/constants"
 import { bookTestDrive } from "../../lib/payments/tokenBooking"
 import TopBar from "../../components/home/TopBar"
@@ -864,9 +864,31 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
   )
 }
 
+// Deep-link support: /showroom?vehicleId=X (shared from blog articles,
+// dealer inventory "View" links, sitemap/IndexNow) opens straight into that
+// vehicle's detail view instead of the generic list. Isolated in its own
+// component so only this leaf needs the Suspense boundary useSearchParams()
+// requires for static prerendering — the rest of the page renders normally.
+function VehicleIdSync({ vehicles, onMatch }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  useEffect(() => {
+    const vehicleId = searchParams?.get("vehicleId")
+    if (!vehicleId || vehicles.length === 0) return
+    const match = vehicles.find(v => v.id === vehicleId)
+    if (match) {
+      onMatch(match)
+      // Strip the param once applied — otherwise clicking "Back" out of the
+      // detail view would find it in the URL again and immediately reopen it.
+      router.replace(pathname, { scroll: false })
+    }
+  }, [searchParams, vehicles, onMatch, router, pathname])
+  return null
+}
+
 /* ── Main page ─────────────────────────────────────────────────────── */
 export default function ShowroomPage() {
-  const searchParams = useSearchParams()
   const [vehicles, setVehicles] = useState([])
   const [filters, setFilters] = useState({ brands: [], districts: [] })
   const [loading, setLoading] = useState(true)
@@ -891,22 +913,15 @@ export default function ShowroomPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Deep-link support: /showroom?vehicleId=X (shared from blog articles,
-  // dealer inventory "View" links, sitemap/IndexNow) opens straight into
-  // that vehicle's detail view instead of the generic list.
-  useEffect(() => {
-    const vehicleId = searchParams?.get("vehicleId")
-    if (!vehicleId || vehicles.length === 0) return
-    const match = vehicles.find(v => v.id === vehicleId)
-    if (match) setViewing(match)
-  }, [searchParams, vehicles])
-
   const brands = ["All Brands", ...(filters.brands || [])]
 
   if (viewing) return <ProductDetail v={viewing} vehicles={vehicles} onBack={() => setViewing(null)} onView={setViewing} onBook={setBookVehicle} />
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "'DM Sans','Segoe UI',sans-serif", background: "#FAFAFA" }}>
+      <Suspense fallback={null}>
+        <VehicleIdSync vehicles={vehicles} onMatch={setViewing} />
+      </Suspense>
       <style>{MOBILE_STYLES}</style>
       <TopBar />
       <div style={{ background: C.ink, padding: "48px 20px", textAlign: "center", color: "#fff" }}>
