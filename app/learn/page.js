@@ -4,6 +4,7 @@ import Link from "next/link"
 import { C } from "../../lib/constants"
 import TopBar from "../../components/home/TopBar"
 import Footer from "../../components/home/Footer"
+import KnowledgeSearchBar from "../../components/home/KnowledgeSearchBar"
 
 const CATEGORY_ICONS = {
   "EV Fundamentals": "⚡",
@@ -39,9 +40,10 @@ export default function LearnPage() {
       <TopBar />
       <div style={{ background: C.ink, padding: "48px 20px", textAlign: "center", color: "#fff" }}>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-1px", margin: 0 }}>EvCRM Learn</h1>
-        <p style={{ fontSize: 16, opacity: 0.7, marginTop: 8, maxWidth: 620, marginLeft: "auto", marginRight: "auto" }}>
+        <p style={{ fontSize: 16, opacity: 0.7, marginTop: 8, maxWidth: 620, marginLeft: "auto", marginRight: "auto", marginBottom: 24 }}>
           Everything about how EVs and vehicles actually work — motors, batteries, engines, transmissions, and the tech shaping what you'll drive next.
         </p>
+        <KnowledgeSearchBar />
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px 80px" }}>

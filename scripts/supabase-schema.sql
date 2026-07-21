@@ -120,3 +120,15 @@ create table if not exists article_vehicles (id text primary key, data jsonb not
 create index if not exists idx_article_vehicles_articleId on article_vehicles ((data->>'articleId'));
 create index if not exists idx_article_vehicles_vehicleId on article_vehicles ((data->>'vehicleId'));
 alter table article_vehicles enable row level security;
+
+-- Knowledge Hub search log (added 2026-07-22, app/api/learn/search). Every
+-- query typed into the /learn or /blog search bar is logged here — which
+-- article it matched or generated, an extracted vehicle brand if any, and
+-- the visitor's cached location. Powers the dealer-facing "Trending
+-- Research" card (app/api/dealer/trending-research): cross-references this
+-- log against a dealer's own inventory brands and city/state to surface
+-- "trending in your stock" and "trending near you" signals.
+create table if not exists search_queries (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_search_queries_createdAt on search_queries ((data->>'createdAt'));
+create index if not exists idx_search_queries_brand on search_queries ((data->>'brand'));
+alter table search_queries enable row level security;

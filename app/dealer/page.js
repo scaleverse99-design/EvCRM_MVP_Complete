@@ -4132,6 +4132,64 @@ function BlogSection({ dealership, inventory=[], dealerSubdomain }) {
 }
 
 /* ─────────────────────────────────────────────
+   TRENDING RESEARCH — insights from the Knowledge Hub search log
+   (evcrm.in/learn, evcrm.in/blog). Self-contained: fetches its own data
+   so it doesn't need new state threaded through DealerDashboard.
+───────────────────────────────────────────── */
+function TrendingResearchCard() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    authFetch("/api/dealer/trending-research")
+      .then(res => res.json())
+      .then(d => { if (d.success) setData(d) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return null
+  if (!data || data.totalSearches === 0) return null // nothing to show yet — don't clutter the dashboard
+
+  const Row = ({ brand, count, max }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <span style={{ fontSize: 11, color: C.ink, width: 110, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{brand}</span>
+      <div style={{ flex: 1, background: C.bg, borderRadius: 6, height: 12, overflow: "hidden" }}>
+        <div style={{ width: `${(count / max) * 100}%`, height: "100%", background: C.green, borderRadius: 6 }} />
+      </div>
+      <span style={{ fontSize: 10, fontWeight: 800, color: C.ink, width: 20, textAlign: "right" }}>{count}</span>
+    </div>
+  )
+
+  const maxStock = Math.max(...data.trendingInStock.map(r => r.count), 1)
+  const maxNear = Math.max(...data.trendingNearYou.map(r => r.count), 1)
+
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <SectionHeading>🔎 Trending Research — last {data.windowDays} days</SectionHeading>
+      <div style={{ fontSize: 11, color: C.ink3, marginBottom: 14 }}>
+        From {data.totalSearches} vehicle-related searches on evcrm.in's Learn & Blog sections.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 10 }}>Trending in your stock</div>
+          {data.trendingInStock.length === 0 ? (
+            <div style={{ fontSize: 11, color: C.ink3 }}>No searches yet matching brands you stock.</div>
+          ) : data.trendingInStock.map(r => <Row key={r.brand} {...r} max={maxStock} />)}
+        </div>
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 10 }}>Trending near you</div>
+          {!data.hasLocation ? (
+            <div style={{ fontSize: 11, color: C.ink3 }}>Add your city in Settings → Dealer Profile to see location-matched trends.</div>
+          ) : data.trendingNearYou.length === 0 ? (
+            <div style={{ fontSize: 11, color: C.ink3 }}>No searches yet from your area.</div>
+          ) : data.trendingNearYou.map(r => <Row key={r.brand} {...r} max={maxNear} />)}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+/* ─────────────────────────────────────────────
    MAIN DEALER DASHBOARD
 ───────────────────────────────────────────── */
 function DealerDashboard() {
@@ -4523,6 +4581,8 @@ function DealerDashboard() {
               )
             })}
           </div>
+
+          <TrendingResearchCard />
 
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1.3fr 1fr", gap:16 }}>
             <Card>

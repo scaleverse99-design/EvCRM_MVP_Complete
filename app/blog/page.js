@@ -4,6 +4,7 @@ import Link from "next/link"
 import { C } from "../../lib/constants"
 import TopBar from "../../components/home/TopBar"
 import Footer from "../../components/home/Footer"
+import KnowledgeSearchBar from "../../components/home/KnowledgeSearchBar"
 
 // Public blog index — consumer-facing vehicle content published by dealers
 // to the evcrm.in hub. This is an SEO surface (topical depth that ranks the
@@ -25,7 +26,8 @@ export default function BlogPage() {
       <TopBar />
       <div style={{ background: C.ink, padding: "48px 20px", textAlign: "center", color: "#fff" }}>
         <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-1px", margin: 0 }}>EvCRM Vehicle Guides</h1>
-        <p style={{ fontSize: 16, opacity: 0.7, marginTop: 8 }}>Reviews, comparisons & buying advice — then buy from trusted dealers near you.</p>
+        <p style={{ fontSize: 16, opacity: 0.7, marginTop: 8, marginBottom: 24 }}>Reviews, comparisons & buying advice — then buy from trusted dealers near you.</p>
+        <KnowledgeSearchBar placeholder="Ask about any car or EV model, or a buying question…" />
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px 80px" }}>
