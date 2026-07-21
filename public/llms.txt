@@ -1,0 +1,29 @@
+# evcrm.in
+
+> India's vehicle dealer marketplace and CRM platform. Browse new and used cars, EVs, and two-wheelers from verified dealers across India — plus an evergreen knowledge base explaining how vehicles actually work, so buyers understand what they're purchasing whether or not they buy here.
+
+## What this site offers
+
+- Vehicle marketplace with real-time dealer inventory (new and used cars, EVs, two-wheelers)
+- Individual dealer storefronts at evcrm.in/{dealer-slug} with live listings, pricing, and test-drive booking
+- Blog: one buyer's guide per vehicle model, showing every dealer currently stocking that model, sorted by price and proximity — evcrm.in/blog
+- Learn: an evergreen knowledge base on EV/automobile fundamentals (motors, batteries, engines, transmissions), buying guides, and current industry tech trends — evcrm.in/learn
+- A search bar on Blog/Learn that answers any vehicle-related question directly, generating a new article on the spot if nothing existing covers it
+
+## Read-only API endpoints for agents
+
+- Marketplace vehicle search: https://evcrm.in/api/marketplace/vehicles
+- Published blog articles (per-model buyer's guides): https://evcrm.in/api/blog
+- One blog article by slug, with live matching inventory: https://evcrm.in/api/blog/{slug}
+- Knowledge base articles, grouped by category: https://evcrm.in/api/learn
+- One knowledge article by slug: https://evcrm.in/api/learn/{slug}
+
+## Structured data
+
+Vehicle listing pages (evcrm.in/showroom?vehicleId=...) include Schema.org Car/Motorcycle + Offer markup.
+Dealer storefront pages include Schema.org AutoDealer markup.
+Blog and Learn articles include Schema.org Article markup.
+
+## Sitemap
+
+https://evcrm.in/sitemap.xml
