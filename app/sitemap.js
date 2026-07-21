@@ -16,6 +16,7 @@ export default async function sitemap() {
   const staticRoutes = [
     "",
     "/showroom",
+    "/blog",
     "/charging",
     "/service-centers",
     "/subsidies",
@@ -31,15 +32,16 @@ export default async function sitemap() {
 
   let vehicleRoutes = []
   let dealerRoutes = []
+  let blogRoutes = []
   try {
-    const [inventory, users] = await Promise.all([readTable("inventory"), readTable("users")])
+    const [inventory, users, blogPosts] = await Promise.all([readTable("inventory"), readTable("users"), readTable("blog_posts").catch(() => [])])
 
     // Same visibility rule as /api/marketplace/vehicles: IN_STOCK, and used
     // vehicles only once their inspection report is dealer-approved.
     vehicleRoutes = inventory
       .filter(v => v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED"))
       .map(v => ({
-        url: `${baseUrl}/vehicles/${v.id}`,
+        url: `${baseUrl}/showroom?vehicleId=${v.id}`,
         lastModified: v.updatedAt || v.createdAt || now,
         changeFrequency: "daily",
         priority: 0.8,
@@ -53,11 +55,20 @@ export default async function sitemap() {
         changeFrequency: "daily",
         priority: 0.7,
       }))
+
+    blogRoutes = (blogPosts || [])
+      .filter(p => p.status === "published")
+      .map(p => ({
+        url: `${baseUrl}/blog/${p.slug}`,
+        lastModified: p.updatedAt || p.publishedAt || now,
+        changeFrequency: "weekly",
+        priority: 0.75,
+      }))
   } catch (e) {
     // A data-layer hiccup should degrade to the static sitemap, not a 500 —
     // Google treats a failing sitemap worse than a smaller one.
     console.error("[sitemap] dynamic section failed:", e.message)
   }
 
-  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes]
+  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes, ...blogRoutes]
 }

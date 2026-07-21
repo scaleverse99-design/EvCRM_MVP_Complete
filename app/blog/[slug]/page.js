@@ -110,7 +110,7 @@ export default function BlogPostPage() {
                       <div style={{ fontSize: 16, fontWeight: 900, color: C.ink, margin: "6px 0" }}>{fmt.currency(v.exShowroom || 0)}</div>
                       <div style={{ fontSize: 10.5, color: C.ink3, marginBottom: 10 }}>🏪 {v.dealerName}{v.district ? ` · ${v.district}` : ""}</div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <Link href={`/vehicles/${v.id}`} style={{ flex: 1, textAlign: "center", background: C.green, color: "#fff", borderRadius: 8, padding: "8px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>Buy Now →</Link>
+                        <Link href={`/showroom?vehicleId=${v.id}`} style={{ flex: 1, textAlign: "center", background: C.green, color: "#fff", borderRadius: 8, padding: "8px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>Buy Now →</Link>
                         {v.dealerSubdomain && <Link href={`/${v.dealerSubdomain}`} title="Visit dealer storefront" style={{ background: "#F3F4F6", color: C.ink2, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>🏪</Link>}
                       </div>
                     </div>

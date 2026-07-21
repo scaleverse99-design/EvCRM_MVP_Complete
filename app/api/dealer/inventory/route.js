@@ -212,7 +212,7 @@ export async function POST(req) {
   // Tell the search engines about the new listing immediately (free
   // instant indexing — fire-and-forget, never blocks the response).
   if (isPubliclyVisible(item)) {
-    pingIndexNow([`https://evcrm.in/vehicles/${item.id}`, "https://evcrm.in/sitemap.xml"])
+    pingIndexNow([`https://evcrm.in/showroom?vehicleId=${item.id}`, "https://evcrm.in/sitemap.xml"])
   }
 
   return NextResponse.json({ success:true, item })

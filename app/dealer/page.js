@@ -592,7 +592,7 @@ function InventorySection({ dealership, user }) {
                         style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}25`, color:C.blue, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                         ✏ Edit
                       </button>
-                      <Link href={`/vehicles/${v.id}`} target="_blank"
+                      <Link href={`/showroom?vehicleId=${v.id}`} target="_blank"
                         style={{ background:`${C.green}15`, border:`1px solid ${C.green}25`, color:C.green, borderRadius:8, padding:"5px 10px", fontSize:10, fontWeight:700, textDecoration:"none" }}>
                         🌐 View
                       </Link>
