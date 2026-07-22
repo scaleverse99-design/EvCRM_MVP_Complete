@@ -12,3 +12,8 @@ node_modules/
 
 firebase-debug.log
 *-debug.log
+.aider*
+
+# scratch space for local experiments / browser automation profiles —
+# never something that belongs in the repo
+scratch/

@@ -132,3 +132,18 @@ create table if not exists search_queries (id text primary key, data jsonb not n
 create index if not exists idx_search_queries_createdAt on search_queries ((data->>'createdAt'));
 create index if not exists idx_search_queries_brand on search_queries ((data->>'brand'));
 alter table search_queries enable row level security;
+
+-- Orchestrator topic queue (added 2026-07-22, app/api/orchestrator/*). Rows
+-- move through a small state machine: DISCOVERED (Gemini found it and it's
+-- awaiting research) → RESEARCHED (grounded search produced a brief; if you
+-- want a human/NotebookLM pause, this is the moment to hand-edit the brief
+-- before it flows into writing) → PUBLISHED (article generated and inserted
+-- into blog_posts). FAILED at any step captures the error and stops flow so
+-- a bad topic doesn't waste later stages' Gemini quota. Same jsonb-blob
+-- pattern as every other table here — no schema migrations when you add a
+-- field to a row.
+create table if not exists orch_topics (id text primary key, data jsonb not null, created_at timestamptz default now());
+create index if not exists idx_orch_topics_state on orch_topics ((data->>'state'));
+create index if not exists idx_orch_topics_topic on orch_topics ((data->>'topic'));
+create index if not exists idx_orch_topics_discoveredAt on orch_topics ((data->>'discoveredAt'));
+alter table orch_topics enable row level security;

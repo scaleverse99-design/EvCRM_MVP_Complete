@@ -1,0 +1,59 @@
+name: News orchestrator cron
+
+# Hits the deployed /api/orchestrator/run endpoint on a schedule. No Node
+# runtime, no npm install — just curl. All the pipeline logic lives inside
+# the Next.js app on Cloud Run, so this workflow only needs to know two
+# secrets (the endpoint URL and the shared bearer token) and stays stable
+# even as the pipeline itself evolves.
+#
+# Add these repo secrets before enabling:
+#   ORCHESTRATOR_URL     = https://evcrm.in/api/orchestrator/run
+#   ORCHESTRATOR_TOKEN   = <same value as INTERNAL_API_SECRET in the app's env>
+
+on:
+  schedule:
+    # IST times: 8:00 AM, 2:00 PM, 8:00 PM (UTC-5:30)
+    - cron: "30 2 * * *"
+    - cron: "30 8 * * *"
+    - cron: "30 14 * * *"
+  workflow_dispatch:
+    inputs:
+      discover:
+        description: "How many topics to discover"
+        required: false
+        default: "10"
+      research:
+        description: "How many topics to research"
+        required: false
+        default: "5"
+      write:
+        description: "How many articles to write and publish"
+        required: false
+        default: "3"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fire the orchestrator
+        env:
+          URL: ${{ secrets.ORCHESTRATOR_URL }}
+          TOKEN: ${{ secrets.ORCHESTRATOR_TOKEN }}
+          DISCOVER: ${{ github.event.inputs.discover || '10' }}
+          RESEARCH: ${{ github.event.inputs.research || '5' }}
+          WRITE:    ${{ github.event.inputs.write    || '3' }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::error::ORCHESTRATOR_URL or ORCHESTRATOR_TOKEN not set in repo secrets"
+            exit 1
+          fi
+          echo "Firing orchestrator: discover=$DISCOVER research=$RESEARCH write=$WRITE"
+          RESPONSE=$(curl --silent --show-error --fail-with-body \
+            --max-time 600 \
+            -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"discover\":$DISCOVER,\"research\":$RESEARCH,\"write\":$WRITE}")
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -oE '"written":[0-9]+|"researched":[0-9]+|"discovered":[0-9]+' || true
