@@ -6,8 +6,36 @@ import { C, fmt } from "../../../lib/constants"
 import TopBar from "../../../components/home/TopBar"
 import Footer from "../../../components/home/Footer"
 
+// Parses inline markdown links `[text](url)` in a paragraph into clickable
+// anchors that show only the link text — the orchestrator's news articles
+// cite sources this way, and the raw Google grounding-redirect URLs are
+// enormous, so rendering the bare markdown looked broken. Anything that
+// isn't a link passes through as plain text (no HTML injection — we never
+// dangerouslySetInnerHTML, we build React nodes). Model-hub/dealer articles
+// have no such links, so this is a no-op for them.
+const MD_LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g
+
+function renderInline(text) {
+  const nodes = []
+  let lastIndex = 0
+  let m
+  MD_LINK.lastIndex = 0
+  while ((m = MD_LINK.exec(text)) !== null) {
+    if (m.index > lastIndex) nodes.push(text.slice(lastIndex, m.index))
+    const [, label, url] = m
+    const safe = /^https?:\/\//i.test(url) ? url : "#"
+    nodes.push(
+      <a key={m.index} href={safe} target="_blank" rel="noopener noreferrer nofollow"
+        style={{ color: C.green, textDecoration: "none", fontWeight: 600 }}>{label}</a>
+    )
+    lastIndex = m.index + m[0].length
+  }
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex))
+  return nodes.length ? nodes : text
+}
+
 // Renders the article body: '## ' lines become headings, blank lines split
-// paragraphs. Keeps the AI/dealer text as plain text (no HTML injection).
+// paragraphs. Inline `[text](url)` citations render as clean source links.
 function ArticleBody({ text }) {
   const blocks = (text || "").split(/\n{2,}/).map(b => b.trim()).filter(Boolean)
   return (
@@ -16,7 +44,7 @@ function ArticleBody({ text }) {
         if (block.startsWith("## ")) {
           return <h2 key={i} style={{ fontSize: 20, fontWeight: 800, color: C.ink, margin: "28px 0 10px" }}>{block.slice(3)}</h2>
         }
-        return <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{block}</p>
+        return <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{renderInline(block)}</p>
       })}
     </>
   )
