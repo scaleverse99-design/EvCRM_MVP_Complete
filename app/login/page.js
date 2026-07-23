@@ -326,7 +326,9 @@ export default function LoginPage() {
             }}>E</div>
             <span style={{ fontSize:28, fontWeight:900, color:C.ink, letterSpacing:"-0.8px" }}>EV<span style={{ color:ACCENT }}>.CRM</span></span>
           </div>
-          <p style={{ fontSize:12, color:C.ink3, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>India's EV Sales OS & Commerce Hub</p>
+          <p style={{ fontSize:12, color:C.ink3, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase" }}>
+            {dealerVariant === "usedcar" ? "India's Auto Sales OS & Commerce Hub" : "India's EV Sales OS & Commerce Hub"}
+          </p>
         </div>
 
         <div style={{ background:"#fff", borderRadius:24, border:`1px solid ${C.border}`, padding:"40px", boxShadow: "0 12px 40px rgba(0,0,0,0.06)" }}>

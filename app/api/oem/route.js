@@ -212,7 +212,7 @@ export async function PATCH(req) {
         await sendBulkImportVerificationEmail({
           email: dealer.email, dealerName: dealer.name, businessName: dealer.dealershipName || dealer.name,
           ownerName: dealer.ownerName || "", phone: dealer.phone, city: dealer.city, state: dealer.state,
-          verificationToken, oemName,
+          verificationToken, oemName, dealerCategory: dealer.dealerCategory
         })
         emailSent = true
       } catch (e) {
@@ -260,7 +260,7 @@ export async function PATCH(req) {
         await sendBulkImportVerificationEmail({
           email: d.email, dealerName: d.name, businessName: d.dealershipName || d.name,
           ownerName: d.ownerName || "", phone: d.phone, city: d.city, state: d.state,
-          verificationToken, oemName,
+          verificationToken, oemName, dealerCategory: d.dealerCategory
         })
         results.push({ dealership, sent: true })
       } catch (e) {
