@@ -61,6 +61,12 @@ export async function GET(req, { params }) {
       authorName: post.authorName,
       publishedAt: post.publishedAt || post.createdAt,
       modelKey: post.modelKey,
+      // Visual-layout fields the orchestrator's news writer emits — without
+      // these the news article renders as a plain wall of paragraphs.
+      keyTakeaways: post.keyTakeaways || [],
+      pullQuote: post.pullQuote || "",
+      comparisonTable: post.comparisonTable || null,
+      images: Array.isArray(post.images) ? post.images : [],
     },
     matchedVehicles: vehicles.slice(0, 50), // cap at 50 vehicles per article
   })

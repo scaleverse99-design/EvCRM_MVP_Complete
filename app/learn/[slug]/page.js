@@ -6,40 +6,87 @@ import { C } from "../../../lib/constants"
 import TopBar from "../../../components/home/TopBar"
 import Footer from "../../../components/home/Footer"
 
-// Parses inline markdown links `[text](url)` into clean clickable anchors
-// showing only the link text (see the same helper in app/blog/[slug] — the
-// orchestrator's cited articles can surface at either route). No-op for
-// text without links, and never injects HTML (builds React nodes).
-const MD_LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g
+import TransmissionWidget from "../../../components/learn/widgets/TransmissionWidget"
+import BatteryWidget from "../../../components/learn/widgets/BatteryWidget"
+
+// Inline renderer — handles **bold**, [text](url) links, and bare
+// [domain/path] citations (the orchestrator's cited news articles can surface
+// at either route, and their writer sometimes strips citations down to a bare
+// bracketed URL). Keep this in sync with the same helper in app/blog/[slug].
+// No-op for plain text, and never injects HTML (builds React nodes).
+const INLINE = /(\*\*(?=\S)([^*]+?)\*\*)|(\[([^\]]+)\]\(([^)\s]+)\))|(\[([^\]\s]+\.[a-z]{2,}[^\]]*)\])/gi
+
+function citationLink(raw, key) {
+  const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  const domain = url.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./, "")
+  return (
+    <a key={key} href={url} target="_blank" rel="noopener noreferrer nofollow"
+      title={url}
+      style={{ color: C.green, textDecoration: "none", fontWeight: 700, fontSize: "0.72em", verticalAlign: "super", marginLeft: 2, whiteSpace: "nowrap" }}>
+      {domain}↗
+    </a>
+  )
+}
 
 function renderInline(text) {
   const nodes = []
   let lastIndex = 0
   let m
-  MD_LINK.lastIndex = 0
-  while ((m = MD_LINK.exec(text)) !== null) {
+  INLINE.lastIndex = 0
+  while ((m = INLINE.exec(text)) !== null) {
     if (m.index > lastIndex) nodes.push(text.slice(lastIndex, m.index))
-    const [, label, url] = m
-    const safe = /^https?:\/\//i.test(url) ? url : "#"
-    nodes.push(
-      <a key={m.index} href={safe} target="_blank" rel="noopener noreferrer nofollow"
-        style={{ color: C.green, textDecoration: "none", fontWeight: 600 }}>{label}</a>
-    )
+    if (m[1]) {
+      nodes.push(<strong key={m.index} style={{ fontWeight: 800, color: C.ink }}>{m[2]}</strong>)
+    } else if (m[3]) {
+      const url = m[5]
+      const safe = /^https?:\/\//i.test(url) ? url : "#"
+      nodes.push(
+        <a key={m.index} href={safe} target="_blank" rel="noopener noreferrer nofollow"
+          style={{ color: C.green, textDecoration: "none", fontWeight: 600 }}>{m[4]}</a>
+      )
+    } else {
+      nodes.push(citationLink(m[7], m.index))
+    }
     lastIndex = m.index + m[0].length
   }
   if (lastIndex < text.length) nodes.push(text.slice(lastIndex))
   return nodes.length ? nodes : text
 }
 
+// Splits body text into typed blocks, peeling a '## ' heading onto its own
+// block even when the writer put it a single '\n' above the paragraph (not a
+// blank line) — otherwise the whole section renders as one giant unprocessed
+// heading. Keep in sync with app/blog/[slug].
+function parseBlocks(text) {
+  const out = []
+  for (const chunk of (text || "").split(/\n{2,}/)) {
+    let buf = []
+    const flush = () => { const t = buf.join("\n").trim(); if (t) out.push(t); buf = [] }
+    for (const line of chunk.split("\n")) {
+      if (line.trim().startsWith("## ")) { flush(); out.push(line.trim()) }
+      else buf.push(line)
+    }
+    flush()
+  }
+  return out
+}
+
 // Renders the article body: '## ' lines become headings, blank lines split
 // paragraphs. Inline `[text](url)` citations render as clean source links.
+// Renders interactive widgets inline when custom tags are encountered.
 function ArticleBody({ text }) {
-  const blocks = (text || "").split(/\n{2,}/).map(b => b.trim()).filter(Boolean)
+  const blocks = parseBlocks(text)
   return (
     <>
       {blocks.map((block, i) => {
         if (block.startsWith("## ")) {
-          return <h2 key={i} style={{ fontSize: 20, fontWeight: 800, color: C.ink, margin: "28px 0 10px" }}>{block.slice(3)}</h2>
+          return <h2 key={i} style={{ fontSize: 20, fontWeight: 800, color: C.ink, margin: "28px 0 10px" }}>{renderInline(block.slice(3))}</h2>
+        }
+        if (block === "[widget:transmission]") {
+          return <TransmissionWidget key={i} />
+        }
+        if (block === "[widget:battery]") {
+          return <BatteryWidget key={i} />
         }
         return <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{renderInline(block)}</p>
       })}

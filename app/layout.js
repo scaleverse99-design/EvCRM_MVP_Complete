@@ -1,4 +1,5 @@
 import "./globals.css"
+import Script from "next/script"
 import { Providers } from "./providers"
 
 export const metadata = {
@@ -35,6 +36,13 @@ export const metadata = {
     shortcut: "/favicon.png",
     apple: "/favicon.png",
   },
+  // Google-recognised AdSense site-ownership signal. Rendered server-side into
+  // <head> as <meta name="google-adsense-account" content="ca-pub-…"> so the
+  // AdSense crawler (which reads static HTML) can verify the site even before
+  // the ad script executes.
+  other: {
+    "google-adsense-account": "ca-pub-8854584222782697",
+  },
 }
 
 export const viewport = {
@@ -46,7 +54,22 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body><Providers>{children}</Providers></body>
+      <body>
+        {/* Google AdSense loader — serves ads client-side. Site OWNERSHIP is
+            verified via the google-adsense-account <meta> in <head> (see
+            metadata above), which is server-rendered and reliably crawlable;
+            the App Router doesn't emit a static <script> tag for any strategy,
+            so we don't depend on this tag for verification — use the "Meta tag"
+            method in the AdSense console. */}
+        <Script
+          id="google-adsense"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8854584222782697"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }
