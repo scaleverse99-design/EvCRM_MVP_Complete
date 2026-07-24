@@ -17,6 +17,7 @@ const pino = require('pino');
 const https = require('https');
 const http = require('http');
 const { extractSpecs } = require('./spec-extractor');
+const { organizeWithQwen } = require('./qwen-organizer');
 
 const logger = pino({
   transport: { target: 'pino-pretty', options: { colorize: true } }
@@ -119,8 +120,12 @@ async function fetchAndEnrichVehicle(vehicleName, category = 'ev_two_wheeler') {
     html: combinedText
   };
 
-  // Run deterministic spec extractor
+  // Step 1: Run deterministic CODE spec extractor (Regex, price/range/battery normalizer)
   const { specs, score } = extractSpecs(rawProduct, category);
+
+  // Step 2: Run local Qwen 2.5 LLM via Ollama (Zero API cost) to organize metadata into JSON
+  const codeCleaned = { name: vehicleName, price: specs.price, specs };
+  const qwenOrganized = await organizeWithQwen(codeCleaned, combinedText);
 
   // Extract brand (first word of vehicle name)
   const brand = vehicleName.split(' ')[0] || 'Automotive OEM';
@@ -135,6 +140,8 @@ async function fetchAndEnrichVehicle(vehicleName, category = 'ev_two_wheeler') {
     currency: 'INR',
     specs: {
       ...specs,
+      qwen_metadata: qwenOrganized.qwen_metadata || null,
+      organized_by: qwenOrganized.organized_by || 'code_regex_engine',
       google_verified_at: new Date().toISOString(),
       top_search_sources: searchResults.slice(0, 3).map(s => ({ title: s.title, url: s.link }))
     },
