@@ -9,8 +9,9 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Copy server and static files
+# Copy server, crawler, and static files
 COPY api/ ./api/
+COPY crawler/ ./crawler/
 COPY web/ ./web/
 
 EXPOSE 3000
