@@ -7,6 +7,7 @@ const puppeteer = require('puppeteer');
 const { createClient } = require('@supabase/supabase-js');
 const pino = require('pino');
 const { extractSpecs } = require('./spec-extractor');
+const { runMonitor } = require('./rss-monitor');
 
 // Initialize logger
 const logger = pino({
@@ -263,6 +264,9 @@ class CTECrawler {
 
       const duration = ((Date.now() - this.stats.startTime) / 1000).toFixed(2);
       logger.info(`Crawler run complete. Scraped: ${this.stats.crawled}, Failed: ${this.stats.failed}, Duration: ${duration}s`);
+
+      logger.info('Starting RSS monitor scan...');
+      await runMonitor().catch(err => logger.error(err, 'RSS monitor run failed'));
 
     } catch (error) {
       logger.error({ error }, 'Scraper thread crashed');
