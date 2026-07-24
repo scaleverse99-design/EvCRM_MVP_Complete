@@ -10,6 +10,7 @@ const { extractSpecs } = require('./spec-extractor');
 const { runMonitor } = require('./rss-monitor');
 const { ingestGovtDatasets } = require('./govt-data-ingest');
 const { enrichWithCarWaleCarDekhoMatrix } = require('./cardekho-carwale-enricher');
+const { ingestInternetArchiveData } = require('./internet-archive-ingest');
 
 // Initialize logger
 const logger = pino({
@@ -275,6 +276,9 @@ class CTECrawler {
 
       logger.info('Starting CarWale & CarDekho Buyer Satisfaction Matrix Enrichment...');
       await enrichWithCarWaleCarDekhoMatrix().catch(err => logger.error(err, 'CarWale/CarDekho enrichment failed'));
+
+      logger.info('Starting Internet Archive (Wayback Machine CDX API) Historical Ingestion...');
+      await ingestInternetArchiveData().catch(err => logger.error(err, 'Internet Archive CDX ingestion failed'));
 
     } catch (error) {
       logger.error({ error }, 'Scraper thread crashed');
