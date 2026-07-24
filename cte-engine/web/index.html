@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTE - Consumer Transparency Engine</title>
+  <meta name="description" content="Transparent price-fairness and quality scoring for the Indian automobile industry. Powered by Ev.CRM.">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">CTE</span>
+      </div>
+      <div class="nav-tagline">Powered by Ev.CRM</div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-bg-gradient"></div>
+    <div class="container hero-content">
+      <span class="badge">Objective Automobile Insights</span>
+      <h1>Consumer Transparency Engine</h1>
+      <p class="subtitle">Scraping live OEM specs & pricing to calculate value scores. Real data. Zero marketing fluff.</p>
+      
+      <!-- Interactive Specs Search bar -->
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search vehicles (e.g., Ather, Ola, NK-Ebikes, Cars24)..." />
+        <button id="search-btn">Analyze Specs</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- Live Market Insights Dashboard -->
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2>Live Automobile Insights</h2>
+        <p>Dynamic spec indexes updated every 6 hours</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🚗</div>
+          <div class="stat-number" id="product-count">0</div>
+          <div class="stat-label">Automotive Catalog</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-trend-list" id="trending-searches">
+            <span>Loading trends...</span>
+          </div>
+          <div class="stat-label">Trending Search Intent</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🕒</div>
+          <div class="stat-number" id="last-crawl">Checking...</div>
+          <div class="stat-label">Last Database Sync</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Market Intelligence Section -->
+    <section class="analytics-section">
+      <div class="section-header">
+        <h2>Market Intelligence Dashboard</h2>
+        <p>5-Year pricing trends & monthly EV registrations share</p>
+      </div>
+      <div class="analytics-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Pricing & Specification Timeline</h3>
+            <select id="brand-select" class="chart-select">
+              <option value="ather">Ather Energy</option>
+              <option value="ola-electric">Ola Electric</option>
+              <option value="tata">Tata Motors</option>
+              <option value="cars24">Cars24 (Used)</option>
+              <option value="spinny">Spinny (Used)</option>
+            </select>
+          </div>
+          <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Monthly Registration Demand & Market Share</h3>
+          </div>
+          <div class="chart-container">
+            <canvas id="demandChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Catalog / Search Results -->
+    <section class="catalog-section" id="catalog-section" style="display:none;">
+      <h2>Specification Analysis</h2>
+      <div class="product-grid" id="product-list">
+        <!-- Dynmic content -->
+      </div>
+    </section>
+
+    <!-- SEO Articles / Comparison Blogs Section -->
+    <section class="blog-section">
+      <div class="section-header">
+        <h2>SEO Guides & Comparisons</h2>
+        <p>Auto-generated from crawler specification insights</p>
+      </div>
+      <div class="articles-grid" id="articles-list">
+        <!-- Dynamic Articles -->
+        <p class="loading-text">Fetching latest articles...</p>
+      </div>
+    </section>
+
+    <!-- AI Developer / MCP Server integration Section -->
+    <section class="mcp-section">
+      <div class="mcp-card">
+        <div class="mcp-header">
+          <span class="mcp-badge">Developer Integration</span>
+          <h2>Connect Your AI Tools (MCP Server)</h2>
+          <p>Expose CTE transparency scores directly to Claude, ChatGPT, or custom AI assistants using Model Context Protocol.</p>
+        </div>
+        <div class="mcp-body">
+          <p>Register the CTE server in your client configurations to let AI tools fetch real-time spec comparisons:</p>
+          <pre><code>{
+  "mcpServers": {
+    "cte-transparency": {
+      "command": "node",
+      "args": ["path/to/cte-engine/api/server.js"],
+      "env": {
+        "SUPABASE_URL": "your-supabase-url",
+        "SUPABASE_KEY": "your-supabase-key"
+      }
+    }
+  }
+}</code></pre>
+          <div class="mcp-endpoints">
+            <strong>Active SSE Endpoints:</strong>
+            <code>GET https://cte.evcrm.in/mcp</code>
+            <code>POST https://cte.evcrm.in/mcp/message?sessionId=...</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead Capture Section -->
+    <section class="signup-section">
+      <div class="signup-container">
+        <h2>Get Weekly Transparency Reports</h2>
+        <p>Join smart buyers receiving raw price-drop alerts, upcoming vehicle specifications, and comparison spreadsheets.</p>
+        <form id="email-form" class="email-form">
+          <input type="email" id="email-input" placeholder="Enter your email" required />
+          <button type="submit">Subscribe</button>
+        </form>
+        <p class="note">No advertising. Unsubscribe in one click.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 CTE (Consumer Transparency Engine). All rights reserved.</p>
+      <p class="footer-link">An initiative by <a href="https://evcrm.in" target="_blank">Ev.CRM</a> to build transparency in e-commerce.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/stats.js"></script>
+  <script src="js/subscribe.js"></script>
+  <script src="js/analytics.js"></script>
+</body>
+</html>

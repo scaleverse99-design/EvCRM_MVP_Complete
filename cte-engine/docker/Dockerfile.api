@@ -1,0 +1,21 @@
+FROM node:22-slim
+
+WORKDIR /app
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+# Install production dependencies
+COPY package*.json ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+# Copy server and static files
+COPY api/ ./api/
+COPY web/ ./web/
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV API_PORT=3000
+
+CMD ["node", "api/server.js"]

@@ -1,0 +1,36 @@
+{
+  "name": "cte-engine",
+  "version": "1.0.0",
+  "description": "Consumer Transparency Engine - Web scraper & MCP server",
+  "main": "api/server.js",
+  "scripts": {
+    "start": "node api/server.js",
+    "crawl": "node crawler/index.js",
+    "dev": "nodemon api/server.js"
+  },
+  "keywords": [
+    "transparency",
+    "e-commerce",
+    "mcp",
+    "scraper"
+  ],
+  "author": "Balaji Lankalapalli",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.0",
+    "puppeteer": "^21.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
