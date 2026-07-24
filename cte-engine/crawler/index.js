@@ -8,6 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 const pino = require('pino');
 const { extractSpecs } = require('./spec-extractor');
 const { runMonitor } = require('./rss-monitor');
+const { ingestGovtDatasets } = require('./govt-data-ingest');
 
 // Initialize logger
 const logger = pino({
@@ -267,6 +268,9 @@ class CTECrawler {
 
       logger.info('Starting RSS monitor scan...');
       await runMonitor().catch(err => logger.error(err, 'RSS monitor run failed'));
+
+      logger.info('Starting Government Datasets & Policy ingestion...');
+      await ingestGovtDatasets().catch(err => logger.error(err, 'Govt dataset ingestion failed'));
 
     } catch (error) {
       logger.error({ error }, 'Scraper thread crashed');
