@@ -287,9 +287,9 @@ if (require.main === module) {
     res.setHeader('Content-Type', 'application/json');
     if (req.url === '/crawl') {
       logger.info('Triggered crawler via HTTP request');
-      await crawler.run().catch(err => logger.error(err));
-      res.writeHead(200);
-      res.end(JSON.stringify({ status: 'crawl run completed', stats: crawler.stats }));
+      res.writeHead(202);
+      res.end(JSON.stringify({ status: 'crawl run initiated in background', timestamp: new Date() }));
+      crawler.run().catch(err => logger.error(err, 'Background crawl run error'));
     } else if (req.url === '/health' || req.url === '/') {
       res.writeHead(200);
       res.end(JSON.stringify({ status: 'healthy', service: 'cte-crawler' }));
