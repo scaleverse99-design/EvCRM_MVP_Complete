@@ -26,9 +26,16 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// ── RSS FEED SOURCES (50+ Indian auto sites) ──────────────────────────────
+// ── RSS FEED SOURCES (50+ Indian auto sites + Google News aggregators) ────
 const RSS_FEEDS = [
-  // Auto News & Reviews
+  // Google News Aggregators (Free, 100% web coverage)
+  { name: 'Google News - EV India',       url: 'https://news.google.com/rss/search?q=electric+vehicle+India+when:12h&hl=en-IN&gl=IN&ceid=IN:en', category: 'ev_news' },
+  { name: 'Google News - Auto Launch',    url: 'https://news.google.com/rss/search?q=car+scooter+launch+India+when:12h&hl=en-IN&gl=IN&ceid=IN:en', category: 'auto_news' },
+  { name: 'Google News - Auto Price Cut', url: 'https://news.google.com/rss/search?q=car+bike+price+cut+hike+India+when:12h&hl=en-IN&gl=IN&ceid=IN:en', category: 'auto_news' },
+  { name: 'Google News - SUV News',       url: 'https://news.google.com/rss/search?q=SUV+car+India+launch+price+when:12h&hl=en-IN&gl=IN&ceid=IN:en', category: 'auto_news' },
+  { name: 'Google News - 2 Wheeler',      url: 'https://news.google.com/rss/search?q=bike+scooter+launch+price+India+when:12h&hl=en-IN&gl=IN&ceid=IN:en', category: 'auto_news' },
+
+  // Auto News & Reviews Portals
   { name: 'AutoCar India',     url: 'https://www.autocarindia.com/RSS/rss.aspx?ID=3064', category: 'auto_news' },
   { name: 'OverDrive India',   url: 'https://www.overdrive.in/feed/',                    category: 'auto_news' },
   { name: 'MotorBeam',         url: 'https://www.motorbeam.com/feed/',                   category: 'auto_news' },
@@ -56,14 +63,15 @@ const RSS_FEEDS = [
   { name: 'BS Motoring',       url: 'https://www.bsmotoring.com/feed/',                  category: 'auto_news' },
 ];
 
-// EV-specific keywords to filter relevant articles
+// Complete Automobile & EV keywords for total coverage
 const EV_KEYWORDS = [
   'electric', 'ev', 'battery', 'range km', 'charging', 'kwh', 'ola s1', 'ather',
-  'tata nexon ev', 'tata tiago ev', 'mahindra xuv400', 'mg zs ev', 'mg comet',
+  'tata nexon', 'tata tiago', 'mahindra xuv', 'mg zs', 'mg comet', 'tata curvv',
   'tvs iqube', 'bajaj chetak', 'hero electric', 'revolt rx', 'hyundai ioniq',
   'kia ev6', 'byd atto', 'launch price', 'ex-showroom', 'price hike', 'price cut',
   'new launch', 'upcoming', 'specification', 'range test', 'real world range',
-  'subsidy', 'fame', 'emps scheme', 'charging station', 'fastcharge'
+  'subsidy', 'fame', 'emps scheme', 'charging station', 'fastcharge', 'suv',
+  'hybrid', 'cng', 'car launch', 'bike launch', 'scooter launch', 'mileage', 'facelift'
 ];
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
