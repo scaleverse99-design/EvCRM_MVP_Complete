@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const pino = require('pino');
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
+const { fetchAndEnrichVehicle } = require('../crawler/google-search-fetcher');
 
 // Initialize Logger
 const logger = pino({
@@ -635,9 +636,20 @@ app.post('/mcp/message', async (req, res) => {
 
       } else if (name === 'get_vehicle_detail') {
         const { name: vname, include_financial = true } = args || {};
-        const { data, error } = await supabase.from('products').select('*').ilike('name', `%${vname}%`).limit(1).maybeSingle();
+        let { data, error } = await supabase.from('products').select('*').ilike('name', `%${vname}%`).limit(1).maybeSingle();
         if (error) throw error;
-        let detail = { source: 'CTE', vehicle: data };
+
+        // Google Live Search Fallback: If not found in local DB, fetch from Google Live Search index & store
+        if (!data && vname) {
+          logger.info(`Vehicle "${vname}" not found in DB. Triggering Google Live Search Fetcher...`);
+          try {
+            data = await fetchAndEnrichVehicle(vname);
+          } catch (fetchErr) {
+            logger.warn(`Google Live Search fetch failed for ${vname}: ${fetchErr.message}`);
+          }
+        }
+
+        let detail = { source: 'CTE (Google Live Verified)', vehicle: data };
         if (include_financial && data) {
           const price = data.current_price || 0;
           const r = 0.095 / 12; const n = 60;
