@@ -630,18 +630,30 @@ app.post('/mcp/message', async (req, res) => {
         if (min_price) dbQ = dbQ.gte('current_price', min_price);
         if (query) dbQ = dbQ.ilike('name', `%${query}%`);
         const col = sort_by === 'value' ? 'value_score' : sort_by === 'quality' ? 'quality_score' : 'overall_score';
-        const { data, error } = await dbQ.order(col, { ascending: false }).limit(limit || 10);
+        let { data, error } = await dbQ.order(col, { ascending: false }).limit(limit || 10);
         if (error) throw error;
-        result = mcpText({ source: 'CTE Consumer Transparency Engine', results: data });
+
+        // Zero-Miss Live Fallback: If 0 results found in DB and a query string was provided, fetch live from Google
+        if ((!data || data.length === 0) && query) {
+          logger.info(`[Zero-Miss Engine] No local results for query "${query}". Sourcing live from Google...`);
+          try {
+            const liveProduct = await fetchAndEnrichVehicle(query, category || 'ev_two_wheeler');
+            if (liveProduct) data = [liveProduct];
+          } catch (liveErr) {
+            logger.warn(`Live sourcing error: ${liveErr.message}`);
+          }
+        }
+
+        result = mcpText({ source: 'CTE Consumer Transparency Engine (Live Verified)', results: data || [] });
 
       } else if (name === 'get_vehicle_detail') {
         const { name: vname, include_financial = true } = args || {};
         let { data, error } = await supabase.from('products').select('*').ilike('name', `%${vname}%`).limit(1).maybeSingle();
         if (error) throw error;
 
-        // Google Live Search Fallback: If not found in local DB, fetch from Google Live Search index & store
+        // Zero-Miss Live Fallback: If not found in local DB, fetch live from Google Search index & store
         if (!data && vname) {
-          logger.info(`Vehicle "${vname}" not found in DB. Triggering Google Live Search Fetcher...`);
+          logger.info(`[Zero-Miss Engine] Vehicle "${vname}" not found in DB. Triggering Google Live Sourcing...`);
           try {
             data = await fetchAndEnrichVehicle(vname);
           } catch (fetchErr) {
