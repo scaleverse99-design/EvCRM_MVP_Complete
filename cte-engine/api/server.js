@@ -120,10 +120,21 @@ app.get('/api/v1/products', async (req, res) => {
       dbQuery = dbQuery.order('overall_score', { ascending: false });
     }
 
-    const { data, error } = await dbQuery.limit(parseInt(limit) || 20);
-
+    let { data, error } = await dbQuery.limit(parseInt(limit) || 20);
     if (error) throw error;
-    res.json({ success: true, data });
+
+    // Zero-Miss Live Fallback: If 0 local rows found for a search query, fetch live from Google
+    if ((!data || data.length === 0) && query) {
+      logger.info(`[Zero-Miss REST API] No local rows for query "${query}". Triggering Google Live Sourcing...`);
+      try {
+        const liveProduct = await fetchAndEnrichVehicle(query, category || 'ev_two_wheeler');
+        if (liveProduct) data = [liveProduct];
+      } catch (liveErr) {
+        logger.warn(`REST API Live Sourcing error: ${liveErr.message}`);
+      }
+    }
+
+    res.json({ success: true, data: data || [] });
   } catch (error) {
     logger.error({ error }, 'Error fetching products');
     res.status(500).json({ success: false, error: error.message });
