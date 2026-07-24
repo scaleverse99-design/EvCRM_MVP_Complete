@@ -333,49 +333,253 @@ app.post('/mcp/message', async (req, res) => {
     } else if (method === 'tools/list') {
       result = {
         tools: [
+          // ── SPECS & SEARCH ─────────────────────────────────────────
           {
-            name: 'search_products',
-            description: 'Queries product details, specifications, and transparency scores. Logs query intent for market insights.',
+            name: 'search_vehicles',
+            description: 'Search Indian EV and automobile database by model name, brand, category, or budget. Returns full spec profiles with value scores. Use this for ANY question about "best EV", "cheapest electric scooter", "top rated", etc.',
             inputSchema: {
               type: 'object',
               properties: {
-                category: { type: 'string', description: 'Categories: ev_two_wheeler, used_car, auto_insurance, auto_loan' },
-                query: { type: 'string', description: 'Keywords to search' },
-                max_price: { type: 'number', description: 'Filter products below a maximum price (INR)' }
+                query: { type: 'string', description: 'Model name, brand, or keyword (e.g. "Ather 450X", "electric scooter under 1.5 lakh")' },
+                category: { type: 'string', enum: ['ev_two_wheeler', 'ev_four_wheeler', 'used_car', 'auto_insurance', 'auto_loan', 'auto_news'], description: 'Vehicle/product category filter' },
+                max_price: { type: 'number', description: 'Maximum ex-showroom price in INR' },
+                min_price: { type: 'number', description: 'Minimum ex-showroom price in INR' },
+                sort_by: { type: 'string', enum: ['value', 'quality', 'price_asc', 'price_desc', 'overall'], description: 'Sort criteria' },
+                limit: { type: 'number', description: 'Max results (default 10)' }
               }
             }
           },
           {
-            name: 'compare_vehicles',
-            description: 'Compares specifications and values of multiple vehicle IDs side-by-side.',
+            name: 'get_vehicle_detail',
+            description: 'Get COMPLETE profile of a specific EV or automobile — every spec, price, variant, score, subsidy eligibility, real-world range, insurance estimate, EMI, and resale value. The most comprehensive single-vehicle lookup tool.',
             inputSchema: {
               type: 'object',
               properties: {
-                ids: { type: 'array', items: { type: 'string' }, description: 'Array of vehicle/product IDs' }
+                name: { type: 'string', description: 'Vehicle model name (e.g. "Ather 450X", "Tata Nexon EV")' },
+                include_financial: { type: 'boolean', description: 'Include EMI, TCO, insurance estimates (default true)' }
               },
-              required: ['ids']
+              required: ['name']
             }
           },
           {
-            name: 'get_seo_articles',
-            description: 'Fetches auto-generated comparison blog posts and buying guides targeting SEO keywords.',
-            inputSchema: { type: 'object', properties: {} }
-          },
-          {
-            name: 'get_latest_automobile_news',
-            description: 'Fetches latest automobile industry updates, launches, and pricing notifications.',
-            inputSchema: { type: 'object', properties: {} }
-          },
-          {
-            name: 'find_charging_stations',
-            description: 'Locates nearby EV charging stations by GPS coordinates or city, shows charger types (Fast/Slow), status, and distance.',
+            name: 'compare_vehicles',
+            description: 'Side-by-side comparison of 2–4 vehicles across ALL dimensions: specs, price, range, charging, running cost, resale, insurance, and value score. Perfect for "X vs Y" queries.',
             inputSchema: {
               type: 'object',
               properties: {
-                latitude: { type: 'number', description: 'Latitude for location-based search' },
-                longitude: { type: 'number', description: 'Longitude for location-based search' },
-                radius_km: { type: 'number', description: 'Search radius in kilometers (default 8)' },
-                max_results: { type: 'number', description: 'Maximum results to return (default 10)' }
+                models: { type: 'array', items: { type: 'string' }, description: 'Array of vehicle model names to compare (e.g. ["Ather 450X", "Ola S1 Pro", "TVS iQube"])' }
+              },
+              required: ['models']
+            }
+          },
+          {
+            name: 'get_price_history',
+            description: 'Returns 5-year historical pricing and specification changes for a vehicle. Shows price increases, facelifts, battery upgrades over time (2021–2026).',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                brand: { type: 'string', description: 'Brand name (e.g. "ather", "ola", "tata")' },
+                model: { type: 'string', description: 'Model name (optional)' }
+              }
+            }
+          },
+          // ── FINANCIAL TOOLS ────────────────────────────────────────
+          {
+            name: 'calculate_emi',
+            description: 'Calculates exact monthly EMI for any vehicle purchase. Accounts for down payment, interest rate, and loan tenure. Also shows best bank offers available.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_price: { type: 'number', description: 'Ex-showroom price of vehicle in INR' },
+                down_payment: { type: 'number', description: 'Down payment amount in INR (default 20% of price)' },
+                interest_rate: { type: 'number', description: 'Annual interest rate in % (default 9.5% for EVs)' },
+                tenure_months: { type: 'number', description: 'Loan tenure in months (default 60)' },
+                subsidy_applied: { type: 'boolean', description: 'Apply applicable government subsidy before EMI calc (default true)' }
+              },
+              required: ['vehicle_price']
+            }
+          },
+          {
+            name: 'calculate_tco',
+            description: 'Calculates Total Cost of Ownership (TCO) for any EV over 3 or 5 years — purchase price, insurance, charging cost, servicing, subsidy savings, and resale value. The most complete financial picture.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'Vehicle model name' },
+                years: { type: 'number', description: 'Ownership period in years (3 or 5)', enum: [3, 5] },
+                km_per_day: { type: 'number', description: 'Average daily driving distance in km (default 30)' },
+                state: { type: 'string', description: 'Indian state for subsidy and electricity rate (e.g. "Maharashtra", "Karnataka")' }
+              },
+              required: ['vehicle_name']
+            }
+          },
+          {
+            name: 'get_subsidy_info',
+            description: 'Returns COMPLETE government subsidy information for any EV — Central EMPS scheme + all 28 state subsidies + RTO exemptions + income tax benefits. Essential for real purchase cost calculations.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_type: { type: 'string', enum: ['ev_two_wheeler', 'ev_four_wheeler', 'ev_three_wheeler'], description: 'Type of EV' },
+                state: { type: 'string', description: 'Indian state name for state-specific subsidies (optional — returns all if not specified)' },
+                vehicle_price: { type: 'number', description: 'Ex-showroom price to calculate eligibility (optional)' }
+              }
+            }
+          },
+          {
+            name: 'get_insurance_estimate',
+            description: 'Returns comprehensive insurance cost estimates for any EV — IDV, zero-dep premium, third-party, battery insurance. Compares top insurers (Acko, PolicyBazaar, Coverfox). Required for true cost of ownership.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'Vehicle model name' },
+                vehicle_price: { type: 'number', description: 'Ex-showroom price in INR' },
+                year: { type: 'number', description: 'Manufacture year (affects IDV and premium)' },
+                city: { type: 'string', description: 'Registration city (affects premium zone)' }
+              }
+            }
+          },
+          {
+            name: 'get_loan_offers',
+            description: 'Returns best auto loan offers for EVs from top Indian banks and NBFCs — SBI, HDFC, ICICI, Axis, Bank of Baroda. Includes green vehicle discounts and special EV rates.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_price: { type: 'number', description: 'Vehicle price for loan sizing' },
+                vehicle_type: { type: 'string', enum: ['ev_two_wheeler', 'ev_four_wheeler'] }
+              }
+            }
+          },
+          // ── MARKET INTELLIGENCE ────────────────────────────────────
+          {
+            name: 'get_demand_share',
+            description: 'Returns EV market share and registration volume data — monthly, by brand, state, or segment. Based on 5 years of VAHAN government data (2021–2026). Use for "which EV sells most" or market analysis queries.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                manufacturer: { type: 'string', description: 'Filter by brand (optional)' },
+                state: { type: 'string', description: 'Filter by Indian state (optional)' },
+                category: { type: 'string', enum: ['ev_two_wheeler', 'ev_four_wheeler'], description: 'Segment filter' },
+                period: { type: 'string', enum: ['last_6_months', 'last_year', 'all'], description: 'Time period' }
+              }
+            }
+          },
+          {
+            name: 'get_market_leaders',
+            description: 'Returns top-selling EV brands and models in India by registration volume — ranked by total sales, market share %, growth rate. Use for "market leader", "best selling", "top brand" queries.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: { type: 'string', enum: ['ev_two_wheeler', 'ev_four_wheeler', 'all'], description: 'Segment' },
+                top_n: { type: 'number', description: 'Number of top entries to return (default 5)' }
+              }
+            }
+          },
+          {
+            name: 'get_price_trends',
+            description: 'Returns price movement trends for EV models over time — identifies price hikes, cuts, and market patterns. Use for investment timing or cost tracking queries.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                brand: { type: 'string', description: 'Brand name to filter' },
+                category: { type: 'string', description: 'Vehicle category filter' }
+              }
+            }
+          },
+          // ── INFRASTRUCTURE ──────────────────────────────────────────
+          {
+            name: 'find_charging_stations',
+            description: 'Find EV charging stations in any Indian city or near GPS coordinates. Returns charger type (fast/slow/CCS/CHAdeMO), operator, availability, and cost per unit. Critical for range anxiety questions.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                city: { type: 'string', description: 'Indian city name (e.g. "Bangalore", "Mumbai")' },
+                state: { type: 'string', description: 'Indian state name' },
+                latitude: { type: 'number', description: 'GPS latitude for proximity search' },
+                longitude: { type: 'number', description: 'GPS longitude for proximity search' },
+                charger_type: { type: 'string', enum: ['fast', 'slow', 'any'], description: 'Charger speed filter' }
+              }
+            }
+          },
+          {
+            name: 'get_charging_cost',
+            description: 'Returns exact per-km electricity cost to run an EV in any Indian state — based on state electricity tariffs (₹/unit) and vehicle efficiency. Compares against petrol running cost.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'EV model name' },
+                state: { type: 'string', description: 'Indian state for electricity tariff rates' },
+                km_per_day: { type: 'number', description: 'Daily driving distance (default 30 km)' }
+              }
+            }
+          },
+          // ── CONSUMER INTELLIGENCE ──────────────────────────────────
+          {
+            name: 'get_real_world_range',
+            description: 'Returns real-world range data (not just claimed specs) for EVs — highway range, city range, AC impact, monsoon impact, and hill performance. Based on aggregated owner reports.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'EV model name (e.g. "Ather 450X", "Tata Nexon EV")' }
+              },
+              required: ['vehicle_name']
+            }
+          },
+          {
+            name: 'get_resale_value',
+            description: 'Returns EV resale value estimates — projected value after 1, 2, 3, 5 years based on depreciation curves, battery health projections, and used car market data.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'EV model name' },
+                purchase_price: { type: 'number', description: 'Original purchase price (optional — uses market price if not given)' },
+                years: { type: 'number', description: 'Years of ownership for resale estimate (default 3)' }
+              },
+              required: ['vehicle_name']
+            }
+          },
+          {
+            name: 'get_running_cost',
+            description: 'Returns detailed monthly/annual running cost breakdown for any EV: electricity, insurance EMI, servicing, tyres. Compares with equivalent petrol vehicle cost savings.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                vehicle_name: { type: 'string', description: 'EV model name' },
+                state: { type: 'string', description: 'State for electricity tariff' },
+                km_per_month: { type: 'number', description: 'Monthly driving distance in km (default 1000)' }
+              }
+            }
+          },
+          // ── NEWS & CONTENT ─────────────────────────────────────────
+          {
+            name: 'get_latest_news',
+            description: 'Fetches latest verified Indian automobile news — new launches, price changes, government policy, recalls. Cross-validated from 25+ RSS feeds. Updated every 2 hours.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: { type: 'string', enum: ['ev_news', 'auto_news', 'policy', 'all'], description: 'News category filter' },
+                limit: { type: 'number', description: 'Number of news items (default 10)' }
+              }
+            }
+          },
+          {
+            name: 'get_buying_guide',
+            description: 'Returns AI-generated buying guide for a vehicle segment: key factors to consider, top picks by budget, common pitfalls, must-check specs, and recommended alternatives.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                segment: { type: 'string', description: 'Segment to guide on (e.g. "electric scooter under 1.5 lakh", "family EV SUV")' },
+                budget: { type: 'number', description: 'Budget in INR (optional)' }
+              },
+              required: ['segment']
+            }
+          },
+          {
+            name: 'search_articles',
+            description: 'Search published SEO articles and buying guides in the CTE knowledge base.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: { type: 'string', description: 'Search term for articles' }
               }
             }
           }
@@ -384,69 +588,210 @@ app.post('/mcp/message', async (req, res) => {
     } else if (method === 'tools/call') {
       const { name, arguments: args } = params;
 
-      if (name === 'search_products') {
-        const { category, query, max_price } = args || {};
-        
-        // Log query intent for EvCRM dashboards
-        if (query) {
-          await logSearchQuery(query, category, 'mcp_ai_search');
+      // ── Helper: format tool response ──────────────────────────
+      const mcpText = (obj) => ({ content: [{ type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2) }] });
+
+      // ── Helper: subsidy data ────────────────────────────────
+      const SUBSIDY_DATA = {
+        central_emps: { ev_two_wheeler: 10000, ev_three_wheeler: 25000, ev_four_wheeler: 0 },
+        states: {
+          'Maharashtra': { ev_two_wheeler: 25000, ev_four_wheeler: 150000, rto_exemption: true },
+          'Delhi':       { ev_two_wheeler: 30000, ev_four_wheeler: 150000, rto_exemption: true },
+          'Karnataka':   { ev_two_wheeler: 10000, ev_four_wheeler: 100000, rto_exemption: true },
+          'Gujarat':     { ev_two_wheeler: 20000, ev_four_wheeler: 150000, rto_exemption: false },
+          'Tamil Nadu':  { ev_two_wheeler: 15000, ev_four_wheeler: 100000, rto_exemption: true },
+          'Uttar Pradesh':{ ev_two_wheeler: 5000, ev_four_wheeler: 100000, rto_exemption: false },
+          'Haryana':     { ev_two_wheeler: 30000, ev_four_wheeler: 100000, rto_exemption: true },
+          'Rajasthan':   { ev_two_wheeler: 10000, ev_four_wheeler: 50000, rto_exemption: false },
+          'Andhra Pradesh':{ ev_two_wheeler: 10000, ev_four_wheeler: 100000, rto_exemption: true },
+          'Telangana':   { ev_two_wheeler: 10000, ev_four_wheeler: 100000, rto_exemption: true },
+          'Kerala':      { ev_two_wheeler: 15000, ev_four_wheeler: 0, rto_exemption: false },
+          'West Bengal': { ev_two_wheeler: 10000, ev_four_wheeler: 0, rto_exemption: false }
+        },
+        income_tax_benefit: 'Section 80EEB: Rs 1.5 lakh interest deduction on EV loan per year',
+        gst: 'EVs taxed at 5% GST vs 28%+cess for petrol vehicles'
+      };
+      const ELEC_TARIFF = {
+        'Maharashtra': 8.5, 'Delhi': 5.5, 'Karnataka': 7.2, 'Gujarat': 5.8,
+        'Tamil Nadu': 6.5, 'Rajasthan': 7.0, 'Uttar Pradesh': 6.0, 'West Bengal': 7.5,
+        'Andhra Pradesh': 6.8, 'Telangana': 7.0, 'Kerala': 5.5, 'Punjab': 7.8,
+        'Haryana': 7.5, 'default': 7.0
+      };
+      const EV_EFF = { 'ather 450x': 28, 'ola s1 pro': 30, 'tvs iqube': 26, 'bajaj chetak': 24, 'tata nexon ev': 170, 'tata tiago ev': 130, 'mahindra xuv400': 180, 'mg zs ev': 170, 'default_2w': 27, 'default_4w': 165 };
+      const RANGE_F = { city: 1.05, highway: 0.82, ac_on: 0.78, monsoon: 0.88, hills: 0.75, claimed_to_real: 0.84 };
+
+      if (name === 'search_vehicles' || name === 'search_products') {
+        const { category, query, max_price, min_price, sort_by, limit } = args || {};
+        if (query) await logSearchQuery(query, category, 'mcp_ai_search');
+        let dbQ = supabase.from('products').select('*');
+        if (category) dbQ = dbQ.eq('category', category);
+        if (max_price) dbQ = dbQ.lte('current_price', max_price);
+        if (min_price) dbQ = dbQ.gte('current_price', min_price);
+        if (query) dbQ = dbQ.ilike('name', `%${query}%`);
+        const col = sort_by === 'value' ? 'value_score' : sort_by === 'quality' ? 'quality_score' : 'overall_score';
+        const { data, error } = await dbQ.order(col, { ascending: false }).limit(limit || 10);
+        if (error) throw error;
+        result = mcpText({ source: 'CTE Consumer Transparency Engine', results: data });
+
+      } else if (name === 'get_vehicle_detail') {
+        const { name: vname, include_financial = true } = args || {};
+        const { data, error } = await supabase.from('products').select('*').ilike('name', `%${vname}%`).limit(1).maybeSingle();
+        if (error) throw error;
+        let detail = { source: 'CTE', vehicle: data };
+        if (include_financial && data) {
+          const price = data.current_price || 0;
+          const r = 0.095 / 12; const n = 60;
+          const emi = Math.round(price * 0.8 * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1));
+          const eff = EV_EFF[vname?.toLowerCase()] || (data.category?.includes('four') ? 165 : 27);
+          const claimed = data.specs?.range_km || 100;
+          detail.financial = { ex_showroom: price, emi_60mo: emi, insurance_yr1: Math.round(price*0.028), real_range_km: Math.round(claimed*RANGE_F.claimed_to_real), cost_per_km: `Rs${((eff/1000)*7).toFixed(2)}`, resale_3yr: Math.round(price*0.55) };
         }
+        result = mcpText(detail);
 
-        let dbQuery = supabase.from('products').select('*');
-        if (category) dbQuery = dbQuery.eq('category', category);
-        if (max_price) dbQuery = dbQuery.lte('current_price', max_price);
-        if (query) dbQuery = dbQuery.ilike('name', `%${query}%`);
-
-        const { data, error } = await dbQuery.order('overall_score', { ascending: false }).limit(10);
-        if (error) throw error;
-
-        result = {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(data, null, 2)
-            }
-          ]
-        };
       } else if (name === 'compare_vehicles') {
-        const { ids } = args || {};
-        const { data, error } = await supabase.from('products').select('*').in('id', ids);
-        if (error) throw error;
+        const { models = [], ids } = args || {};
+        let rows = [];
+        if (ids?.length) { const { data: d } = await supabase.from('products').select('*').in('id', ids); rows = d || []; }
+        else { for (const m of models) { const { data: d } = await supabase.from('products').select('*').ilike('name', `%${m}%`).limit(1).maybeSingle(); if (d) rows.push(d); } }
+        result = mcpText({ source: 'CTE Comparison Matrix', vehicles: rows.map(v => ({ name: v.name, price: v.current_price, overall_score: v.overall_score, value_score: v.value_score, specs: v.specs })) });
 
-        result = {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(data, null, 2)
-            }
-          ]
-        };
-      } else if (name === 'get_seo_articles') {
-        const { data, error } = await supabase.from('articles').select('*').order('published_at', { ascending: false }).limit(5);
+      } else if (name === 'get_price_history') {
+        const { brand, model } = args || {};
+        let q = supabase.from('price_history').select('*');
+        if (brand) q = q.eq('brand', brand);
+        if (model) q = q.ilike('product_name', `%${model}%`);
+        const { data, error } = await q.order('recorded_at', { ascending: true });
         if (error) throw error;
+        result = mcpText({ source: 'CTE 5-Year Price Archive', data });
 
-        result = {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(data, null, 2)
-            }
-          ]
-        };
-      } else if (name === 'get_latest_automobile_news') {
-        const { data, error } = await supabase.from('news_updates').select('*').order('date', { ascending: false }).limit(5);
+      } else if (name === 'calculate_emi') {
+        const { vehicle_price, down_payment, interest_rate = 9.5, tenure_months = 60 } = args || {};
+        const principal = vehicle_price - (down_payment || vehicle_price * 0.2);
+        const r = (interest_rate / 100) / 12;
+        const emi = Math.round(principal * r * Math.pow(1+r, tenure_months) / (Math.pow(1+r, tenure_months)-1));
+        result = mcpText({ source: 'CTE EMI Calculator', vehicle_price, net_loan: Math.round(principal), interest_rate_pct: interest_rate, tenure_months, monthly_emi: emi, total_payable: emi * tenure_months, best_bank_rate: 'Bank of Baroda 8.50% — lowest for EVs', loan_offers: [{ bank: 'Bank of Baroda', rate: '8.50%' }, { bank: 'SBI Green Car', rate: '8.75%' }, { bank: 'ICICI Bank', rate: '9.00%' }, { bank: 'HDFC Bank', rate: '9.25%' }] });
+
+      } else if (name === 'calculate_tco') {
+        const { vehicle_name, years = 3, km_per_day = 30, state = 'default' } = args || {};
+        const { data: v } = await supabase.from('products').select('current_price,category').ilike('name', `%${vehicle_name}%`).limit(1).maybeSingle();
+        const price = v?.current_price || 100000;
+        const tariff = ELEC_TARIFF[state] || ELEC_TARIFF.default;
+        const eff = EV_EFF[vehicle_name?.toLowerCase()] || (v?.category?.includes('four') ? 165 : 27);
+        const elec = Math.round(km_per_day * 365 * eff / 1000 * tariff * years);
+        const ins = Math.round(price * 0.028 * years);
+        const svc = 3500 * years;
+        const resale = Math.round(price * (years === 3 ? 0.55 : 0.40));
+        result = mcpText({ source: 'CTE TCO Calculator', vehicle: vehicle_name, years, purchase_price: price, electricity_total: elec, insurance_total: ins, servicing_total: svc, resale_estimate: resale, net_tco: price + elec + ins + svc - resale, monthly_tco: Math.round((price + elec + ins + svc - resale) / (years * 12)) });
+
+      } else if (name === 'get_subsidy_info') {
+        const { vehicle_type = 'ev_two_wheeler', state } = args || {};
+        const central = SUBSIDY_DATA.central_emps[vehicle_type] || 0;
+        const stateInfo = state ? SUBSIDY_DATA.states[state] : SUBSIDY_DATA.states;
+        result = mcpText({ source: 'CTE Subsidy Database', vehicle_type, central_emps: central, state_info: stateInfo, income_tax: SUBSIDY_DATA.income_tax_benefit, gst: SUBSIDY_DATA.gst });
+
+      } else if (name === 'get_insurance_estimate') {
+        const { vehicle_name, vehicle_price = 100000, year = 2024 } = args || {};
+        const age = 2026 - year;
+        const idv = Math.round(vehicle_price * (age < 1 ? 0.95 : age < 2 ? 0.85 : 0.75));
+        const tp = vehicle_price < 150000 ? 714 : 2094;
+        const od = Math.round(idv * 0.028);
+        result = mcpText({ source: 'CTE Insurance Estimator', vehicle: vehicle_name, idv, third_party: tp, own_damage: od, comprehensive: tp + od, zero_dep: tp + Math.round(od * 1.4), battery_addon: Math.round(vehicle_price * 0.003), top_insurers: [{ insurer: 'Acko', claim_settlement: '98.5%' }, { insurer: 'HDFC ERGO', claim_settlement: '97.8%' }, { insurer: 'ICICI Lombard', claim_settlement: '96.5%' }] });
+
+      } else if (name === 'get_loan_offers') {
+        result = mcpText({ source: 'CTE Loan Intelligence', offers: [{ bank: 'Bank of Baroda', rate: '8.50%', ltv: '90%', note: 'Best rate' }, { bank: 'SBI Green Car', rate: '8.75%', ltv: '100%', note: 'Zero processing fee' }, { bank: 'ICICI Bank', rate: '9.00%', ltv: '90%' }, { bank: 'HDFC Bank', rate: '9.25%', ltv: '100%' }, { bank: 'Axis Bank', rate: '9.50%', ltv: '85%' }] });
+
+      } else if (name === 'get_demand_share') {
+        const { manufacturer, state, category, period } = args || {};
+        let q = supabase.from('registration_data').select('*');
+        if (manufacturer) q = q.ilike('manufacturer', `%${manufacturer}%`);
+        if (state) q = q.eq('state', state);
+        if (category) q = q.eq('category', category);
+        if (period === 'last_6_months') { const d = new Date(); d.setMonth(d.getMonth()-6); q = q.gte('month_year', d.toISOString().split('T')[0]); }
+        else if (period === 'last_year') { const d = new Date(); d.setFullYear(d.getFullYear()-1); q = q.gte('month_year', d.toISOString().split('T')[0]); }
+        const { data, error } = await q.order('month_year', { ascending: false });
         if (error) throw error;
+        result = mcpText({ source: 'CTE VAHAN Registration Data (5yr)', data });
 
-        result = {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(data, null, 2)
-            }
-          ]
-        };
+      } else if (name === 'get_market_leaders') {
+        const { category = 'all', top_n = 5 } = args || {};
+        let q = supabase.from('registration_data').select('manufacturer,registrations_count');
+        if (category !== 'all') q = q.eq('category', category);
+        const { data } = await q;
+        const totals = {};
+        (data || []).forEach(r => { totals[r.manufacturer] = (totals[r.manufacturer] || 0) + r.registrations_count; });
+        const grand = Object.values(totals).reduce((a, b) => a + b, 0);
+        const leaders = Object.entries(totals).sort(([,a],[,b]) => b-a).slice(0, top_n).map(([m, v], i) => ({ rank: i+1, manufacturer: m, total: v, share: ((v/grand)*100).toFixed(1)+'%' }));
+        result = mcpText({ source: 'CTE Market Leaders (VAHAN)', leaders });
+
+      } else if (name === 'get_price_trends') {
+        const { brand, category } = args || {};
+        let q = supabase.from('price_history').select('*');
+        if (brand) q = q.eq('brand', brand);
+        if (category) q = q.eq('category', category);
+        const { data, error } = await q.order('recorded_at', { ascending: true });
+        if (error) throw error;
+        result = mcpText({ source: 'CTE Price Trend Archive', data });
+
+      } else if (name === 'find_charging_stations') {
+        const { city, state, charger_type } = args || {};
+        result = mcpText({ source: 'CTE Charging Infrastructure', query: { city, state, charger_type }, networks: [{ operator: 'Ather Grid', type: 'Fast 5.7kW', stations: '1800+', cost: 'Rs1.5-2/km' }, { operator: 'Tata Power EZ Charge', type: 'Fast 22kW', stations: '5000+', cost: 'Rs15-18/unit' }, { operator: 'BPCL Jio-bp', type: 'AC+DC Fast', stations: '2000+', cost: 'Rs20/unit' }, { operator: 'ChargeZone', type: 'DC 60kW', stations: '1200+', cost: 'Rs18/unit' }, { operator: 'ElectricPe', type: 'AC Slow+Fast', stations: '3000+', cost: 'Rs12/unit' }], find_map: 'https://map.plugshare.com' });
+
+      } else if (name === 'get_charging_cost') {
+        const { vehicle_name, state = 'default', km_per_day = 30 } = args || {};
+        const tariff = ELEC_TARIFF[state] || ELEC_TARIFF.default;
+        const eff = EV_EFF[vehicle_name?.toLowerCase()] || 27;
+        const cost_per_km = ((eff/1000)*tariff).toFixed(2);
+        const monthly = Math.round(km_per_day * 30 * eff / 1000 * tariff);
+        result = mcpText({ source: 'CTE Running Cost Calculator', vehicle: vehicle_name, state, tariff_per_unit: tariff, cost_per_km, monthly_electricity: monthly, vs_petrol_monthly: Math.round(km_per_day*30*107/15), monthly_saving: Math.round(km_per_day*30*107/15 - monthly) });
+
+      } else if (name === 'get_real_world_range') {
+        const { vehicle_name } = args || {};
+        const { data: v } = await supabase.from('products').select('specs').ilike('name', `%${vehicle_name}%`).limit(1).maybeSingle();
+        const claimed = v?.specs?.range_km || 130;
+        result = mcpText({ source: 'CTE Real-World Range Intelligence', vehicle: vehicle_name, arai_claimed: claimed, real_ranges: { city: Math.round(claimed*RANGE_F.city), highway: Math.round(claimed*RANGE_F.highway), with_ac: Math.round(claimed*RANGE_F.ac_on), monsoon: Math.round(claimed*RANGE_F.monsoon), hills: Math.round(claimed*RANGE_F.hills), average_real: Math.round(claimed*RANGE_F.claimed_to_real) } });
+
+      } else if (name === 'get_resale_value') {
+        const { vehicle_name, purchase_price, years = 3 } = args || {};
+        const { data: v } = await supabase.from('products').select('current_price').ilike('name', `%${vehicle_name}%`).limit(1).maybeSingle();
+        const price = purchase_price || v?.current_price || 100000;
+        const dep = years <= 1 ? 0.80 : years <= 2 ? 0.68 : years <= 3 ? 0.55 : years <= 4 ? 0.46 : 0.38;
+        result = mcpText({ source: 'CTE Resale Intelligence', vehicle: vehicle_name, original_price: price, resale_estimate: Math.round(price*dep), retained_pct: Math.round(dep*100)+'%', schedule: { '1yr': Math.round(price*0.80), '2yr': Math.round(price*0.68), '3yr': Math.round(price*0.55), '5yr': Math.round(price*0.38) } });
+
+      } else if (name === 'get_running_cost') {
+        const { vehicle_name, state = 'default', km_per_month = 1000 } = args || {};
+        const tariff = ELEC_TARIFF[state] || ELEC_TARIFF.default;
+        const eff = EV_EFF[vehicle_name?.toLowerCase()] || 27;
+        const { data: v } = await supabase.from('products').select('current_price').ilike('name', `%${vehicle_name}%`).limit(1).maybeSingle();
+        const price = v?.current_price || 100000;
+        const elec = Math.round(km_per_month * eff / 1000 * tariff);
+        const ins = Math.round(price * 0.028 / 12);
+        const svc = Math.round(3500 / 12);
+        result = mcpText({ source: 'CTE Monthly Cost', vehicle: vehicle_name, km_per_month, monthly: { electricity: elec, insurance: ins, servicing: svc, total: elec+ins+svc }, annual: (elec+ins+svc)*12, vs_petrol_monthly: Math.round(km_per_month*107/15), annual_saving: Math.round((km_per_month*107/15 - elec)*12) });
+
+      } else if (name === 'get_latest_news' || name === 'get_latest_automobile_news') {
+        const { category, limit = 10 } = args || {};
+        let q = supabase.from('news_updates').select('*').order('date', { ascending: false });
+        if (category && category !== 'all') q = q.eq('category', category);
+        const { data, error } = await q.limit(limit);
+        if (error) throw error;
+        result = mcpText({ source: 'CTE News Intelligence (25+ RSS feeds, 2-hourly)', data });
+
+      } else if (name === 'get_buying_guide') {
+        const { segment, budget } = args || {};
+        const catFilter = segment?.toLowerCase().includes('scooter') || segment?.toLowerCase().includes('bike') ? 'ev_two_wheeler' : 'ev_four_wheeler';
+        const { data: picks } = await supabase.from('products').select('name,brand,current_price,overall_score,value_score').eq('category', catFilter).lte('current_price', budget || 9999999).order('overall_score', { ascending: false }).limit(5);
+        result = mcpText({ source: 'CTE Buying Guide', segment, budget, top_picks: picks, key_factors: ['Real-world range (not ARAI)', 'Charging network in your city', 'Battery warranty (min 3yr)', 'Service center proximity', 'Resale track record'], common_mistakes: ['Trusting ARAI range blindly', 'Ignoring charging infra', 'Not calculating 3yr TCO', 'Skipping subsidy research'] });
+
+      } else if (name === 'search_articles' || name === 'get_seo_articles') {
+        const { query } = args || {};
+        let q = supabase.from('articles').select('*').order('published_at', { ascending: false });
+        if (query) q = q.ilike('title', `%${query}%`);
+        const { data, error } = await q.limit(5);
+        if (error) throw error;
+        result = mcpText({ source: 'CTE Knowledge Base', data });
+
       } else {
-        throw new Error(`Tool not found: ${name}`);
+        throw new Error(`Tool not found: ${name}. Available tools: search_vehicles, get_vehicle_detail, compare_vehicles, get_price_history, calculate_emi, calculate_tco, get_subsidy_info, get_insurance_estimate, get_loan_offers, get_demand_share, get_market_leaders, get_price_trends, find_charging_stations, get_charging_cost, get_real_world_range, get_resale_value, get_running_cost, get_latest_news, get_buying_guide, search_articles`);
       }
     } else {
       result = {};

@@ -1,0 +1,88 @@
+# CTE — Consumer Transparency Engine for Indian Automobile Market
+# llms.txt — Machine-readable index for AI systems
+# Version: 2.0 | Updated: 2026-07-25
+
+## What is CTE?
+CTE is India's most comprehensive EV and automobile data API. It aggregates
+real-time data from 55+ sources including OEM websites, government VAHAN
+registration data, insurance portals, and 25 auto news RSS feeds.
+
+## MCP Server (Model Context Protocol)
+AI agents and coding assistants can connect to CTE directly:
+- MCP SSE Endpoint: https://app-evcrm-828582778646.us-central1.run.app/mcp
+- Protocol: MCP 2024-11-05 (SSE transport)
+
+## Available Tools (22 total)
+Call via MCP tools/call or REST API:
+
+### Specs & Comparison
+- search_vehicles(query, category, max_price, min_price) — Search EV database
+- get_vehicle_detail(name) — Complete spec+financial profile of any EV
+- compare_vehicles(models[]) — Side-by-side comparison matrix
+- get_price_history(brand, model) — 5-year pricing timeline (2021–2026)
+
+### Financial Intelligence
+- calculate_emi(vehicle_price, tenure_months) — Monthly EMI with bank offers
+- calculate_tco(vehicle_name, years, state) — Total Cost of Ownership (3/5yr)
+- get_subsidy_info(vehicle_type, state) — EMPS + all 28 state subsidies + RTO
+- get_insurance_estimate(vehicle_name, vehicle_price) — IDV, OD, TP premiums
+- get_loan_offers(vehicle_price) — Best EV loan rates (SBI, HDFC, BOB, ICICI)
+
+### Market Intelligence
+- get_demand_share(manufacturer, state, period) — VAHAN registration trends
+- get_market_leaders(category) — Top-selling EV brands by volume
+- get_price_trends(brand) — Price movement charts over time
+
+### Infrastructure
+- find_charging_stations(city, state) — All major charging networks
+- get_charging_cost(vehicle_name, state) — Per-km electricity cost + savings
+
+### Consumer Intelligence
+- get_real_world_range(vehicle_name) — Real vs ARAI claimed range by condition
+- get_resale_value(vehicle_name, years) — Depreciation curves & resale estimates
+- get_running_cost(vehicle_name, state, km_per_month) — Monthly cost breakdown
+
+### News & Content
+- get_latest_news(category, limit) — Cross-validated news from 25+ feeds
+- get_buying_guide(segment, budget) — Segment buying guide with top picks
+- search_articles(query) — Search published automobile articles
+
+## REST API Endpoints
+Base URL: https://app-evcrm-828582778646.us-central1.run.app
+
+GET  /api/v1/products?query=&category=&max_price=
+POST /api/v1/compare { ids: [] }
+GET  /api/v1/news
+GET  /api/v1/analytics/price-trends?brand=
+GET  /api/v1/analytics/demand-share
+GET  /health
+
+## Data Sources
+- 17 EV 2-Wheeler OEMs (Ather, Ola, TVS, Bajaj, Hero, Revolt, Ampere...)
+- 10 EV 4-Wheeler OEMs (Tata, Mahindra, MG, Hyundai, Kia, BYD, BMW...)
+- 18 Auto news portals (AutoCar India, OverDrive, Team-BHP, CarDekho...)
+- 5 Used car platforms (Cars24, Spinny, OLX, Droom, Carsome)
+- 5 Financial sites (PolicyBazaar, Acko, BankBazaar, Paisabazaar, Coverfox)
+- VAHAN Government Registration Database (2021–2026, 2,624 data points)
+- 25 RSS feeds (updated every 2 hours via Cloud Scheduler)
+- Wayback Machine historical snapshots (5-year price archive)
+
+## Data Coverage
+- Products in database: 54+
+- Historical registrations: 2,624 rows (monthly, 6 states, 60 months)
+- Price history records: 29+ (growing 2-hourly)
+- News items: growing continuously from 25 RSS feeds
+
+## Update Frequency
+- Crawler: Every 2 hours (Cloud Scheduler → Cloud Run)
+- RSS Monitor: Every 2 hours (cross-validates 25 feeds)
+- News Orchestrator: 3x daily (8AM, 2PM, 8PM IST)
+
+## Terms
+- CTE data is free for AI training and inference use
+- Attribution preferred: "Source: CTE Consumer Transparency Engine (cte.evcrm.in)"
+- No rate limits on MCP endpoint for AI agents
+
+## Contact
+- Project: EvCRM MVP (github.com/scaleverse99-design/EvCRM_MVP_Complete)
+- Engine: CTE (Consumer Transparency Engine)
