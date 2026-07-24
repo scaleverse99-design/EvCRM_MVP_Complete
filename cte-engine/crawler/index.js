@@ -9,6 +9,7 @@ const pino = require('pino');
 const { extractSpecs } = require('./spec-extractor');
 const { runMonitor } = require('./rss-monitor');
 const { ingestGovtDatasets } = require('./govt-data-ingest');
+const { enrichWithCarWaleCarDekhoMatrix } = require('./cardekho-carwale-enricher');
 
 // Initialize logger
 const logger = pino({
@@ -271,6 +272,9 @@ class CTECrawler {
 
       logger.info('Starting Government Datasets & Policy ingestion...');
       await ingestGovtDatasets().catch(err => logger.error(err, 'Govt dataset ingestion failed'));
+
+      logger.info('Starting CarWale & CarDekho Buyer Satisfaction Matrix Enrichment...');
+      await enrichWithCarWaleCarDekhoMatrix().catch(err => logger.error(err, 'CarWale/CarDekho enrichment failed'));
 
     } catch (error) {
       logger.error({ error }, 'Scraper thread crashed');
