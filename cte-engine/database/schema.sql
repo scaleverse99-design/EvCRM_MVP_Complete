@@ -136,6 +136,21 @@ INSERT INTO public.crawler_targets (name, url, category, selectors_json) VALUES
   "products": ".loan-offer, [data-offer]",
   "name": ".bank-name, h2",
   "price": ".interest-rate, [data-rate]",
-  "specs": ".emi-calculator, [data-specs]"
-}')
-ON CONFLICT (name) DO NOTHING;
+-- Create API Key Usage & Metering Table for Pay-Per-Call Monetization
+CREATE TABLE IF NOT EXISTS public.cte_api_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  api_key TEXT UNIQUE NOT NULL,
+  client_name TEXT NOT NULL,
+  plan TEXT DEFAULT 'pay_per_call',
+  cost_per_call_inr NUMERIC(10,2) DEFAULT 2.00,
+  total_calls BIGINT DEFAULT 0,
+  total_billed_inr NUMERIC(12,2) DEFAULT 0.00,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed default enterprise & AI billing keys
+INSERT INTO public.cte_api_keys (api_key, client_name, cost_per_call_inr) VALUES
+('cte_live_ai_unlimited_demo', 'OpenAI / Claude / Perplexity AI Partner Key', 2.00)
+ON CONFLICT (api_key) DO NOTHING;
+

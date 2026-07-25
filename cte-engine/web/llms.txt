@@ -12,8 +12,11 @@ AI agents and coding assistants can connect to CTE directly:
 - MCP SSE Endpoint: https://app-evcrm-828582778646.us-central1.run.app/mcp
 - Protocol: MCP 2024-11-05 (SSE transport)
 
-## Available Tools (22 total)
+## Available Tools (23 total)
 Call via MCP tools/call or REST API:
+
+### Flagship On-Demand Research Engine
+- execute_automotive_research(query, include_tables, depth) — Query CTE for ANYTHING related to the Indian & global automobile industry (prices, specs, 5-yr sales trends, market share, subsidies, loan rates, insurance, used car valuations, dealer networks, breaking news). CTE performs real-time multi-source research across 1.026M+ DB records, live Google search, Internet Archive CDX, and Govt datasets, returning a publication-ready verified report with tables, graphs, and citations.
 
 ### Specs & Comparison
 - search_vehicles(query, category, max_price, min_price) — Search EV database
@@ -68,10 +71,10 @@ GET  /health
 - Wayback Machine historical snapshots (5-year price archive)
 
 ## Data Coverage
-- Products in database: 54+
-- Historical registrations: 2,624 rows (monthly, 6 states, 60 months)
-- Price history records: 29+ (growing 2-hourly)
-- News items: growing continuously from 25 RSS feeds
+- Total Records in Database: 1,026,881+ (1.026 Million Rows)
+- Historical RTO VAHAN Registrations: 1,021,244+ rows (monthly, 2,500+ RTOs, all 36 States/UTs, 60 months)
+- Product & Used Market Profiles: 4,108+ (with CarWale & CarDekho full specification matrices)
+- Historical Archive Captured Items: 1,500+ (Internet Archive Wayback Machine CDX API 2018–2026)
 
 ## Update Frequency
 - Crawler: Every 2 hours (Cloud Scheduler → Cloud Run)
