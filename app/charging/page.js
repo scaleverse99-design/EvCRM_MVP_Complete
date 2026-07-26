@@ -66,6 +66,8 @@ export default function ChargeStationsPage() {
   const [pincodeInfo, setPincodeInfo] = useState(null)
   const [pincodeError, setPincodeError] = useState("")
 
+  const [showLocationModal, setShowLocationModal] = useState(false)
+
   const [stations, setStations] = useState([])
   const [loading, setLoading] = useState(true)
   const [isLive, setIsLive] = useState(false)
@@ -76,6 +78,12 @@ export default function ChargeStationsPage() {
   useEffect(() => {
     const saved = localStorage.getItem("evcrm_user_location")
     if (saved) setLocation(JSON.parse(saved))
+
+    // Check if location modal was already dismissed or gps active in this session
+    const dismissed = sessionStorage.getItem("evcrm_charging_loc_dismissed")
+    if (!dismissed && !gpsActive) {
+      setShowLocationModal(true)
+    }
   }, [])
 
   const currentDistrict = location?.district || "Hyderabad"
@@ -234,6 +242,7 @@ export default function ChargeStationsPage() {
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setGpsError("Geolocation is not supported by your browser.")
+      setShowLocationModal(false)
       return
     }
 
@@ -251,14 +260,23 @@ export default function ChargeStationsPage() {
         setUserCoords(coords)
         setGpsActive(true)
         setGpsLoading(false)
+        setShowLocationModal(false)
+        sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
       },
       (error) => {
         console.warn("GPS error:", error)
         setGpsError("Unable to retrieve location. Please check browser permissions.")
         setGpsLoading(false)
+        setShowLocationModal(false)
+        sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
       },
       { enableHighAccuracy: true, timeout: 10000 }
     )
+  }
+
+  const handleDismissModal = () => {
+    setShowLocationModal(false)
+    sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
   }
 
   const handlePincodeSubmit = (e) => {
@@ -272,6 +290,8 @@ export default function ChargeStationsPage() {
     setUserCoords(null)
     setGpsActive(false)
     setActivePincode(cleanPin)
+    setShowLocationModal(false)
+    sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
   }
 
   const handleClearPincode = () => {
@@ -317,11 +337,112 @@ export default function ChargeStationsPage() {
   }
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", position: "relative" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
       />
+
+      {/* Automatic Location Permission Modal Overlay */}
+      {showLocationModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.65)", backdropFilter: "blur(8px)",
+          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20
+        }}>
+          <div style={{
+            background: "#fff", width: "100%", maxWidth: 460, borderRadius: 24,
+            padding: 32, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            textAlign: "center", position: "relative"
+          }}>
+            <button
+              onClick={handleDismissModal}
+              style={{
+                position: "absolute", top: 18, right: 18, background: "#f3f4f6",
+                border: "none", width: 32, height: 32, borderRadius: "50%",
+                fontSize: 14, fontWeight: "bold", cursor: "pointer", color: C.ink2
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{
+              width: 64, height: 64, borderRadius: "50%", background: "#ecfdf5",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 32, margin: "0 auto 20px"
+            }}>
+              📍
+            </div>
+
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: C.ink, marginBottom: 8, letterSpacing: "-0.5px" }}>
+              Locate Nearest EV Chargers
+            </h2>
+
+            <p style={{ fontSize: 13, color: C.ink3, lineHeight: 1.6, marginBottom: 24 }}>
+              Enable location access to instantly detect your GPS position and view nearest DC fast chargers, Ather Grid, Tata Power stations, and swapping hubs.
+            </p>
+
+            <button
+              onClick={handleGetLocation}
+              disabled={gpsLoading}
+              style={{
+                width: "100%", padding: "14px", borderRadius: 14,
+                background: C.green, color: "#fff", border: "none",
+                fontSize: 13, fontWeight: 900, cursor: "pointer",
+                boxShadow: "0 10px 20px rgba(5,150,105,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                marginBottom: 16, transition: "all 0.2s"
+              }}
+            >
+              <span>{gpsLoading ? "⌛ Requesting Permission..." : "📍 ALLOW GPS LOCATION & FIND NEARBY"}</span>
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3 }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+            </div>
+
+            {/* Quick Pincode in Modal */}
+            <form onSubmit={handlePincodeSubmit} style={{ display: "flex", gap: 8 }}>
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="Enter 6-digit PIN"
+                value={pincodeInput}
+                onChange={e => { setPincodeInput(e.target.value); setPincodeError("") }}
+                style={{
+                  flex: 1, padding: "10px 14px", borderRadius: 10,
+                  border: `1.5px solid ${C.border}`, fontSize: 13,
+                  outline: "none", fontWeight: 700, background: "#f9fafb"
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: "10px 16px", borderRadius: 10,
+                  background: C.ink, color: "#fff", border: "none",
+                  fontSize: 12, fontWeight: 900, cursor: "pointer"
+                }}
+              >
+                Use PIN ➔
+              </button>
+            </form>
+
+            <button
+              onClick={handleDismissModal}
+              style={{
+                background: "none", border: "none", color: C.ink3,
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                marginTop: 20, textDecoration: "underline"
+              }}
+            >
+              Skip & Browse All Stations
+            </button>
+          </div>
+        </div>
+      )}
 
       <TopBar location={location} setLocation={setLocation} />
       
