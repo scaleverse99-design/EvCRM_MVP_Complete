@@ -184,8 +184,9 @@ app.get('/api/v1/products', async (req, res) => {
 
     let executiveSummary = null;
     if (query) {
-      const q = query.toLowerCase();
-      const topModelName = (data && data.length > 0) ? data[0].name : (detectedBrand ? detectedBrand.toUpperCase() + ' 450X Series' : 'Ather 450X');
+      const rawName = (data && data.length > 0) ? data[0].name : '';
+      const cleanName = rawName.replace(/\s*\(.*?\)/g, '').replace(/Listing.*/i, '').trim();
+      const topModelName = (cleanName && cleanName.length > 3) ? cleanName : (detectedBrand ? detectedBrand.toUpperCase() + ' 450X Series' : 'Ather 450X Series');
       
       if (q.includes('most selling') || q.includes('top selling') || q.includes('best selling') || q.includes('highest selling') || q.includes('popular')) {
         executiveSummary = `**Core Finding:** The highest-selling model for ${detectedBrand.toUpperCase() || 'this brand'} over the last 5 years (2021–2026) is the **${topModelName}**, commanding the majority of regional VAHAN RTO registrations.\n\n` +
