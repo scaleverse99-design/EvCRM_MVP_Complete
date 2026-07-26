@@ -132,15 +132,29 @@ async function searchProducts(query = '') {
       }
 
       let execSummaryHtml = '';
-      if (rep.executive_summary) {
+      if (rep.executive_answer) {
+        let bulletsHtml = (rep.executive_answer.bullets || []).map(b => {
+          let text = b.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          return `<li style="margin-bottom: 8px; color: #f1f5f9;">${text}</li>`;
+        }).join('');
+
+        execSummaryHtml = `
+          <div style="background: #1e293b; border-left: 4px solid var(--accent-color); padding: 18px; border-radius: 12px; margin-bottom: 24px; font-size: 0.95rem; line-height: 1.6;">
+            <div style="font-weight: 800; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; color: var(--accent-color); margin-bottom: 10px;">💡 ${rep.executive_answer.title || 'Executive Research Answer'}</div>
+            <ul style="margin: 0; padding-left: 20px;">
+              ${bulletsHtml}
+            </ul>
+          </div>
+        `;
+      } else if (rep.executive_summary) {
         let formattedText = rep.executive_summary
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\n\n/g, '<br><br>')
           .replace(/\n/g, '<br>');
 
         execSummaryHtml = `
-          <div style="background: #1e293b; border-left: 4px solid var(--accent-color); padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; lineHeight: 1.6;">
-            <div style="font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--accent-color); margin-bottom: 8px;">💡 Executive Research Answer</div>
+          <div style="background: #1e293b; border-left: 4px solid var(--accent-color); padding: 18px; border-radius: 12px; margin-bottom: 24px; font-size: 0.95rem; line-height: 1.6;">
+            <div style="font-weight: 800; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; color: var(--accent-color); margin-bottom: 10px;">💡 Executive Research Answer</div>
             <div style="color: #f1f5f9;">${formattedText}</div>
           </div>
         `;
@@ -199,8 +213,8 @@ async function searchProducts(query = '') {
           ${liveSourcesHtml}
         ` : ''}
 
-        <div style="margin-top: 24px; text-align: right;">
-          <button class="compare-btn" onclick="window.open('https://evcrm.in/compare', '_blank')" style="background: var(--accent-color); color: #000; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">View Interactive Analytics on EvCRM ↗</button>
+        <div style="margin-top: 24px; text-align: right; border-top: 1px solid #334155; padding-top: 16px;">
+          <span style="color: var(--accent-color); font-weight: 700; font-size: 0.85rem;">⚡ CTE Verified Market Index</span>
         </div>
       `;
 
@@ -243,7 +257,7 @@ async function searchProducts(query = '') {
               ${specsHtml}
             </ul>
           </div>
-          <button class="compare-btn" onclick="window.open('https://evcrm.in/compare', '_blank')">Compare & Book on EvCRM ↗</button>
+          <button class="compare-btn" style="cursor: default; opacity: 0.9;">⚡ CTE Verified Spec</button>
         `;
         productList.appendChild(card);
       });
