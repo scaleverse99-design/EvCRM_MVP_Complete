@@ -121,6 +121,7 @@ export default function ChargeStationsPage() {
     async function fetchStations() {
       try {
         let url = `/api/charging/stations?district=${encodeURIComponent(currentDistrict)}`
+        // PINCODE HAS TOP PRECEDENCE
         if (activePincode) {
           url += `&pincode=${encodeURIComponent(activePincode)}`
         } else if (userCoords) {
@@ -158,9 +159,10 @@ export default function ChargeStationsPage() {
 
     async function fetchClientSideOcm(mounted) {
       try {
-        let coords = userCoords
+        let coords = null
         let resolvedDist = currentDistrict
 
+        // PINCODE PRECEDENCE
         if (activePincode && /^\d{6}$/.test(activePincode)) {
           try {
             const [pinRes, geoRes] = await Promise.allSettled([
@@ -172,12 +174,14 @@ export default function ChargeStationsPage() {
               const poList = pinRes.value[0].PostOffice || []
               if (poList.length > 0) {
                 resolvedDist = poList[0].District || poList[0].Block || resolvedDist
-                setPincodeInfo({
-                  pincode: activePincode,
-                  district: resolvedDist,
-                  locality: poList[0].Name || "",
-                  state: poList[0].State || ""
-                })
+                if (mounted) {
+                  setPincodeInfo({
+                    pincode: activePincode,
+                    district: resolvedDist,
+                    locality: poList[0].Name || "",
+                    state: poList[0].State || ""
+                  })
+                }
               }
             }
 
@@ -185,13 +189,15 @@ export default function ChargeStationsPage() {
               coords = { lat: parseFloat(geoRes.value[0].lat), lng: parseFloat(geoRes.value[0].lon) }
             }
           } catch (pe) { console.warn("Pin error", pe) }
+        } else if (userCoords) {
+          coords = userCoords
         }
 
         if (!coords) {
           coords = DISTRICT_COORDS[resolvedDist] || DISTRICT_COORDS["Vizianagaram"] || DISTRICT_COORDS["Hyderabad"]
         }
 
-        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=100&distanceunit=KM&key=${OCM_KEY}`
+        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=120&distanceunit=KM&key=${OCM_KEY}`
 
         const ocmRes = await fetch(ocmUrl)
         if (ocmRes.ok) {
@@ -338,6 +344,10 @@ export default function ChargeStationsPage() {
     const url = `https://www.google.com/maps/search/${query}+near+${pincodeInfo?.district || currentDistrict}+${location?.state || ""}`
     window.open(url, "_blank")
   }
+
+  const activeLocationTitle = pincodeInfo?.locality 
+    ? `${pincodeInfo.locality}, ${pincodeInfo.district}`
+    : (activePincode ? `Pincode ${activePincode}` : (gpsActive ? "your current GPS location" : currentDistrict))
 
   const jsonLdSchema = {
     "@context": "https://schema.org",
@@ -521,14 +531,14 @@ export default function ChargeStationsPage() {
           </div>
 
           <p style={{ fontSize: 15, color: C.ink3, maxWidth: 780, lineHeight: 1.6 }}>
-            Discover nearest quick <b>DC fast charge stations</b>, <b>public electric car charging hubs</b>, and <b>battery swapping grids</b> in <span style={{ color: C.green, fontWeight: 700 }}>{pincodeInfo?.locality ? `${pincodeInfo.locality}, ${pincodeInfo.district}` : (activePincode ? `PIN ${activePincode}` : currentDistrict)}</span> powered by OpenChargeMap live data. Direct 1-click Google Maps navigation enabled.
+            Discover nearest quick <b>DC fast charge stations</b>, <b>public electric car charging hubs</b>, and <b>battery swapping grids</b> in <span style={{ color: C.green, fontWeight: 700 }}>{activeLocationTitle}</span> powered by OpenChargeMap live data. Direct 1-click Google Maps navigation enabled.
           </p>
 
           {gpsError && (
             <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginTop: 8 }}>⚠️ {gpsError}</p>
           )}
 
-          {gpsActive && (
+          {gpsActive && !activePincode && (
             <div style={{
               marginTop: 12, padding: "8px 14px", background: "#eff6ff", borderRadius: 10,
               border: "1px solid #bfdbfe", fontSize: 12, color: "#1e40af", fontWeight: 700,

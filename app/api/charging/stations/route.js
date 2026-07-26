@@ -61,7 +61,7 @@ export async function GET(req) {
     let isUserGps = !isNaN(reqLat) && !isNaN(reqLng)
     let pincodeInfo = null
 
-    // Handle 6-digit Indian Pincode Geocoding
+    // Pincode has HIGHEST PRECEDENCE
     if (pincodeParam && /^\d{6}$/.test(pincodeParam)) {
       try {
         const [pinRes, geoRes] = await Promise.allSettled([
@@ -121,8 +121,8 @@ export async function GET(req) {
 
     const apiKey = process.env.OPENCHARGEMAP_API_KEY || "42411a8d-310d-427a-98aa-6b4a595122bc"
     
-    // Call OpenChargeMap API with expanded 100km radius for rural/town areas
-    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=100&distanceunit=KM&key=${apiKey}`
+    // Call OpenChargeMap API
+    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=120&distanceunit=KM&key=${apiKey}`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 6000)
