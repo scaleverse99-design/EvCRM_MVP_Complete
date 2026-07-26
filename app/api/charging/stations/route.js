@@ -60,8 +60,9 @@ export async function GET(req) {
     let reqLng = parseFloat(searchParams.get("lng"))
     let isUserGps = !isNaN(reqLat) && !isNaN(reqLng)
     let pincodeInfo = null
+    let gpsLocationName = ""
 
-    // Pincode has HIGHEST PRECEDENCE
+    // Pincode HAS TOP PRECEDENCE
     if (pincodeParam && /^\d{6}$/.test(pincodeParam)) {
       try {
         const [pinRes, geoRes] = await Promise.allSettled([
@@ -101,7 +102,7 @@ export async function GET(req) {
         reqLat = pinLat
         reqLng = pinLng
         district = resolvedDistrict
-        isUserGps = true
+        isUserGps = false // Reset GPS override when Pincode is active
         pincodeInfo = {
           pincode: pincodeParam,
           district: resolvedDistrict,
@@ -113,16 +114,32 @@ export async function GET(req) {
       } catch (pinErr) {
         console.warn("Pincode geocoding error:", pinErr)
       }
+    } else if (isUserGps) {
+      // Reverse-geocode GPS coordinates to find exact place name
+      try {
+        const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${reqLat}&lon=${reqLng}&format=json`, {
+          headers: { "User-Agent": "EvCRM/1.0" }
+        }).then(r => r.json())
+        if (revRes && revRes.address) {
+          const addr = revRes.address
+          gpsLocationName = addr.suburb || addr.town || addr.city_district || addr.city || addr.county || addr.state_district || ""
+          if (addr.state_district || addr.county || addr.city) {
+            district = addr.city || addr.state_district || addr.county || district
+          }
+        }
+      } catch (revErr) {
+        console.warn("Reverse geocoding error:", revErr)
+      }
     }
 
-    const coords = isUserGps
-      ? { lat: reqLat, lng: reqLng }
-      : (DISTRICT_COORDS[district] || { lat: 17.3850, lng: 78.4867 })
+    const coords = (pincodeInfo?.lat && pincodeInfo?.lng)
+      ? { lat: pincodeInfo.lat, lng: pincodeInfo.lng }
+      : (isUserGps ? { lat: reqLat, lng: reqLng } : (DISTRICT_COORDS[district] || { lat: 17.3850, lng: 78.4867 }))
 
     const apiKey = process.env.OPENCHARGEMAP_API_KEY || "42411a8d-310d-427a-98aa-6b4a595122bc"
     
-    // Call OpenChargeMap API
-    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=120&distanceunit=KM&key=${apiKey}`
+    // Call OpenChargeMap API with 150km radius for rural/town coverage
+    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=100&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=150&distanceunit=KM&key=${apiKey}`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 6000)
@@ -220,6 +237,7 @@ export async function GET(req) {
       source: fetchedSuccess ? "openchargemap_live" : "local_fallback",
       district,
       isUserGps,
+      gpsLocationName,
       pincodeInfo,
       total: allStations.length,
       stations: allStations

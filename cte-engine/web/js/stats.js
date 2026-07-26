@@ -131,6 +131,21 @@ async function searchProducts(query = '') {
         });
       }
 
+      let execSummaryHtml = '';
+      if (rep.executive_summary) {
+        let formattedText = rep.executive_summary
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n\n/g, '<br><br>')
+          .replace(/\n/g, '<br>');
+
+        execSummaryHtml = `
+          <div style="background: #1e293b; border-left: 4px solid var(--accent-color); padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95rem; lineHeight: 1.6;">
+            <div style="font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--accent-color); margin-bottom: 8px;">💡 Executive Research Answer</div>
+            <div style="color: #f1f5f9;">${formattedText}</div>
+          </div>
+        `;
+      }
+
       reportCard.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
@@ -139,6 +154,8 @@ async function searchProducts(query = '') {
           </div>
           <span style="background: var(--accent-color); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">100% Truth Verified</span>
         </div>
+
+        ${execSummaryHtml}
 
         ${salesRowsHtml ? `
           <h4 style="margin-top: 20px; margin-bottom: 10px; color: #e2e8f0;">📈 5-Year VAHAN Registration & Sales Records</h4>

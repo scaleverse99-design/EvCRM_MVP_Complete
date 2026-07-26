@@ -72,6 +72,7 @@ export default function ChargeStationsPage() {
   const [gpsActive, setGpsActive] = useState(false)
   const [gpsLoading, setGpsLoading] = useState(false)
   const [gpsError, setGpsError] = useState("")
+  const [gpsLocationName, setGpsLocationName] = useState("")
 
   const [pincodeInput, setPincodeInput] = useState("")
   const [activePincode, setActivePincode] = useState("")
@@ -92,7 +93,7 @@ export default function ChargeStationsPage() {
     if (saved) setLocation(JSON.parse(saved))
 
     const dismissed = sessionStorage.getItem("evcrm_charging_loc_dismissed")
-    if (!dismissed && !gpsActive) {
+    if (!dismissed && !gpsActive && !activePincode) {
       setShowLocationModal(true)
     }
   }, [])
@@ -108,6 +109,7 @@ export default function ChargeStationsPage() {
     if (clean.length === 6) {
       setUserCoords(null)
       setGpsActive(false)
+      setGpsLocationName("")
       setActivePincode(clean)
       setShowLocationModal(false)
       sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
@@ -121,8 +123,9 @@ export default function ChargeStationsPage() {
     async function fetchStations() {
       try {
         let url = `/api/charging/stations?district=${encodeURIComponent(currentDistrict)}`
-        // PINCODE HAS TOP PRECEDENCE
-        if (activePincode) {
+        
+        // ABSOLUTE TOP PRIORITY FOR PINCODE
+        if (activePincode && /^\d{6}$/.test(activePincode)) {
           url += `&pincode=${encodeURIComponent(activePincode)}`
         } else if (userCoords) {
           url += `&lat=${userCoords.lat}&lng=${userCoords.lng}`
@@ -143,6 +146,7 @@ export default function ChargeStationsPage() {
             setStations(data.stations || [])
             setIsLive(data.source === "openchargemap_live")
             if (data.pincodeInfo) setPincodeInfo(data.pincodeInfo)
+            if (data.gpsLocationName) setGpsLocationName(data.gpsLocationName)
             return
           }
         }
@@ -162,7 +166,7 @@ export default function ChargeStationsPage() {
         let coords = null
         let resolvedDist = currentDistrict
 
-        // PINCODE PRECEDENCE
+        // PINCODE HAS TOP PRIORITY OVER USER GPS
         if (activePincode && /^\d{6}$/.test(activePincode)) {
           try {
             const [pinRes, geoRes] = await Promise.allSettled([
@@ -191,6 +195,14 @@ export default function ChargeStationsPage() {
           } catch (pe) { console.warn("Pin error", pe) }
         } else if (userCoords) {
           coords = userCoords
+          // Reverse-geocode GPS coordinates for display
+          try {
+            const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lng}&format=json`).then(r => r.json())
+            if (revRes && revRes.address) {
+              const placeName = revRes.address.suburb || revRes.address.town || revRes.address.city_district || revRes.address.city || revRes.address.county || ""
+              if (mounted && placeName) setGpsLocationName(placeName)
+            }
+          } catch (e) { console.warn("Reverse geo client error", e) }
         }
 
         if (!coords) {
@@ -320,6 +332,7 @@ export default function ChargeStationsPage() {
     setPincodeError("")
     setUserCoords(null)
     setGpsActive(false)
+    setGpsLocationName("")
     setActivePincode(cleanPin)
     setShowLocationModal(false)
     sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
@@ -346,8 +359,8 @@ export default function ChargeStationsPage() {
   }
 
   const activeLocationTitle = pincodeInfo?.locality 
-    ? `${pincodeInfo.locality}, ${pincodeInfo.district}`
-    : (activePincode ? `Pincode ${activePincode}` : (gpsActive ? "your current GPS location" : currentDistrict))
+    ? `${pincodeInfo.locality}, ${pincodeInfo.district} (PIN ${pincodeInfo.pincode})`
+    : (activePincode ? `Pincode ${activePincode}` : (gpsActive ? (gpsLocationName ? `${gpsLocationName}` : "your current GPS location") : currentDistrict))
 
   const jsonLdSchema = {
     "@context": "https://schema.org",
@@ -387,7 +400,7 @@ export default function ChargeStationsPage() {
           padding: 20
         }}>
           <div style={{
-            background: "#fff", width: "100%", maxWidth: 460, borderRadius: 24,
+            background: "#fff", width: "100%", maxWidth: 480, borderRadius: 24,
             padding: 32, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             textAlign: "center", position: "relative"
           }}>
@@ -414,56 +427,55 @@ export default function ChargeStationsPage() {
               Locate Nearest EV Chargers
             </h2>
 
-            <p style={{ fontSize: 13, color: C.ink3, lineHeight: 1.6, marginBottom: 24 }}>
-              Enable location access to instantly detect your GPS position and view nearest DC fast chargers, Ather Grid, Tata Power stations, and swapping hubs.
+            <p style={{ fontSize: 13, color: C.ink3, lineHeight: 1.6, marginBottom: 20 }}>
+              Enter your 6-digit Indian PIN code for 100% accurate location, or use browser GPS detection.
             </p>
 
-            <button
-              onClick={handleGetLocation}
-              disabled={gpsLoading}
-              style={{
-                width: "100%", padding: "14px", borderRadius: 14,
-                background: C.green, color: "#fff", border: "none",
-                fontSize: 13, fontWeight: 900, cursor: "pointer",
-                boxShadow: "0 10px 20px rgba(5,150,105,0.3)",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                marginBottom: 16, transition: "all 0.2s"
-              }}
-            >
-              <span>{gpsLoading ? "⌛ Requesting Permission..." : "📍 ALLOW GPS LOCATION & FIND NEARBY"}</span>
-            </button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
-              <div style={{ flex: 1, height: 1, background: C.border }} />
-              <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3 }}>OR ENTER YOUR PINCODE</span>
-              <div style={{ flex: 1, height: 1, background: C.border }} />
-            </div>
-
-            {/* Quick Pincode in Modal */}
-            <form onSubmit={handlePincodeSubmit} style={{ display: "flex", gap: 8 }}>
+            {/* Prominent PIN Code Input in Modal */}
+            <form onSubmit={handlePincodeSubmit} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               <input
                 type="text"
                 maxLength={6}
-                placeholder="Enter 6-digit PIN (e.g. 535128)"
+                placeholder="Enter 6-digit PIN (e.g. 535128 Cheepurupalli)"
                 value={pincodeInput}
                 onChange={e => handlePincodeInputChange(e.target.value)}
                 style={{
-                  flex: 1, padding: "10px 14px", borderRadius: 10,
-                  border: `1.5px solid ${C.border}`, fontSize: 13,
-                  outline: "none", fontWeight: 700, background: "#f9fafb"
+                  flex: 1, padding: "12px 16px", borderRadius: 12,
+                  border: `2px solid ${C.green}`, fontSize: 14,
+                  outline: "none", fontWeight: 800, background: "#f0fdf4", color: C.ink
                 }}
               />
               <button
                 type="submit"
                 style={{
-                  padding: "10px 16px", borderRadius: 10,
-                  background: C.ink, color: "#fff", border: "none",
-                  fontSize: 12, fontWeight: 900, cursor: "pointer"
+                  padding: "12px 18px", borderRadius: 12,
+                  background: C.green, color: "#fff", border: "none",
+                  fontSize: 13, fontWeight: 900, cursor: "pointer"
                 }}
               >
-                Use PIN ➔
+                Find by PIN ➔
               </button>
             </form>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3 }}>OR USE BROWSER GPS</span>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+            </div>
+
+            <button
+              onClick={handleGetLocation}
+              disabled={gpsLoading}
+              style={{
+                width: "100%", padding: "12px", borderRadius: 12,
+                background: "#f3f4f6", color: C.ink, border: `1.5px solid ${C.border}`,
+                fontSize: 12, fontWeight: 800, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                transition: "all 0.2s"
+              }}
+            >
+              <span>{gpsLoading ? "⌛ Requesting Location..." : "📍 Auto-Detect via Browser GPS"}</span>
+            </button>
 
             <button
               onClick={handleDismissModal}
@@ -544,9 +556,9 @@ export default function ChargeStationsPage() {
               border: "1px solid #bfdbfe", fontSize: 12, color: "#1e40af", fontWeight: 700,
               display: "inline-flex", alignItems: "center", gap: 6
             }}>
-              <span>🎯 Sorted by exact distance from your current GPS location</span>
+              <span>🎯 Sorted by exact distance from {gpsLocationName ? `📍 ${gpsLocationName}` : "your current GPS location"}</span>
               <button 
-                onClick={() => { setUserCoords(null); setGpsActive(false) }}
+                onClick={() => { setUserCoords(null); setGpsActive(false); setGpsLocationName("") }}
                 style={{ background: "none", border: "none", color: "#1d4ed8", cursor: "pointer", textDecoration: "underline", marginLeft: 8 }}
               >
                 Reset
