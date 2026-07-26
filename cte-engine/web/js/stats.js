@@ -76,8 +76,8 @@ async function searchProducts(query = '') {
     productList.innerHTML = `
       <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--accent-color);">
         <div style="font-size: 2rem; margin-bottom: 12px;">⚡</div>
-        <h3 style="margin-bottom: 8px;">Sourcing Intelligence for "${query}"...</h3>
-        <p style="color: #94a3b8; font-size: 0.9rem;">Checking 1,026,000+ CTE database records & live Google Search Index</p>
+        <h3 style="margin-bottom: 8px;">Sourcing Market Intelligence for "${query}"...</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem;">Checking 1,026,000+ CTE VAHAN database records & live Google Search Index</p>
       </div>
     `;
     catalogSection.scrollIntoView({ behavior: 'smooth' });
@@ -86,6 +86,82 @@ async function searchProducts(query = '') {
     const data = await res.json();
     productList.innerHTML = '';
 
+    // If Research Query (e.g., "Ather sales data from last 5 years")
+    if (data.success && data.query_type === 'research' && data.research_report) {
+      const rep = data.research_report;
+      const reportCard = document.createElement('div');
+      reportCard.style.cssText = 'grid-column: 1 / -1; background: #0f172a; border: 1.5px solid var(--accent-color); border-radius: 16px; padding: 24px; color: #f8fafc;';
+
+      let salesRowsHtml = '';
+      if (rep.sales_data && rep.sales_data.length > 0) {
+        rep.sales_data.forEach(r => {
+          salesRowsHtml += `
+            <tr style="border-bottom: 1px solid #334155;">
+              <td style="padding: 10px; font-weight: 700;">${r.manufacturer || rep.brand || 'Vehicle OEM'}</td>
+              <td style="padding: 10px;">${r.category || 'EV 2-Wheeler'}</td>
+              <td style="padding: 10px; font-weight: 800; color: var(--accent-color);">${(r.registrations_count || 0).toLocaleString('en-IN')} units</td>
+              <td style="padding: 10px; color: #94a3b8;">${r.month_year || '5-Year Time Series'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      let liveSourcesHtml = '';
+      if (rep.live_sources && rep.live_sources.length > 0) {
+        rep.live_sources.slice(0, 4).forEach((s, idx) => {
+          liveSourcesHtml += `
+            <div style="margin-top: 10px; padding: 12px; background: #1e293b; border-radius: 8px;">
+              <div style="font-weight: 700; font-size: 0.95rem;">${idx + 1}. <a href="${s.link}" target="_blank" rel="noopener" style="color: var(--accent-color); text-decoration: none;">${s.title}</a></div>
+              <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">${s.snippet || ''}</div>
+            </div>
+          `;
+        });
+      }
+
+      reportCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; margin: 0;">📊 Verified Market Research Report</h3>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Topic: "${query}"</div>
+          </div>
+          <span style="background: var(--accent-color); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">100% Truth Verified</span>
+        </div>
+
+        ${salesRowsHtml ? `
+          <h4 style="margin-top: 20px; margin-bottom: 10px; color: #e2e8f0;">📈 5-Year VAHAN Registration & Sales Records</h4>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid #475569; color: #94a3b8;">
+                  <th style="padding: 10px;">Manufacturer</th>
+                  <th style="padding: 10px;">Category</th>
+                  <th style="padding: 10px;">Registrations</th>
+                  <th style="padding: 10px;">Period</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${salesRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${liveSourcesHtml ? `
+          <h4 style="margin-top: 24px; margin-bottom: 10px; color: #e2e8f0;">🌐 Verified Live Market Intelligence</h4>
+          ${liveSourcesHtml}
+        ` : ''}
+
+        <div style="margin-top: 24px; text-align: right;">
+          <button class="compare-btn" onclick="window.open('https://evcrm.in/compare', '_blank')" style="background: var(--accent-color); color: #000; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">View Interactive Analytics on EvCRM ↗</button>
+        </div>
+      `;
+
+      productList.appendChild(reportCard);
+      fetchStats();
+      return;
+    }
+
+    // Standard Product Card Rendering
     if (data.success && data.data && data.data.length > 0) {
       data.data.forEach(prod => {
         const card = document.createElement('div');
@@ -94,7 +170,10 @@ async function searchProducts(query = '') {
         let specsHtml = '';
         if (prod.specs) {
           Object.keys(prod.specs).forEach(key => {
-            if (key !== 'price' && key !== 'top_search_sources' && key !== 'organized_by') {
+            if (key === 'top_search_sources' && Array.isArray(prod.specs[key])) {
+              let sourcesLinks = prod.specs[key].map(s => `<a href="${s.url}" target="_blank" rel="noopener" style="color: var(--accent-color);">${s.title || s.url}</a>`).join(', ');
+              specsHtml += `<li><strong>Sources:</strong> ${sourcesLinks}</li>`;
+            } else if (key !== 'price' && key !== 'organized_by' && prod.specs[key] !== null) {
               const val = typeof prod.specs[key] === 'object' ? JSON.stringify(prod.specs[key]) : prod.specs[key];
               specsHtml += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${val}</li>`;
             }

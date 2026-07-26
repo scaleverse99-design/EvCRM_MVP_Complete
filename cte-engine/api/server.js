@@ -100,8 +100,10 @@ app.get('/api/v1/products', async (req, res) => {
   try {
     const { category, query, max_price, sort_by, limit } = req.query;
 
+    const isResearchQuery = query && /(?:sales|market|share|growth|data|report|5\s*years|5years|history|trend|versus|\bvs\b|why)/i.test(query);
+
     if (query) {
-      await logSearchQuery(query, category, 'product_search');
+      await logSearchQuery(query, category, isResearchQuery ? 'market_research' : 'product_search');
     }
 
     let dbQuery = supabase
@@ -110,7 +112,16 @@ app.get('/api/v1/products', async (req, res) => {
 
     if (category) dbQuery = dbQuery.eq('category', category);
     if (max_price) dbQuery = dbQuery.lte('current_price', parseInt(max_price));
-    if (query) dbQuery = dbQuery.ilike('name', `%${query}%`);
+    
+    // Extract primary brand keyword if research query
+    const brandKeyword = query ? query.split(' ')[0] : '';
+    if (query) {
+      if (isResearchQuery && brandKeyword.length > 2) {
+        dbQuery = dbQuery.ilike('name', `%${brandKeyword}%`);
+      } else {
+        dbQuery = dbQuery.ilike('name', `%${query}%`);
+      }
+    }
 
     if (sort_by === 'quality') {
       dbQuery = dbQuery.order('quality_score', { ascending: false });
@@ -123,8 +134,25 @@ app.get('/api/v1/products', async (req, res) => {
     let { data, error } = await dbQuery.limit(parseInt(limit) || 20);
     if (error) throw error;
 
-    // Zero-Miss Live Fallback: If 0 local rows found for a search query, fetch live from Google
-    if ((!data || data.length === 0) && query) {
+    let salesData = [];
+    let liveSearchResults = [];
+
+    if (isResearchQuery && query) {
+      // Fetch 5-year sales & registration data from VAHAN database
+      const { data: regRows } = await supabase
+        .from('registration_data')
+        .select('*')
+        .ilike('manufacturer', `%${brandKeyword}%`)
+        .order('registrations_count', { ascending: false })
+        .limit(10);
+      salesData = regRows || [];
+
+      // Fetch live news & search index
+      liveSearchResults = await queryGoogleLiveSearch(query);
+    }
+
+    // Zero-Miss Live Fallback: If 0 local rows found for a product search query, fetch live from Google
+    if ((!data || data.length === 0) && query && !isResearchQuery) {
       logger.info(`[Zero-Miss REST API] No local rows for query "${query}". Triggering Google Live Sourcing...`);
       try {
         const liveProduct = await fetchAndEnrichVehicle(query, category || 'ev_two_wheeler');
@@ -134,7 +162,17 @@ app.get('/api/v1/products', async (req, res) => {
       }
     }
 
-    res.json({ success: true, data: data || [] });
+    res.json({
+      success: true,
+      query_type: isResearchQuery ? 'research' : 'product',
+      data: data || [],
+      research_report: isResearchQuery ? {
+        query,
+        brand: brandKeyword,
+        sales_data: salesData,
+        live_sources: liveSearchResults
+      } : null
+    });
   } catch (error) {
     logger.error({ error }, 'Error fetching products');
     res.status(500).json({ success: false, error: error.message });
