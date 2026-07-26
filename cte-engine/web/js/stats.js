@@ -66,16 +66,27 @@ async function fetchArticles() {
 }
 
 async function searchProducts(query = '') {
+  const catalogSection = document.getElementById('catalog-section');
+  const productList = document.getElementById('product-list');
+
+  if (!query) return;
+
   try {
+    catalogSection.style.display = 'block';
+    productList.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--accent-color);">
+        <div style="font-size: 2rem; margin-bottom: 12px;">⚡</div>
+        <h3 style="margin-bottom: 8px;">Sourcing Intelligence for "${query}"...</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem;">Checking 1,026,000+ CTE database records & live Google Search Index</p>
+      </div>
+    `;
+    catalogSection.scrollIntoView({ behavior: 'smooth' });
+
     const res = await fetch(`/api/v1/products?query=${encodeURIComponent(query)}`);
     const data = await res.json();
-
-    const catalogSection = document.getElementById('catalog-section');
-    const productList = document.getElementById('product-list');
     productList.innerHTML = '';
 
-    if (data.success && data.data.length > 0) {
-      catalogSection.style.display = 'block';
+    if (data.success && data.data && data.data.length > 0) {
       data.data.forEach(prod => {
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -83,8 +94,9 @@ async function searchProducts(query = '') {
         let specsHtml = '';
         if (prod.specs) {
           Object.keys(prod.specs).forEach(key => {
-            if (key !== 'price') {
-              specsHtml += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${prod.specs[key]}</li>`;
+            if (key !== 'price' && key !== 'top_search_sources' && key !== 'organized_by') {
+              const val = typeof prod.specs[key] === 'object' ? JSON.stringify(prod.specs[key]) : prod.specs[key];
+              specsHtml += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${val}</li>`;
             }
           });
         }
@@ -93,9 +105,9 @@ async function searchProducts(query = '') {
           <div class="product-header">
             <div>
               <div class="product-title">${prod.name}</div>
-              <span class="product-source">${prod.source}</span>
+              <span class="product-source">${prod.source || 'CTE Verified Index'}</span>
             </div>
-            <div class="product-score-badge">${prod.overall_score}</div>
+            <div class="product-score-badge">${prod.overall_score || 75}</div>
           </div>
           <div class="product-details">
             <div class="product-price-tag">₹${(prod.current_price || 0).toLocaleString('en-IN')}</div>
@@ -103,21 +115,23 @@ async function searchProducts(query = '') {
               ${specsHtml}
             </ul>
           </div>
-          <button class="compare-btn">Specs Transparency Verified</button>
+          <button class="compare-btn" onclick="window.open('https://evcrm.in/compare', '_blank')">Compare & Book on EvCRM ↗</button>
         `;
         productList.appendChild(card);
       });
-      
-      // Smooth scroll to catalog section
-      catalogSection.scrollIntoView({ behavior: 'smooth' });
+      fetchStats();
     } else {
-      if (query !== '') {
-        alert('No vehicles found matching search. The query has been logged to help seed targets.');
-        fetchStats(); // Update trending list since query was logged
-      }
+      productList.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 32px; text-align: center; background: #1e293b; border-radius: 12px; border: 1px solid #334155;">
+          <h4 style="color: #f8fafc; margin-bottom: 8px;">Query Logged to CTE Index</h4>
+          <p style="color: #94a3b8; font-size: 0.9rem;">"${query}" has been captured by the Zero-Miss engine. Sourcing live data in background.</p>
+        </div>
+      `;
+      fetchStats();
     }
   } catch (err) {
     console.error('Error searching products:', err);
+    productList.innerHTML = `<div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: #ef4444;">Failed to connect to CTE API. Please try again.</div>`;
   }
 }
 
