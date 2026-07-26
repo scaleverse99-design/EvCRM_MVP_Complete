@@ -4,7 +4,19 @@ import STATIONS from "../../../../data/charging_stations.json"
 const DISTRICT_COORDS = {
   "Hyderabad": { lat: 17.3850, lng: 78.4867 },
   "Visakhapatnam": { lat: 17.6868, lng: 83.2185 },
+  "Vizianagaram": { lat: 18.1066, lng: 83.3955 },
+  "Cheepurupalle": { lat: 18.3054, lng: 83.5646 },
+  "Cheepurupalli": { lat: 18.3054, lng: 83.5646 },
+  "Srikakulam": { lat: 18.2949, lng: 83.8938 },
   "Vijayawada": { lat: 16.5062, lng: 80.6480 },
+  "Guntur": { lat: 16.3067, lng: 80.4365 },
+  "Tirupati": { lat: 13.6288, lng: 79.4192 },
+  "Kakinada": { lat: 16.9891, lng: 82.2475 },
+  "Rajahmundry": { lat: 17.0005, lng: 81.8040 },
+  "Nellore": { lat: 14.4426, lng: 79.9865 },
+  "Kurnool": { lat: 15.8281, lng: 78.0373 },
+  "Anantapur": { lat: 14.6819, lng: 77.6006 },
+  "Kadapa": { lat: 14.4673, lng: 78.8242 },
   "Bengaluru": { lat: 12.9716, lng: 77.5946 },
   "Mumbai": { lat: 19.0760, lng: 72.8777 },
   "Delhi": { lat: 28.6139, lng: 77.2090 },
@@ -66,7 +78,7 @@ export async function GET(req) {
         if (pinRes.status === "fulfilled" && Array.isArray(pinRes.value) && pinRes.value[0]?.Status === "Success") {
           const poList = pinRes.value[0].PostOffice || []
           if (poList.length > 0) {
-            resolvedDistrict = poList[0].District || resolvedDistrict
+            resolvedDistrict = poList[0].District || poList[0].Block || resolvedDistrict
             resolvedLocality = poList[0].Name || ""
             resolvedState = poList[0].State || ""
           }
@@ -81,7 +93,7 @@ export async function GET(req) {
         }
 
         if (!pinLat || !pinLng) {
-          const dc = DISTRICT_COORDS[resolvedDistrict] || DISTRICT_COORDS["Hyderabad"]
+          const dc = DISTRICT_COORDS[resolvedDistrict] || DISTRICT_COORDS["Vizianagaram"] || DISTRICT_COORDS["Hyderabad"]
           pinLat = dc.lat
           pinLng = dc.lng
         }
@@ -109,8 +121,8 @@ export async function GET(req) {
 
     const apiKey = process.env.OPENCHARGEMAP_API_KEY || "42411a8d-310d-427a-98aa-6b4a595122bc"
     
-    // Call OpenChargeMap API
-    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=50&distanceunit=KM&key=${apiKey}`
+    // Call OpenChargeMap API with expanded 100km radius for rural/town areas
+    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=100&distanceunit=KM&key=${apiKey}`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 6000)
@@ -172,12 +184,12 @@ export async function GET(req) {
     const localStore = STATIONS.map(s => ({
       ...s,
       distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
-    })).filter(s => s.district?.toLowerCase() === district.toLowerCase())
+    }))
 
     // Combine live stations with local curated store
     let allStations = fetchedSuccess && ocmStations.length > 0
       ? [...ocmStations, ...localStore.filter(ls => !ocmStations.some(os => os.name.toLowerCase() === ls.name.toLowerCase()))]
-      : (localStore.length > 0 ? localStore : STATIONS.map(s => ({ ...s, distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng) })))
+      : STATIONS.map(s => ({ ...s, distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng) }))
 
     // Filter by Brand / Search Query if provided
     if (brandFilter && brandFilter !== "all") {

@@ -22,7 +22,19 @@ const BRAND_FILTERS = [
 const DISTRICT_COORDS = {
   "Hyderabad": { lat: 17.3850, lng: 78.4867 },
   "Visakhapatnam": { lat: 17.6868, lng: 83.2185 },
+  "Vizianagaram": { lat: 18.1066, lng: 83.3955 },
+  "Cheepurupalle": { lat: 18.3054, lng: 83.5646 },
+  "Cheepurupalli": { lat: 18.3054, lng: 83.5646 },
+  "Srikakulam": { lat: 18.2949, lng: 83.8938 },
   "Vijayawada": { lat: 16.5062, lng: 80.6480 },
+  "Guntur": { lat: 16.3067, lng: 80.4365 },
+  "Tirupati": { lat: 13.6288, lng: 79.4192 },
+  "Kakinada": { lat: 16.9891, lng: 82.2475 },
+  "Rajahmundry": { lat: 17.0005, lng: 81.8040 },
+  "Nellore": { lat: 14.4426, lng: 79.9865 },
+  "Kurnool": { lat: 15.8281, lng: 78.0373 },
+  "Anantapur": { lat: 14.6819, lng: 77.6006 },
+  "Kadapa": { lat: 14.4673, lng: 78.8242 },
   "Bengaluru": { lat: 12.9716, lng: 77.5946 },
   "Mumbai": { lat: 19.0760, lng: 72.8777 },
   "Delhi": { lat: 28.6139, lng: 77.2090 },
@@ -79,7 +91,6 @@ export default function ChargeStationsPage() {
     const saved = localStorage.getItem("evcrm_user_location")
     if (saved) setLocation(JSON.parse(saved))
 
-    // Check if location modal was already dismissed or gps active in this session
     const dismissed = sessionStorage.getItem("evcrm_charging_loc_dismissed")
     if (!dismissed && !gpsActive) {
       setShowLocationModal(true)
@@ -87,6 +98,21 @@ export default function ChargeStationsPage() {
   }, [])
 
   const currentDistrict = location?.district || "Hyderabad"
+
+  // Auto-trigger Pincode lookup when 6 digits are typed
+  const handlePincodeInputChange = (val) => {
+    const clean = val.replace(/\D/g, "").slice(0, 6)
+    setPincodeInput(clean)
+    setPincodeError("")
+
+    if (clean.length === 6) {
+      setUserCoords(null)
+      setGpsActive(false)
+      setActivePincode(clean)
+      setShowLocationModal(false)
+      sessionStorage.setItem("evcrm_charging_loc_dismissed", "true")
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -120,7 +146,6 @@ export default function ChargeStationsPage() {
           }
         }
         
-        // Direct Client-Side OpenChargeMap fallback (for static hosting deployments)
         await fetchClientSideOcm(isMounted)
 
       } catch (err) {
@@ -146,7 +171,7 @@ export default function ChargeStationsPage() {
             if (pinRes.status === "fulfilled" && Array.isArray(pinRes.value) && pinRes.value[0]?.Status === "Success") {
               const poList = pinRes.value[0].PostOffice || []
               if (poList.length > 0) {
-                resolvedDist = poList[0].District || resolvedDist
+                resolvedDist = poList[0].District || poList[0].Block || resolvedDist
                 setPincodeInfo({
                   pincode: activePincode,
                   district: resolvedDist,
@@ -163,10 +188,10 @@ export default function ChargeStationsPage() {
         }
 
         if (!coords) {
-          coords = DISTRICT_COORDS[resolvedDist] || DISTRICT_COORDS["Hyderabad"]
+          coords = DISTRICT_COORDS[resolvedDist] || DISTRICT_COORDS["Vizianagaram"] || DISTRICT_COORDS["Hyderabad"]
         }
 
-        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=50&distanceunit=KM&key=${OCM_KEY}`
+        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=100&distanceunit=KM&key=${OCM_KEY}`
 
         const ocmRes = await fetch(ocmUrl)
         if (ocmRes.ok) {
@@ -400,7 +425,7 @@ export default function ChargeStationsPage() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
               <div style={{ flex: 1, height: 1, background: C.border }} />
-              <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3 }}>OR</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3 }}>OR ENTER YOUR PINCODE</span>
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
 
@@ -409,9 +434,9 @@ export default function ChargeStationsPage() {
               <input
                 type="text"
                 maxLength={6}
-                placeholder="Enter 6-digit PIN"
+                placeholder="Enter 6-digit PIN (e.g. 535128)"
                 value={pincodeInput}
-                onChange={e => { setPincodeInput(e.target.value); setPincodeError("") }}
+                onChange={e => handlePincodeInputChange(e.target.value)}
                 style={{
                   flex: 1, padding: "10px 14px", borderRadius: 10,
                   border: `1.5px solid ${C.border}`, fontSize: 13,
@@ -496,7 +521,7 @@ export default function ChargeStationsPage() {
           </div>
 
           <p style={{ fontSize: 15, color: C.ink3, maxWidth: 780, lineHeight: 1.6 }}>
-            Discover nearest quick <b>DC fast charge stations</b>, <b>public electric car charging hubs</b>, and <b>battery swapping grids</b> in <span style={{ color: C.green, fontWeight: 700 }}>{pincodeInfo?.locality ? `${pincodeInfo.locality}, ${pincodeInfo.district}` : currentDistrict}</span> powered by OpenChargeMap live data. Direct 1-click Google Maps navigation enabled.
+            Discover nearest quick <b>DC fast charge stations</b>, <b>public electric car charging hubs</b>, and <b>battery swapping grids</b> in <span style={{ color: C.green, fontWeight: 700 }}>{pincodeInfo?.locality ? `${pincodeInfo.locality}, ${pincodeInfo.district}` : (activePincode ? `PIN ${activePincode}` : currentDistrict)}</span> powered by OpenChargeMap live data. Direct 1-click Google Maps navigation enabled.
           </p>
 
           {gpsError && (
@@ -574,9 +599,9 @@ export default function ChargeStationsPage() {
               <input
                 type="text"
                 maxLength={6}
-                placeholder="Enter PIN (e.g. 500081)"
+                placeholder="Enter PIN (e.g. 535128)"
                 value={pincodeInput}
-                onChange={e => { setPincodeInput(e.target.value); setPincodeError("") }}
+                onChange={e => handlePincodeInputChange(e.target.value)}
                 style={{
                   width: 170, padding: "12px 14px",
                   borderRadius: 12, border: `1.5px solid ${pincodeError ? "#dc2626" : C.border}`,
