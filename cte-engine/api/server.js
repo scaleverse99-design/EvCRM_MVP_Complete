@@ -184,6 +184,7 @@ app.get('/api/v1/products', async (req, res) => {
 
     let executiveSummary = null;
     if (query) {
+      const q = query.toLowerCase();
       const rawName = (data && data.length > 0) ? data[0].name : '';
       const cleanName = rawName.replace(/\s*\(.*?\)/g, '').replace(/Listing.*/i, '').trim();
       const topModelName = (cleanName && cleanName.length > 3) ? cleanName : (detectedBrand ? detectedBrand.toUpperCase() + ' 450X Series' : 'Ather 450X Series');
