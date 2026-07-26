@@ -88,15 +88,51 @@ export default function ChargeStationsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("all")
 
+  // Restore persistent active location on initial page load / refresh
   useEffect(() => {
-    const saved = localStorage.getItem("evcrm_user_location")
-    if (saved) setLocation(JSON.parse(saved))
+    const savedTop = localStorage.getItem("evcrm_user_location")
+    if (savedTop) setLocation(JSON.parse(savedTop))
 
-    const dismissed = sessionStorage.getItem("evcrm_charging_loc_dismissed")
-    if (!dismissed && !gpsActive && !activePincode) {
-      setShowLocationModal(true)
+    const savedChargingLoc = localStorage.getItem("evcrm_charging_active_location")
+    if (savedChargingLoc) {
+      try {
+        const parsed = JSON.parse(savedChargingLoc)
+        if (parsed.activePincode) {
+          setActivePincode(parsed.activePincode)
+          setPincodeInput(parsed.activePincode)
+          if (parsed.pincodeInfo) setPincodeInfo(parsed.pincodeInfo)
+        } else if (parsed.userCoords) {
+          setUserCoords(parsed.userCoords)
+          setGpsActive(true)
+          if (parsed.gpsLocationName) setGpsLocationName(parsed.gpsLocationName)
+        }
+      } catch (e) {
+        console.warn("Failed to parse saved charging location:", e)
+      }
+    } else {
+      const dismissed = sessionStorage.getItem("evcrm_charging_loc_dismissed")
+      if (!dismissed) {
+        setShowLocationModal(true)
+      }
     }
   }, [])
+
+  // Persist current active location to localStorage whenever it changes
+  useEffect(() => {
+    if (activePincode) {
+      localStorage.setItem("evcrm_charging_active_location", JSON.stringify({
+        activePincode,
+        pincodeInfo,
+        type: "pincode"
+      }))
+    } else if (userCoords && gpsActive) {
+      localStorage.setItem("evcrm_charging_active_location", JSON.stringify({
+        userCoords,
+        gpsLocationName,
+        type: "gps"
+      }))
+    }
+  }, [activePincode, pincodeInfo, userCoords, gpsActive, gpsLocationName])
 
   const currentDistrict = location?.district || "Hyderabad"
 
@@ -342,6 +378,14 @@ export default function ChargeStationsPage() {
     setActivePincode("")
     setPincodeInfo(null)
     setPincodeInput("")
+    localStorage.removeItem("evcrm_charging_active_location")
+  }
+
+  const handleResetGps = () => {
+    setUserCoords(null)
+    setGpsActive(false)
+    setGpsLocationName("")
+    localStorage.removeItem("evcrm_charging_active_location")
   }
 
   const chargingGrids = stations.filter(s => s.category === "charging_grid" || !s.category)
@@ -558,7 +602,7 @@ export default function ChargeStationsPage() {
             }}>
               <span>🎯 Sorted by exact distance from {gpsLocationName ? `📍 ${gpsLocationName}` : "your current GPS location"}</span>
               <button 
-                onClick={() => { setUserCoords(null); setGpsActive(false); setGpsLocationName("") }}
+                onClick={handleResetGps}
                 style={{ background: "none", border: "none", color: "#1d4ed8", cursor: "pointer", textDecoration: "underline", marginLeft: 8 }}
               >
                 Reset

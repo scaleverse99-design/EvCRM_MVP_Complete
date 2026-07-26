@@ -221,46 +221,48 @@ async function searchProducts(query = '') {
       productList.appendChild(reportCard);
     }
 
-    // Standard Product Card Rendering (renders below research report or standalone)
+    // Standard Product Card Rendering (Categorized into New OEM Specs vs Pre-Owned Regional Listings)
     if (data.success && data.data && data.data.length > 0) {
+      const oemSpecs = [];
+      const preOwnedListings = [];
+
       data.data.forEach(prod => {
-        // Filter out zero-price placeholder products if specs are missing
         if (!prod.current_price && (!prod.specs || !prod.specs.range_km)) return;
-
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        
-        let specsHtml = '';
-        if (prod.specs) {
-          Object.keys(prod.specs).forEach(key => {
-            if (key === 'top_search_sources' && Array.isArray(prod.specs[key])) {
-              let sourcesLinks = prod.specs[key].map(s => `<a href="${s.url}" target="_blank" rel="noopener" style="color: var(--accent-color);">${s.title || s.url}</a>`).join(', ');
-              specsHtml += `<li><strong>Sources:</strong> ${sourcesLinks}</li>`;
-            } else if (key !== 'price' && key !== 'organized_by' && prod.specs[key] !== null) {
-              const val = typeof prod.specs[key] === 'object' ? JSON.stringify(prod.specs[key]) : prod.specs[key];
-              specsHtml += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${val}</li>`;
-            }
-          });
+        const isPreOwned = /Listing|Owner|Used|Pre-Owned/i.test(prod.name) || (prod.specs && (prod.specs.owner || prod.specs.city));
+        if (isPreOwned) {
+          preOwnedListings.push(prod);
+        } else {
+          oemSpecs.push(prod);
         }
-
-        card.innerHTML = `
-          <div class="product-header">
-            <div>
-              <div class="product-title">${prod.name}</div>
-              <span class="product-source">${prod.source || 'CTE Verified Index'}</span>
-            </div>
-            <div class="product-score-badge">${prod.overall_score || 75}</div>
-          </div>
-          <div class="product-details">
-            <div class="product-price-tag">₹${(prod.current_price || 0).toLocaleString('en-IN')}</div>
-            <ul class="spec-list">
-              ${specsHtml}
-            </ul>
-          </div>
-          <button class="compare-btn" style="cursor: default; opacity: 0.9;">⚡ CTE Verified Spec</button>
-        `;
-        productList.appendChild(card);
       });
+
+      // 1. Render Official New Vehicle OEM Specs First
+      if (oemSpecs.length > 0) {
+        const oemHeader = document.createElement('div');
+        oemHeader.style.cssText = 'grid-column: 1 / -1; margin-top: 12px; margin-bottom: 8px; font-weight: 800; font-size: 1.1rem; color: #f8fafc; display: flex; align-items: center; gap: 8px;';
+        oemHeader.innerHTML = `<span>✨ Official OEM Vehicle Specification Profiles</span>`;
+        productList.appendChild(oemHeader);
+
+        oemSpecs.forEach(prod => {
+          renderProductCard(prod, productList, false);
+        });
+      }
+
+      // 2. Render Pre-Owned Regional Listings below with explanatory header
+      if (preOwnedListings.length > 0) {
+        const preOwnedHeader = document.createElement('div');
+        preOwnedHeader.style.cssText = 'grid-column: 1 / -1; margin-top: 32px; margin-bottom: 8px; border-top: 1px dashed #475569; padding-top: 24px; color: #cbd5e1;';
+        preOwnedHeader.innerHTML = `
+          <h4 style="font-size: 1.1rem; font-weight: 800; margin: 0; color: #f8fafc;">📍 Pre-Owned Regional Market Valuations</h4>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px; margin-bottom: 0;">Verified used vehicle aggregator listings (Prices vary across cities based on model year, owner count & odometer km).</p>
+        `;
+        productList.appendChild(preOwnedHeader);
+
+        preOwnedListings.forEach(prod => {
+          renderProductCard(prod, productList, true);
+        });
+      }
+
       fetchStats();
     } else {
       productList.innerHTML = `
@@ -275,6 +277,51 @@ async function searchProducts(query = '') {
     console.error('Error searching products:', err);
     productList.innerHTML = `<div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: #ef4444;">Failed to connect to CTE API. Please try again.</div>`;
   }
+}
+
+function renderProductCard(prod, productList, isPreOwned) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  if (isPreOwned) {
+    card.style.border = '1px solid #334155';
+    card.style.background = '#0f172a';
+  }
+  
+  let specsHtml = '';
+  if (prod.specs) {
+    Object.keys(prod.specs).forEach(key => {
+      if (key === 'top_search_sources' && Array.isArray(prod.specs[key])) {
+        let sourcesLinks = prod.specs[key].map(s => `<a href="${s.url}" target="_blank" rel="noopener" style="color: var(--accent-color);">${s.title || s.url}</a>`).join(', ');
+        specsHtml += `<li><strong>Sources:</strong> ${sourcesLinks}</li>`;
+      } else if (key !== 'price' && key !== 'organized_by' && prod.specs[key] !== null) {
+        const val = typeof prod.specs[key] === 'object' ? JSON.stringify(prod.specs[key]) : prod.specs[key];
+        specsHtml += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${val}</li>`;
+      }
+    });
+  }
+
+  const badgeText = isPreOwned ? 'USED MARKET LISTING' : (prod.source || 'CTE Verified Index');
+  const badgeColor = isPreOwned ? '#f59e0b' : 'var(--accent-color)';
+  const priceLabel = isPreOwned ? 'Resale Market Valuation' : 'Ex-Showroom Price';
+
+  card.innerHTML = `
+    <div class="product-header">
+      <div>
+        <div class="product-title">${prod.name}</div>
+        <span class="product-source" style="color: ${badgeColor}; font-weight: 700;">${badgeText}</span>
+      </div>
+      <div class="product-score-badge">${prod.overall_score || 75}</div>
+    </div>
+    <div class="product-details">
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">${priceLabel}</div>
+      <div class="product-price-tag">₹${(prod.current_price || 0).toLocaleString('en-IN')}</div>
+      <ul class="spec-list">
+        ${specsHtml}
+      </ul>
+    </div>
+    <button class="compare-btn" style="cursor: default; opacity: 0.9;">${isPreOwned ? '📍 Pre-Owned Market Valuation' : '⚡ CTE Verified New Spec'}</button>
+  `;
+  productList.appendChild(card);
 }
 
 function formatTimeAgo(date) {
