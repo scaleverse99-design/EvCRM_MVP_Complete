@@ -6,6 +6,8 @@ import Footer from "../../components/home/Footer"
 import { C } from "../../lib/constants"
 import STATIONS from "../../data/charging_stations.json"
 
+const OCM_KEY = "42411a8d-310d-427a-98aa-6b4a595122bc"
+
 const BRAND_FILTERS = [
   { id: "all", label: "All Networks" },
   { id: "tata", label: "Tata Power" },
@@ -16,6 +18,41 @@ const BRAND_FILTERS = [
   { id: "battery smart", label: "Battery Smart" },
   { id: "eesl", label: "EESL" },
 ]
+
+const DISTRICT_COORDS = {
+  "Hyderabad": { lat: 17.3850, lng: 78.4867 },
+  "Visakhapatnam": { lat: 17.6868, lng: 83.2185 },
+  "Vijayawada": { lat: 16.5062, lng: 80.6480 },
+  "Bengaluru": { lat: 12.9716, lng: 77.5946 },
+  "Mumbai": { lat: 19.0760, lng: 72.8777 },
+  "Delhi": { lat: 28.6139, lng: 77.2090 },
+  "Chennai": { lat: 13.0827, lng: 80.2707 },
+  "Pune": { lat: 18.5204, lng: 73.8567 },
+  "Ahmedabad": { lat: 23.0225, lng: 72.5714 },
+  "Kolkata": { lat: 22.5726, lng: 88.3639 },
+  "Lucknow": { lat: 26.8467, lng: 80.9462 },
+  "Salem": { lat: 11.6643, lng: 78.1460 },
+  "Gurugram": { lat: 28.4595, lng: 77.0266 },
+  "Noida": { lat: 28.5355, lng: 77.3910 },
+  "Coimbatore": { lat: 11.0168, lng: 76.9558 },
+  "Jaipur": { lat: 26.9124, lng: 75.7873 },
+  "Kochi": { lat: 9.9312, lng: 76.2673 },
+}
+
+function getDistanceKm(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null
+  const R = 6371
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return Math.round(R * c * 10) / 10
+}
 
 export default function ChargeStationsPage() {
   const [location, setLocation] = useState(null)
@@ -63,22 +100,124 @@ export default function ChargeStationsPage() {
         }
 
         const res = await fetch(url)
-        const data = await res.json()
-        if (isMounted && data.success) {
-          setStations(data.stations || [])
-          setIsLive(data.source === "openchargemap_live")
-          if (data.pincodeInfo) {
-            setPincodeInfo(data.pincodeInfo)
+        const contentType = res.headers.get("content-type") || ""
+
+        if (res.ok && contentType.includes("application/json")) {
+          const data = await res.json()
+          if (isMounted && data.success) {
+            setStations(data.stations || [])
+            setIsLive(data.source === "openchargemap_live")
+            if (data.pincodeInfo) setPincodeInfo(data.pincodeInfo)
+            return
           }
         }
+        
+        // Direct Client-Side OpenChargeMap fallback (for static hosting deployments)
+        await fetchClientSideOcm(isMounted)
+
       } catch (err) {
-        console.warn("Failed to fetch live charging stations:", err)
-        if (isMounted) {
-          const fallback = STATIONS.filter(s => s.district === currentDistrict)
-          setStations(fallback.length > 0 ? fallback : STATIONS.slice(0, 8))
-        }
+        console.warn("API route unavailable, using direct client OpenChargeMap fetch:", err)
+        if (isMounted) await fetchClientSideOcm(isMounted)
       } finally {
         if (isMounted) setLoading(false)
+      }
+    }
+
+    async function fetchClientSideOcm(mounted) {
+      try {
+        let coords = userCoords
+        let resolvedDist = currentDistrict
+
+        if (activePincode && /^\d{6}$/.test(activePincode)) {
+          try {
+            const [pinRes, geoRes] = await Promise.allSettled([
+              fetch(`https://api.postalpincode.in/pincode/${activePincode}`).then(r => r.json()),
+              fetch(`https://nominatim.openstreetmap.org/search?postalcode=${activePincode}&country=India&format=json`).then(r => r.json())
+            ])
+
+            if (pinRes.status === "fulfilled" && Array.isArray(pinRes.value) && pinRes.value[0]?.Status === "Success") {
+              const poList = pinRes.value[0].PostOffice || []
+              if (poList.length > 0) {
+                resolvedDist = poList[0].District || resolvedDist
+                setPincodeInfo({
+                  pincode: activePincode,
+                  district: resolvedDist,
+                  locality: poList[0].Name || "",
+                  state: poList[0].State || ""
+                })
+              }
+            }
+
+            if (geoRes.status === "fulfilled" && Array.isArray(geoRes.value) && geoRes.value.length > 0) {
+              coords = { lat: parseFloat(geoRes.value[0].lat), lng: parseFloat(geoRes.value[0].lon) }
+            }
+          } catch (pe) { console.warn("Pin error", pe) }
+        }
+
+        if (!coords) {
+          coords = DISTRICT_COORDS[resolvedDist] || DISTRICT_COORDS["Hyderabad"]
+        }
+
+        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=50&distanceunit=KM&key=${OCM_KEY}`
+
+        const ocmRes = await fetch(ocmUrl)
+        if (ocmRes.ok) {
+          const rawData = await ocmRes.json()
+          if (Array.isArray(rawData) && rawData.length > 0) {
+            let parsed = rawData.map((item, idx) => {
+              const info = item.AddressInfo || {}
+              const operator = item.OperatorInfo?.Title || "Independent Charging Network"
+              const ports = (item.Connections || []).map(c => c.ConnectionType?.Title ? (c.PowerKW ? `${c.ConnectionType.Title} (${c.PowerKW}kW)` : c.ConnectionType.Title) : null).filter(Boolean)
+              const title = info.Title || `EV Station #${item.ID || idx}`
+              const isSwapping = title.toLowerCase().includes("swap") || operator.toLowerCase().includes("swap") || operator.toLowerCase().includes("battery smart") || operator.toLowerCase().includes("sun mobility")
+              const stationLat = info.Latitude || coords.lat
+              const stationLng = info.Longitude || coords.lng
+              const dist = getDistanceKm(coords.lat, coords.lng, stationLat, stationLng)
+
+              return {
+                id: `ocm_${item.ID || idx}`,
+                name: title,
+                state: info.StateOrProvince || "",
+                district: resolvedDist,
+                lat: stationLat,
+                lng: stationLng,
+                operator: operator,
+                ports: ports.length > 0 ? ports : ["CCS2 Fast Charger (50kW)"],
+                category: isSwapping ? "battery_swapping" : "charging_grid",
+                status: item.StatusType?.IsOperational === false ? "Maintenance" : "Available",
+                address: [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean).join(", ") || info.Title || resolvedDist,
+                distanceKm: dist,
+                isLive: true
+              }
+            })
+
+            // Apply search & brand filters
+            if (selectedBrand && selectedBrand !== "all") {
+              parsed = parsed.filter(s => s.operator.toLowerCase().includes(selectedBrand) || s.name.toLowerCase().includes(selectedBrand))
+            }
+            if (searchQuery.trim()) {
+              const q = searchQuery.toLowerCase().trim()
+              parsed = parsed.filter(s => s.name.toLowerCase().includes(q) || s.operator.toLowerCase().includes(q) || s.address.toLowerCase().includes(q))
+            }
+
+            parsed.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0))
+
+            if (mounted) {
+              setStations(parsed)
+              setIsLive(true)
+              return
+            }
+          }
+        }
+      } catch (clientErr) {
+        console.warn("Direct OpenChargeMap failed, loading local store:", clientErr)
+      }
+
+      // Local store fallback
+      if (mounted) {
+        const local = STATIONS.filter(s => s.district === currentDistrict)
+        setStations(local.length > 0 ? local : STATIONS.slice(0, 8))
+        setIsLive(false)
       }
     }
 
@@ -155,7 +294,6 @@ export default function ChargeStationsPage() {
     window.open(url, "_blank")
   }
 
-  // JSON-LD Structured Data Schema for SEO & GSC Top Queries
   const jsonLdSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -180,7 +318,6 @@ export default function ChargeStationsPage() {
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh" }}>
-      {/* Schema.org Structured Data for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
@@ -284,7 +421,6 @@ export default function ChargeStationsPage() {
           marginBottom: 40, boxShadow: "0 4px 20px rgba(0,0,0,0.03)"
         }}>
           
-          {/* Row 1: Search Query + Pincode Entry Form */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, marginBottom: 16 }}>
             {/* Search Input */}
             <div style={{ position: "relative" }}>
