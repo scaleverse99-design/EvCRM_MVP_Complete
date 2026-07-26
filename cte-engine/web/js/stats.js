@@ -86,11 +86,11 @@ async function searchProducts(query = '') {
     const data = await res.json();
     productList.innerHTML = '';
 
-    // If Research Query (e.g., "Ather sales data from last 5 years")
+    // If Research Query (e.g., "Ather sales data from last 5 years" or "ather last 5 years price changes")
     if (data.success && data.query_type === 'research' && data.research_report) {
       const rep = data.research_report;
       const reportCard = document.createElement('div');
-      reportCard.style.cssText = 'grid-column: 1 / -1; background: #0f172a; border: 1.5px solid var(--accent-color); border-radius: 16px; padding: 24px; color: #f8fafc;';
+      reportCard.style.cssText = 'grid-column: 1 / -1; background: #0f172a; border: 1.5px solid var(--accent-color); border-radius: 16px; padding: 24px; color: #f8fafc; margin-bottom: 24px;';
 
       let salesRowsHtml = '';
       if (rep.sales_data && rep.sales_data.length > 0) {
@@ -101,6 +101,19 @@ async function searchProducts(query = '') {
               <td style="padding: 10px;">${r.category || 'EV 2-Wheeler'}</td>
               <td style="padding: 10px; font-weight: 800; color: var(--accent-color);">${(r.registrations_count || 0).toLocaleString('en-IN')} units</td>
               <td style="padding: 10px; color: #94a3b8;">${r.month_year || '5-Year Time Series'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      let priceRowsHtml = '';
+      if (rep.price_history && rep.price_history.length > 0) {
+        rep.price_history.forEach(p => {
+          priceRowsHtml += `
+            <tr style="border-bottom: 1px solid #334155;">
+              <td style="padding: 10px; font-weight: 700;">${p.brand || rep.brand} ${p.model || ''}</td>
+              <td style="padding: 10px; font-weight: 800; color: var(--accent-color);">₹${(p.price || 0).toLocaleString('en-IN')}</td>
+              <td style="padding: 10px; color: #94a3b8;">${p.recorded_at ? new Date(p.recorded_at).toLocaleDateString('en-IN') : 'Historical Log'}</td>
             </tr>
           `;
         });
@@ -121,7 +134,7 @@ async function searchProducts(query = '') {
       reportCard.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
-            <h3 style="font-size: 1.3rem; font-weight: 800; margin: 0;">📊 Verified Market Research Report</h3>
+            <h3 style="font-size: 1.3rem; font-weight: 800; margin: 0;">📊 Verified Market & Price Research Report</h3>
             <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Topic: "${query}"</div>
           </div>
           <span style="background: var(--accent-color); color: #000; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">100% Truth Verified</span>
@@ -146,8 +159,26 @@ async function searchProducts(query = '') {
           </div>
         ` : ''}
 
+        ${priceRowsHtml ? `
+          <h4 style="margin-top: 20px; margin-bottom: 10px; color: #e2e8f0;">🏷️ Historical Pricing Timeline Logs</h4>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid #475569; color: #94a3b8;">
+                  <th style="padding: 10px;">Model Variant</th>
+                  <th style="padding: 10px;">Ex-Showroom Price</th>
+                  <th style="padding: 10px;">Date Recorded</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${priceRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
         ${liveSourcesHtml ? `
-          <h4 style="margin-top: 24px; margin-bottom: 10px; color: #e2e8f0;">🌐 Verified Live Market Intelligence</h4>
+          <h4 style="margin-top: 24px; margin-bottom: 10px; color: #e2e8f0;">🌐 Verified Live Market Intelligence & Price Reports</h4>
           ${liveSourcesHtml}
         ` : ''}
 
@@ -157,13 +188,14 @@ async function searchProducts(query = '') {
       `;
 
       productList.appendChild(reportCard);
-      fetchStats();
-      return;
     }
 
-    // Standard Product Card Rendering
+    // Standard Product Card Rendering (renders below research report or standalone)
     if (data.success && data.data && data.data.length > 0) {
       data.data.forEach(prod => {
+        // Filter out zero-price placeholder products if specs are missing
+        if (!prod.current_price && (!prod.specs || !prod.specs.range_km)) return;
+
         const card = document.createElement('div');
         card.className = 'product-card';
         
