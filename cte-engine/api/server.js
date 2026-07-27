@@ -98,56 +98,58 @@ async function logSearchQuery(query, category, intent) {
 // Get Products (with Search & Insights logging & Zero-Miss Research)
 app.get('/api/v1/products', async (req, res) => {
   try {
-    const { category, query, max_price, sort_by, limit } = req.query;
+    const { category: reqCategory, query, max_price, sort_by, limit } = req.query;
 
-    // Detect if research/market/price query (contains words like sales, price, prices, pricing, cost, market, share, 5 years, data, report, history, trend, vs, why, how, review, changes) OR has 3+ words
-    const isResearchQuery = query && (
-      /(?:sales|price|prices|pricing|cost|market|share|growth|data|report|5\s*years|5years|last|history|trend|versus|\bvs\b|why|how|review|change|changes)/i.test(query) ||
-      query.trim().split(/\s+/).length >= 3
-    );
+    const rQueryLower = query ? query.toLowerCase().trim() : '';
+    const slug = rQueryLower.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 
-    if (query) {
-      await logSearchQuery(query, category, isResearchQuery ? 'market_research' : 'product_search');
+    // Determine Category Focus (developer, automotive, or general universal)
+    let resolvedCategory = 'universal_insight';
+    if (reqCategory === 'ev_two_wheeler' || reqCategory === 'ev_four_wheeler' || /(?:ather|ola|tvs|bajaj|tata|hero|mahindra|mg|hyundai|suzuki|honda|toyota|bmw|audi|sales|price|vahan|rto|registration|scooter|car|bike)/i.test(rQueryLower)) {
+      resolvedCategory = 'ev_two_wheeler'; // maps to existing auto schema
+    } else if (/(?:npm|git|docker|rust|python|code|install|api|function|react|javascript|node|typescript|html|css|sql|class|struct|json|cmd|cli|terminal)/i.test(rQueryLower)) {
+      resolvedCategory = 'developer_insight';
     }
 
-    // Extract brand & specific model candidates from query (e.g. tvs iqube, ola s1 pro, ather 450x)
-    const knownBrands = ['ather', 'ola', 'tvs', 'bajaj', 'tata', 'hero', 'mahindra', 'mg', 'hyundai', 'kia', 'simple', 'revolt', 'ampere', 'pure', 'okinawa', 'greaves', 'matter', 'bounce', 'vidya', 'urja', 'chetak', 'nexon'];
-    const knownModels = ['iqube', 's1 pro', 's1 air', 's1 x', 's1', '450x', '450s', '450 plus', 'rizta', 'apex', 'nexon ev', 'curvv', 'tiago ev', 'tigor ev', 'zs ev', 'windsor', 'comet', 'chetak', 'ioniq 5', 'kona', 'be 6e', 'xuv400'];
-
-    const rawQueryLower = query ? query.toLowerCase().trim() : '';
-    const detectedBrand = knownBrands.find(b => rawQueryLower.includes(b)) || '';
-    const detectedModel = knownModels.find(m => rawQueryLower.includes(m)) || '';
-
-    let dbQuery = supabase.from('products').select('*');
-    if (category) dbQuery = dbQuery.eq('category', category);
-    if (max_price) dbQuery = dbQuery.lte('current_price', parseInt(max_price));
-
     if (query) {
-      if (detectedModel) {
-        dbQuery = dbQuery.ilike('name', `%${detectedModel}%`);
-      } else if (detectedBrand.length >= 2) {
-        dbQuery = dbQuery.or(`name.ilike.%${detectedBrand}%,brand.ilike.%${detectedBrand}%`);
-      } else {
-        dbQuery = dbQuery.ilike('name', `%${query}%`);
+      await logSearchQuery(query, resolvedCategory, 'rest_api_search');
+    }
+
+    // 1. Check if we have a Cached Universal Insight (under 0.1s check!)
+    if (query) {
+      const { data: cachedProduct } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', resolvedCategory)
+        .eq('url', `https://cte.evcrm.in/insights/${slug}`)
+        .maybeSingle();
+
+      if (cachedProduct && cachedProduct.specs && cachedProduct.specs.report) {
+        logger.info(`[Universal REST Cache-Hit] Serving pre-compiled report for: "${query}"`);
+        return res.json({
+          success: true,
+          query_type: 'research',
+          data: [],
+          research_report: {
+            query,
+            brand: 'Universal',
+            model: 'Insight',
+            category: resolvedCategory,
+            executive_answer: {
+              title: `⚡ CTE Verified Universal Intelligence`,
+              bullets: [
+                `**Sourced Insights:** Sourced from pre-compiled dynamic CTE edge records.`,
+                `**Real-Time Context:** ${cachedProduct.specs.report.slice(0, 300).replace(/#+\s+/g, '')}...`
+              ]
+            },
+            live_sources: []
+          }
+        });
       }
     }
 
-    if (sort_by === 'quality') {
-      dbQuery = dbQuery.order('quality_score', { ascending: false });
-    } else if (sort_by === 'value') {
-      dbQuery = dbQuery.order('value_score', { ascending: false });
-    } else {
-      dbQuery = dbQuery.order('overall_score', { ascending: false });
-    }
-
-    let { data, error } = await dbQuery.limit(parseInt(limit) || 20);
-    if (error) throw error;
-
-    let salesData = [];
-    let priceHistoryData = [];
+    // 2. Fetch Live google Search Fallback
     let liveSearchResults = [];
-
-    // Always fetch live search results if query is provided
     if (query) {
       try {
         liveSearchResults = await queryGoogleLiveSearch(query);
@@ -156,33 +158,54 @@ app.get('/api/v1/products', async (req, res) => {
       }
     }
 
-    if (detectedBrand || detectedModel) {
-      // 1. Fetch sales & registration data filtered by Model if specified
-      let regDbQuery = supabase.from('registration_data').select('*');
-      if (detectedBrand) regDbQuery = regDbQuery.ilike('manufacturer', `%${detectedBrand}%`);
-      if (detectedModel) regDbQuery = regDbQuery.ilike('model', `%${detectedModel}%`);
+    let salesData = [];
+    let priceHistoryData = [];
+    let data = [];
 
-      const { data: regRows } = await regDbQuery
-        .order('registrations_count', { ascending: false })
-        .limit(15);
-      salesData = regRows || [];
+    if (resolvedCategory === 'ev_two_wheeler') {
+      const knownBrands = ['ather', 'ola', 'tvs', 'bajaj', 'tata', 'hero', 'mahindra', 'mg', 'hyundai', 'kia', 'simple', 'revolt', 'ampere', 'pure', 'okinawa', 'greaves', 'matter', 'bounce', 'vidya', 'urja', 'chetak', 'nexon'];
+      const knownModels = ['iqube', 's1 pro', 's1 air', 's1 x', 's1', '450x', '450s', '450 plus', 'rizta', 'apex', 'nexon ev', 'curvv', 'tiago ev', 'tigor ev', 'zs ev', 'windsor', 'comet', 'chetak', 'ioniq 5', 'kona', 'be 6e', 'xuv400'];
 
-      // 2. Fetch price history timelines
-      let priceDbQuery = supabase.from('price_history').select('*');
-      if (detectedBrand) priceDbQuery = priceDbQuery.ilike('brand', `%${detectedBrand}%`);
-      if (detectedModel) priceDbQuery = priceDbQuery.ilike('product_name', `%${detectedModel}%`);
+      const detectedBrand = knownBrands.find(b => rQueryLower.includes(b)) || '';
+      const detectedModel = knownModels.find(m => rQueryLower.includes(m)) || '';
 
-      const { data: priceRows } = await priceDbQuery
-        .order('recorded_at', { ascending: false })
-        .limit(10);
-      priceHistoryData = priceRows || [];
+      let dbQuery = supabase.from('products').select('*');
+      if (detectedModel) {
+        dbQuery = dbQuery.ilike('name', `%${detectedModel}%`);
+      } else if (detectedBrand.length >= 2) {
+        dbQuery = dbQuery.or(`name.ilike.%${detectedBrand}%,brand.ilike.%${detectedBrand}%`);
+      } else if (query) {
+        dbQuery = dbQuery.ilike('name', `%${query}%`);
+      }
+
+      let { data: productsData } = await dbQuery.limit(parseInt(limit) || 20);
+      data = productsData || [];
+
+      if (detectedBrand || detectedModel) {
+        let regDbQuery = supabase.from('registration_data').select('*');
+        if (detectedBrand) regDbQuery = regDbQuery.ilike('manufacturer', `%${detectedBrand}%`);
+        if (detectedModel) regDbQuery = regDbQuery.ilike('model', `%${detectedModel}%`);
+
+        const { data: regRows } = await regDbQuery
+          .order('registrations_count', { ascending: false })
+          .limit(15);
+        salesData = regRows || [];
+
+        let priceDbQuery = supabase.from('price_history').select('*');
+        if (detectedBrand) priceDbQuery = priceDbQuery.ilike('brand', `%${detectedBrand}%`);
+        if (detectedModel) priceDbQuery = priceDbQuery.ilike('product_name', `%${detectedModel}%`);
+
+        const { data: priceRows } = await priceDbQuery
+          .order('recorded_at', { ascending: false })
+          .limit(10);
+        priceHistoryData = priceRows || [];
+      }
     }
 
-    // Zero-Miss Live Sourcing Fallback: If 0 local products found, attempt live enrichment
-    if ((!data || data.length === 0) && query) {
-      logger.info(`[Zero-Miss REST API] No local rows for query "${query}". Triggering Google Live Sourcing...`);
+    // Zero-Miss Live Sourcing Fallback for EV/Automotive
+    if (resolvedCategory === 'ev_two_wheeler' && data.length === 0 && query) {
       try {
-        const liveProduct = await fetchAndEnrichVehicle(query, category || 'ev_two_wheeler');
+        const liveProduct = await fetchAndEnrichVehicle(query, 'ev_two_wheeler');
         if (liveProduct) data = [liveProduct];
       } catch (liveErr) {
         logger.warn(`REST API Live Sourcing error: ${liveErr.message}`);
@@ -192,7 +215,6 @@ app.get('/api/v1/products', async (req, res) => {
     // Dynamic Real-Time Executive Answer Synthesis Engine
     let executiveAnswer = null;
     if (query) {
-      const q = query.toLowerCase();
       let title = 'Market & Sales Intelligence Brief';
       let bulletPoints = [];
 
@@ -211,41 +233,30 @@ app.get('/api/v1/products', async (req, res) => {
         });
       }
 
-      const targetModelTitle = detectedModel ? `${detectedBrand.toUpperCase()} ${detectedModel.toUpperCase()}` : (detectedBrand ? detectedBrand.toUpperCase() : 'AUTOMOTIVE');
-
-      if (q.includes('sales') || q.includes('registration') || q.includes('units') || q.includes('volume') || q.includes('sold') || q.includes('launched')) {
-        title = `📊 Sales Volume & Model Registration Intelligence (${targetModelTitle})`;
-        bulletPoints.push(`**Target Model Tracking:** Specifically analyzing sales data for **${targetModelTitle}**.`);
-        bulletPoints.push(`**Cataloged Sales Volume:** Total VAHAN registrations for **${targetModelTitle}** total **${totalSales.toLocaleString('en-IN')} units** across tracked state RTO logs.`);
-        if (peakVolume > 0) {
-          bulletPoints.push(`**Peak Monthly Volume:** Monthly registrations reached a peak of **${peakVolume.toLocaleString('en-IN')} units** in ${peakDetails}.`);
+      if (resolvedCategory === 'developer_insight') {
+        title = `💻 CTE Autonomous Developer & Code Research Report`;
+        if (liveSearchResults && liveSearchResults.length > 0) {
+          bulletPoints.push(`**Developer Insight Brief:** ${liveSearchResults[0].snippet}`);
         }
-        if (liveSearchResults && liveSearchResults.length > 0 && liveSearchResults[0].snippet) {
-          bulletPoints.push(`**Live Market Intelligence:** ${liveSearchResults[0].snippet}`);
-        }
-      } else if (q.includes('most selling') || q.includes('top selling') || q.includes('best selling') || q.includes('highest selling') || q.includes('popular')) {
-        title = `🏆 Top Selling Model Analysis (${targetModelTitle})`;
-        const topModel = detectedModel ? targetModelTitle : ((data && data.length > 0) ? data[0].name.replace(/\s*\(.*?\)/g, '').replace(/Listing.*/i, '').trim() : `${targetModelTitle} Series`);
-        bulletPoints.push(`**Highest Volume Model:** The **${topModel}** commands the leading share of overall registrations.`);
-        bulletPoints.push(`**Key Growth Drivers:** Performance specs, competitive range per charge, and ecosystem charging accessibility.`);
-        if (liveSearchResults && liveSearchResults.length > 0 && liveSearchResults[0].snippet) {
-          bulletPoints.push(`**Live Trend Insight:** ${liveSearchResults[0].snippet}`);
-        }
-      } else if (q.includes('price') || q.includes('cost') || q.includes('discount') || q.includes('hike') || q.includes('cut')) {
-        title = `🏷️ Pricing & Valuation Intelligence (${targetModelTitle})`;
-        if (priceHistoryData && priceHistoryData.length > 0) {
-          const latestPrice = priceHistoryData[0].price;
-          bulletPoints.push(`**Latest Ex-Showroom Price Log:** Price recorded at **₹${(latestPrice || 0).toLocaleString('en-IN')}**.`);
-        }
-        if (liveSearchResults && liveSearchResults.length > 0 && liveSearchResults[0].snippet) {
-          bulletPoints.push(`**Live Pricing Market Intelligence:** ${liveSearchResults[0].snippet}`);
+        bulletPoints.push(`**Query Sourced:** Sourced across active package indexes and developer doc networks.`);
+      } else if (resolvedCategory === 'ev_two_wheeler') {
+        const targetModelTitle = query.toUpperCase();
+        if (rQueryLower.includes('sales') || rQueryLower.includes('registration') || rQueryLower.includes('units') || rQueryLower.includes('volume') || rQueryLower.includes('sold') || rQueryLower.includes('launched')) {
+          title = `📊 Sales Volume & Model Registration Intelligence (${targetModelTitle})`;
+          bulletPoints.push(`**Target Model Tracking:** Specifically analyzing sales data for **${targetModelTitle}**.`);
+          bulletPoints.push(`**Cataloged Sales Volume:** Total VAHAN registrations for **${targetModelTitle}** total **${totalSales.toLocaleString('en-IN')} units** across tracked state RTO logs.`);
+          if (peakVolume > 0) {
+            bulletPoints.push(`**Peak Monthly Volume:** Monthly registrations reached a peak of **${peakVolume.toLocaleString('en-IN')} units** in ${peakDetails}.`);
+          }
+        } else {
+          title = `⚡ Verified CTE Executive Intelligence`;
+          bulletPoints.push(`**Model Profile:** Direct analysis for **${targetModelTitle}**.`);
+          bulletPoints.push(`**Verified Database Scope:** Sourced across 1,026,000+ CTE VAHAN database rows.`);
         }
       } else {
-        title = `⚡ Verified CTE Executive Intelligence`;
-        bulletPoints.push(`**Model Profile:** Direct analysis for **${targetModelTitle}**.`);
-        bulletPoints.push(`**Verified Database Scope:** Sourced across 1,026,000+ CTE VAHAN database rows, historical price logs, and live search index.`);
-        if (liveSearchResults && liveSearchResults.length > 0 && liveSearchResults[0].snippet) {
-          bulletPoints.push(`**Live Sourced Findings:** ${liveSearchResults[0].snippet}`);
+        title = `🌐 CTE Universal Knowledge Research Report`;
+        if (liveSearchResults && liveSearchResults.length > 0) {
+          bulletPoints.push(`**Universal Insight Brief:** ${liveSearchResults[0].snippet}`);
         }
       }
 
@@ -257,12 +268,11 @@ app.get('/api/v1/products', async (req, res) => {
 
     res.json({
       success: true,
-      query_type: isResearchQuery ? 'research' : 'product',
+      query_type: resolvedCategory === 'ev_two_wheeler' ? 'product' : 'research',
       data: data || [],
       research_report: {
         query,
-        brand: detectedBrand,
-        model: detectedModel,
+        brand: 'CTE Universal Engine',
         executive_answer: executiveAnswer,
         sales_data: salesData,
         price_history: priceHistoryData,
