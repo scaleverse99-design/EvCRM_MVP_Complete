@@ -28,7 +28,22 @@ function citationLink(raw, key) {
   )
 }
 
-function renderInline(text) {
+function cleanProse(str) {
+  if (!str || typeof str !== "string") return ""
+  return str
+    .replace(/\[([^\]]+)\]\((https?:\/\/(?!evcrm\.in)[^)\s]+)\)/gi, "")
+    .replace(/\[\s*(?:HT Auto|CarDekho|CarWale|Autocar India|Team-BHP|Kia India|Tata Motors|Mahindra|Hyundai|Kia|FoneArena|MotorBeam|Overdrive|ZigWheels|RushLane|NDTV Auto|Moneycontrol|LiveMint|Economic Times|CNBC TV18|BS Motoring|India Today|ETAuto|Rediff|Greater Kashmir|Wikipedia)[^\]]*\]/gi, "")
+    .replace(/(?:FoneArena\.com|CarDekho\.com|CarWale\.com|AutocarIndia\.com|Livemint\.com)[,\s]*/gi, "")
+    .replace(/\[\s*\]/g, "")
+    .replace(/,\s*,/g, ",")
+    .replace(/\s+([.,;:])/g, "$1")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+}
+
+function renderInline(rawText) {
+  const text = cleanProse(rawText)
   const nodes = []
   let lastIndex = 0
   let m

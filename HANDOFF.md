@@ -1,12 +1,12 @@
 # EvCRM — Complete Product Handoff Document
 
 > **Purpose**: Everything a developer (or AI agent in Google Antigravity IDE) needs to continue building this product.
-> **Last updated**: 2026-07-18 · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
+> **Last updated**: 2026-07-24 · **Live site**: https://evcrm.in · **Repo**: https://github.com/scaleverse99-design/EvCRM_MVP_Complete
 > 
-> **🟢 BUILD STATUS**: ✅ PASSING (2026-07-18)  
-> **Latest work**: Subdomain + Custom Domain feature (MVP complete, build fixed)  
-> **Commits**: `ecec017` (feature), `1c32da6` (docs), `d21cfd8` (tasks), `3ae9d7b` (build fix)  
-> **Next blocker**: Razorpay live keys for domain billing (see §10.1)
+> **🟢 BUILD STATUS**: ✅ PASSING (2026-07-24)  
+> **Latest work**: Deployed the Consumer Transparency Engine (CTE) API & Puppeteer Scraper Crawler to Google Cloud Run (Node 22, US-Central1). Live at https://cte-api-evcrm-541020907374.us-central1.run.app. Enabled synchronous crawler execution on /crawl to resolve serverless CPU throttling, and fixed native WebSocket connections. Updated handoff documentation.
+> **Commits**: `f606db1` (rendering + AdSense + Pexels + DCT widget), `1f3e6ec` (dealerCategory in bulk-import emails + variant login subtitle)  
+> **Next blocker**: Razorpay live keys for domain billing (see §10.1). Optional: set `PEXELS_API_KEY` in env to turn on article photos.
 
 > **Cross-agent sync note:** THIS file (`HANDOFF.md`, capitalized) + `TASKS.md` are the single
 > source of truth. **Antigravity looks for `.agents/handoff.md` and `task.md` (lowercase)** — those
@@ -496,3 +496,27 @@ archive ("Handoff Memory"). Files there are NEVER modified or deleted — only a
 **8. Domain analytics** (future) — track "leads from ramdealers.in" vs "leads from evcrm.in"
 
 **9. Founder/admin panel completion** — metrics dashboard works; User Ops section empty
+
+---
+
+## 11. Consumer Transparency Engine (CTE) Deployment (Session July 24, 2026)
+
+We have built and deployed a new sub-project `cte-engine` to manage vehicle specifications crawling and power automobile insights:
+
+### A. Architectural Overview
+* **Rule-Based Parser:** A high-speed, cost-free specifications parsing engine running 100% regex parsing, avoiding LLM pricing.
+* **Scraper Crawler:** A Puppeteer-based scraper that extracts automobile specifications dynamically from targets configured in Supabase.
+* **API & MCP Server:** Express server serving rest endpoints, visual dashboard client, and a JSON-RPC Server-Sent Events (SSE) Model Context Protocol (MCP) server for Claude/Gemini integrations.
+
+### B. Deployment Details (Google Cloud Run)
+* **API Server:** Deployed on Node.js 22 to `us-central1` region under project `ev-crm-realtime`.
+  * **Live Endpoint:** [https://cte-api-evcrm-541020907374.us-central1.run.app](https://cte-api-evcrm-541020907374.us-central1.run.app)
+  * **MCP SSE Endpoint:** `https://cte-api-evcrm-541020907374.us-central1.run.app/mcp`
+* **Crawler Scraper:** Deployed on Node.js 22 to satisfy Supabase's native WebSocket connection requirements.
+  * **Live Endpoint:** [https://cte-crawler-evcrm-541020907374.us-central1.run.app](https://cte-crawler-evcrm-541020907374.us-central1.run.app)
+  * **Trigger Hook:** Hitting `/crawl` on the crawler endpoint triggers a scrape job asynchronously.
+  * **Health Hook:** `/health` endpoint responds with crawler status.
+* **Optimized Builds:** Built with skip parameters (`PUPPETEER_SKIP_DOWNLOAD=true`) to bypass Chromium installation inside containers.
+
+### C. Live Domain Mapping
+To finish mapping: Configure a Custom Domain mapping on the GCP Cloud Run panel for `cte.evcrm.in` pointing to `cte-api-evcrm-541020907374.us-central1.run.app` and add the corresponding CNAME record on your domain management panel.

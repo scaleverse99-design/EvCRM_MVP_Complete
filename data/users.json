@@ -114,5 +114,42 @@
     "is_active": true,
     "created_at": "2026-07-14T19:57:31.597Z",
     "last_login": "2026-07-14T20:32:28.601Z"
+  },
+  {
+    "email": "testev@example.com",
+    "password_hash": "$2a$12$ShFrb.hR0RYZIl7MS243E..MlwSdFTM3l5UR/IEGzgitKPJn/VKAe",
+    "role": "dealer",
+    "name": "Test EV Dealer",
+    "phone": "9876543210",
+    "dealership": "test-ev-motors-x648",
+    "dealershipName": "Test EV Motors",
+    "dealerCategory": "EV",
+    "dealerSubdomain": "test-ev-motors",
+    "city": "Hyderabad",
+    "is_active": true,
+    "trialStartDate": "2026-07-21T18:19:13.635Z",
+    "billingStatus": "trial",
+    "id": "user_1784657953635",
+    "created_at": "2026-07-21T18:19:13.635Z",
+    "last_login": "2026-07-22T06:28:16.803Z"
+  },
+  {
+    "email": "testice@example.com",
+    "password_hash": "$2a$12$H21QSQINaNu1kmUhl1Io1O/ek7ZbvbD66UfusYw5o0.qx.YOEpZp.",
+    "role": "dealer",
+    "name": "Test Used Car Dealer",
+    "phone": "9876543211",
+    "dealership": "test-used-car-motors-on2c",
+    "dealershipName": "Test Used Car Motors",
+    "dealerCategory": "ICE",
+    "dealerSubdomain": "test-used-car-motors",
+    "city": "Hyderabad",
+    "is_active": true,
+    "trialStartDate": "2026-07-21T18:20:50.118Z",
+    "billingStatus": "trial",
+    "id": "user_1784658050118",
+    "created_at": "2026-07-21T18:20:50.118Z",
+    "last_login": "2026-07-22T06:31:06.787Z",
+    "sellCarEnabled": true
   }
 ]

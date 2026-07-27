@@ -484,5 +484,527 @@
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.20186.1 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
     "expires_at": "2026-07-21T21:24:33.892Z",
     "created_at": "2026-07-14T21:24:33.892Z"
+  },
+  {
+    "id": "sess_1784238244126",
+    "user_id": "user_oem_001",
+    "token_hash": "f8cb580baaf3f5a7f8ff57d851f9dfb92921fc530f66c5bd333216926d3bb279",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:44:04.126Z",
+    "created_at": "2026-07-16T21:44:04.126Z"
+  },
+  {
+    "id": "sess_1784238261540",
+    "user_id": "user_oem_001",
+    "token_hash": "36612100614aaf5c644bd55e5787c1c404a032b4e075a2a0f65a7bedf6a22cbf",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.21459.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-23T21:44:21.540Z",
+    "created_at": "2026-07-16T21:44:21.540Z"
+  },
+  {
+    "id": "sess_1784238948543",
+    "user_id": "user_oem_001",
+    "token_hash": "8e54eb1e51bdc93dca53162678eb9c10bc113c189ccbc6dfab67ea6dde3168d3",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:55:48.543Z",
+    "created_at": "2026-07-16T21:55:48.543Z"
+  },
+  {
+    "id": "sess_1784238985682",
+    "user_id": "user_oem_001",
+    "token_hash": "4af433a8861157c4ca9f08f8950f4bd7cd113126efd5cbd237c103008723a2a2",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:56:25.682Z",
+    "created_at": "2026-07-16T21:56:25.682Z"
+  },
+  {
+    "id": "sess_1784239041645",
+    "user_id": "user_oem_001",
+    "token_hash": "452abb7c72de8d9c69d1e74f09908e15fbe95b35209a1d5dd779bcddac45ec88",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:57:21.645Z",
+    "created_at": "2026-07-16T21:57:21.645Z"
+  },
+  {
+    "id": "sess_1784239066565",
+    "user_id": "user_oem_001",
+    "token_hash": "10bedc2c5b7e5853dbf9899a707de5612886a8ea92d4ae5a6c244b0405fe80f6",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:57:46.565Z",
+    "created_at": "2026-07-16T21:57:46.565Z"
+  },
+  {
+    "id": "sess_1784239172242",
+    "user_id": "user_oem_001",
+    "token_hash": "e2dd18842329a4c8b7266404bd37de06c613e04c4898d0a6e11c9d041bc979af",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:59:32.242Z",
+    "created_at": "2026-07-16T21:59:32.242Z"
+  },
+  {
+    "id": "sess_1784239179269",
+    "user_id": "user-1784239173095-2idoan9",
+    "token_hash": "170dc40f95bd3974ac52ad9a0b56d9c72a0a3271a7e0ccb3f6073795d05648f4",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T21:59:39.269Z",
+    "created_at": "2026-07-16T21:59:39.269Z"
+  },
+  {
+    "id": "sess_1784239288510",
+    "user_id": "user_oem_001",
+    "token_hash": "6b3c3011594444effc33f08275bbc804e274a34ba3659feaaef43e90fa9ece56",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T22:01:28.510Z",
+    "created_at": "2026-07-16T22:01:28.510Z"
+  },
+  {
+    "id": "sess_1784239449811",
+    "user_id": "user-1784239295503-0t0akrs",
+    "token_hash": "73627834529e5579e8bc7c11a9835eab5822907094b5c35c96ab48077abcddff",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T22:04:09.811Z",
+    "created_at": "2026-07-16T22:04:09.811Z"
+  },
+  {
+    "id": "sess_1784239601287",
+    "user_id": "user_oem_001",
+    "token_hash": "b9189e95fe33088ccaa70dd429dfcf83d4eda7f40f7b8b6d0c3c8c47cb803325",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T22:06:41.287Z",
+    "created_at": "2026-07-16T22:06:41.287Z"
+  },
+  {
+    "id": "sess_1784239602682",
+    "user_id": "user-1784239601920-wgb0ncj",
+    "token_hash": "1065603483a4e43a99f288e487baa5d5595606ddb3e4571581ae9b6f916403f1",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T22:06:42.682Z",
+    "created_at": "2026-07-16T22:06:42.682Z"
+  },
+  {
+    "id": "sess_1784240300627",
+    "user_id": "user_oem_001",
+    "token_hash": "080ea3afae5fa179c36174b96c1c80db66b4932348796bffe68f383a7439bca6",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-23T22:18:20.627Z",
+    "created_at": "2026-07-16T22:18:20.627Z"
+  },
+  {
+    "id": "sess_1784240325140",
+    "user_id": "user_oem_001",
+    "token_hash": "2f5ee69033f23ad12d6dd34dcd726185a0685d639824f9a797198c1cf7e163e0",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.21459.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-23T22:18:45.140Z",
+    "created_at": "2026-07-16T22:18:45.140Z"
+  },
+  {
+    "id": "sess_1784240523950",
+    "user_id": "user_oem_001",
+    "token_hash": "92cf72c3826bb2edfceb9c31801977cd450116b50fe9528b85dd0738a4951788",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.21459.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-23T22:22:03.950Z",
+    "created_at": "2026-07-16T22:22:03.950Z"
+  },
+  {
+    "id": "sess_1784270592412",
+    "user_id": "user_oem_001",
+    "token_hash": "d3e5e62fe4f33e6695d1232a75dd50ccaaf480e4af57d04ccbcfb7b4f39d8c53",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T06:43:12.412Z",
+    "created_at": "2026-07-17T06:43:12.412Z"
+  },
+  {
+    "id": "sess_1784270605832",
+    "user_id": "user_oem_001",
+    "token_hash": "a795e5d647097248b62e0beec742e2395492f1d55f36902e2ed9b139645b3eae",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T06:43:25.832Z",
+    "created_at": "2026-07-17T06:43:25.832Z"
+  },
+  {
+    "id": "sess_1784271678484",
+    "user_id": "user_oem_001",
+    "token_hash": "3b05e28e81d1957a815969c4968ba7c2cff61d0484b95429b7b50f2558046360",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T07:01:18.484Z",
+    "created_at": "2026-07-17T07:01:18.484Z"
+  },
+  {
+    "id": "sess_1784271709888",
+    "user_id": "user_oem_001",
+    "token_hash": "93fec172adfb6cfc5d518ba95496333e80069be361e4c5d74ff4f8fc6c291e5f",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T07:01:49.888Z",
+    "created_at": "2026-07-17T07:01:49.888Z"
+  },
+  {
+    "id": "sess_1784271838953",
+    "user_id": "user_oem_001",
+    "token_hash": "6574683c58a54fdc8a07e64f40069c7250ddc439e56f13b07756d0f4853b1b31",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T07:03:58.953Z",
+    "created_at": "2026-07-17T07:03:58.953Z"
+  },
+  {
+    "id": "sess_1784273882250",
+    "user_id": "user_oem_001",
+    "token_hash": "90b5e4d0226679cb7834b9bc6361a5bb60f7e2824a6fb1f9a3b8eac7824ee6d1",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T07:38:02.250Z",
+    "created_at": "2026-07-17T07:38:02.250Z"
+  },
+  {
+    "id": "sess_1784273896799",
+    "user_id": "user_oem_001",
+    "token_hash": "5100631cdcdbc5b6d5c39bd7cb3c4c277d76922bd7ee60ac3938c3733417f593",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T07:38:16.799Z",
+    "created_at": "2026-07-17T07:38:16.799Z"
+  },
+  {
+    "id": "sess_1784289776091",
+    "user_id": "user_oem_001",
+    "token_hash": "f733c7ee46b5e4f8743895d96c1aee5d4284a14bdf4cd5fddd54492b32049de5",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T12:02:56.091Z",
+    "created_at": "2026-07-17T12:02:56.091Z"
+  },
+  {
+    "id": "sess_1784289794892",
+    "user_id": "user_oem_001",
+    "token_hash": "1c3594f2af670904c48a656e0e92562023d07bed12371da1bf3b38e01fc3d249",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T12:03:14.892Z",
+    "created_at": "2026-07-17T12:03:14.892Z"
+  },
+  {
+    "id": "sess_1784321797569",
+    "user_id": "user_1784321796005",
+    "token_hash": "3f4facced7c270eff04b1194c5c619c83c237e1fe6349f2f50c82ded6e49c415",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T20:56:37.569Z",
+    "created_at": "2026-07-17T20:56:37.569Z"
+  },
+  {
+    "id": "sess_1784321854377",
+    "user_id": "user_1784321796005",
+    "token_hash": "927cdd84e6be2dcd37228e2f6fc128118ab9861f752527044b6c224b8b870681",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T20:57:34.377Z",
+    "created_at": "2026-07-17T20:57:34.377Z"
+  },
+  {
+    "id": "sess_1784321937650",
+    "user_id": "user_1784321796005",
+    "token_hash": "ac3dda4252022b02a9e7facd2beba38f1a6e2eb445a55aecd22fc078241e53b7",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T20:58:57.650Z",
+    "created_at": "2026-07-17T20:58:57.650Z"
+  },
+  {
+    "id": "sess_1784322152366",
+    "user_id": "user_oem_001",
+    "token_hash": "53a001d301e18b33f2fa8b37a7dfcebc2fccfc5316e81d351beea8cc439a90e6",
+    "ip_address": "::1",
+    "user_agent": "node",
+    "expires_at": "2026-07-24T21:02:32.367Z",
+    "created_at": "2026-07-17T21:02:32.367Z"
+  },
+  {
+    "id": "sess_1784324340064",
+    "user_id": "user_1784324338422",
+    "token_hash": "c8eefde0e588d51a9b044c6ee61f782e6dd28af7784f630f97a3176cfe92a157",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T21:39:00.064Z",
+    "created_at": "2026-07-17T21:39:00.064Z"
+  },
+  {
+    "id": "sess_1784324340641",
+    "user_id": "user_1784324338422",
+    "token_hash": "c8eefde0e588d51a9b044c6ee61f782e6dd28af7784f630f97a3176cfe92a157",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-24T21:39:00.641Z",
+    "created_at": "2026-07-17T21:39:00.641Z"
+  },
+  {
+    "id": "sess_1784405290981",
+    "user_id": "user_1784405290152",
+    "token_hash": "39c10096384ad7b46494c6c5e2352bc93c4235d9a592346484ca816374dc468b",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T20:08:10.981Z",
+    "created_at": "2026-07-18T20:08:10.981Z"
+  },
+  {
+    "id": "sess_1784405365021",
+    "user_id": "user_1784405290152",
+    "token_hash": "3c9cc9adfcdfa5eeba431d0fe69a2f3c9da9e42f83e5e2f87d929c8e6a14978d",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T20:09:25.021Z",
+    "created_at": "2026-07-18T20:09:25.021Z"
+  },
+  {
+    "id": "sess_1784405742577",
+    "user_id": "user_1784405290152",
+    "token_hash": "1001efb78f6118e911c287481f5131f5b110912458e69a63afc5710c3536fa2c",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T20:15:42.577Z",
+    "created_at": "2026-07-18T20:15:42.577Z"
+  },
+  {
+    "id": "sess_1784406897226",
+    "user_id": "user_1784406895753",
+    "token_hash": "0758fbb9730643b3f52eb75f6f7fb599c1a2e94a0c60230a1fe55a83c08e6499",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T20:34:57.226Z",
+    "created_at": "2026-07-18T20:34:57.226Z"
+  },
+  {
+    "id": "sess_1784409569756",
+    "user_id": "user_1784409569163",
+    "token_hash": "b9521de9812da4a029465b7868cf3a4eb13c2a69355c4da70190f06f17eb488e",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T21:19:29.756Z",
+    "created_at": "2026-07-18T21:19:29.756Z"
+  },
+  {
+    "id": "sess_1784409605161",
+    "user_id": "user_1784409569163",
+    "token_hash": "264a2f4df748912ee8e9a001faaf731692af04410f178700604c8d1a4c41dfd9",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-25T21:20:05.161Z",
+    "created_at": "2026-07-18T21:20:05.161Z"
+  },
+  {
+    "id": "sess_1784451126300",
+    "user_id": "user_1784451124943",
+    "token_hash": "8fa10bd3c524004c0d3ee5da35bbbb62e79aeb5629835c41319b53eb519fbbcc",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T08:52:06.300Z",
+    "created_at": "2026-07-19T08:52:06.300Z"
+  },
+  {
+    "id": "sess_1784451156329",
+    "user_id": "user_1784451124943",
+    "token_hash": "e78e349efd25e9d5b71280c351477b4fcae178e9d891633ac4a11e2f41fde1ac",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T08:52:36.329Z",
+    "created_at": "2026-07-19T08:52:36.329Z"
+  },
+  {
+    "id": "sess_1784451338471",
+    "user_id": "user_1784451336901",
+    "token_hash": "626bf5e242edd99bada8a8f75cf350bcbe6608596a8064b5733581553404c66c",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T08:55:38.471Z",
+    "created_at": "2026-07-19T08:55:38.471Z"
+  },
+  {
+    "id": "sess_1784451374448",
+    "user_id": "user_1784451336901",
+    "token_hash": "c23010c73c3ec2ac4d9456c7cfcb6bfd4f044f4f5e9a500777ad1dbab0010907",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T08:56:14.448Z",
+    "created_at": "2026-07-19T08:56:14.448Z"
+  },
+  {
+    "id": "sess_1784453023215",
+    "user_id": "user_1784453022066",
+    "token_hash": "e2113e184380c1b2c2ae1b93ef3b240109d21fe4ea963f227d23085cc8c50f3b",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T09:23:43.215Z",
+    "created_at": "2026-07-19T09:23:43.215Z"
+  },
+  {
+    "id": "sess_1784453259835",
+    "user_id": "user_1784453022066",
+    "token_hash": "f18cee3882a14c5f5b4d20b6f8879043c1ae4fced96a09bccf6fe34d895dc424",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T09:27:39.835Z",
+    "created_at": "2026-07-19T09:27:39.835Z"
+  },
+  {
+    "id": "sess_1784453315103",
+    "user_id": "user_1784453314512",
+    "token_hash": "c5462ee974d90e88d4c365c563efe0587f6e71004a2f77d379adae1c19f4ace8",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.0 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T09:28:35.103Z",
+    "created_at": "2026-07-19T09:28:35.103Z"
+  },
+  {
+    "id": "sess_1784471180509",
+    "user_id": "user_1784471179641",
+    "token_hash": "2432486f31cc579f48e02e77bfdf8a08ed7942ead95ebb1e6c047fe8b4fa6129",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T14:26:20.509Z",
+    "created_at": "2026-07-19T14:26:20.509Z"
+  },
+  {
+    "id": "sess_1784471243642",
+    "user_id": "user_1784471179641",
+    "token_hash": "1ab1d50cc147d4d6f53e4555ecaf708d827c72e0f2d359c364137382b5ed39ed",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T14:27:23.642Z",
+    "created_at": "2026-07-19T14:27:23.642Z"
+  },
+  {
+    "id": "sess_1784471539501",
+    "user_id": "user_1784471179641",
+    "token_hash": "95c2eb0378a4ee9ca1391db74ca915b290302da46fb104a6a94811c0a64e03b5",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T14:32:19.501Z",
+    "created_at": "2026-07-19T14:32:19.501Z"
+  },
+  {
+    "id": "sess_1784474443014",
+    "user_id": "user_1784474442060",
+    "token_hash": "79c967a33f40f58abedcc6e857e78c1a8aadffd6638a775fe134016b5ee03383",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T15:20:43.014Z",
+    "created_at": "2026-07-19T15:20:43.014Z"
+  },
+  {
+    "id": "sess_1784474602405",
+    "user_id": "user_1784474442060",
+    "token_hash": "e4ec03d437b10d25f2a0ee429622d01c1824e6e48539dde70735100ff0cb9f7b",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T15:23:22.405Z",
+    "created_at": "2026-07-19T15:23:22.405Z"
+  },
+  {
+    "id": "sess_1784474670534",
+    "user_id": "user_1784474669646",
+    "token_hash": "620ce0d8de4cc8bafbc40befd84feda30ef8ded13d97f4f1a8fb126f18df46e8",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T15:24:30.534Z",
+    "created_at": "2026-07-19T15:24:30.534Z"
+  },
+  {
+    "id": "sess_1784483213221",
+    "user_id": "user_1784483212512",
+    "token_hash": "678f3c2a81ad91f6fb2ccc34d2dfd4276baa9db40752c2ef8f563a60512707b5",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-26T17:46:53.221Z",
+    "created_at": "2026-07-19T17:46:53.221Z"
+  },
+  {
+    "id": "sess_1784657955026",
+    "user_id": "user_1784657953635",
+    "token_hash": "149aa1e8e41baf1d9f0ac10642e4ee3f6f22a9a3f133419d3700164e48fecbf9",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T18:19:15.026Z",
+    "created_at": "2026-07-21T18:19:15.026Z"
+  },
+  {
+    "id": "sess_1784658050984",
+    "user_id": "user_1784658050118",
+    "token_hash": "4a5a0796b2540d26e7c4655e7afe05a9a32027ab9e68a82127aabdc4bb42af63",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T18:20:50.984Z",
+    "created_at": "2026-07-21T18:20:50.984Z"
+  },
+  {
+    "id": "sess_1784658714181",
+    "user_id": "user_1784657953635",
+    "token_hash": "435e29fddb1ea24986304a6490bdef99cb3a39541bf47768c0484d4038258048",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T18:31:54.181Z",
+    "created_at": "2026-07-21T18:31:54.181Z"
+  },
+  {
+    "id": "sess_1784659051062",
+    "user_id": "user_1784658050118",
+    "token_hash": "ebe622f64ae723d6b09e5c39e6c7b501a8adfe3268e0c15f93070d6dd4d6b2ef",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T18:37:31.062Z",
+    "created_at": "2026-07-21T18:37:31.062Z"
+  },
+  {
+    "id": "sess_1784659494112",
+    "user_id": "user_1784657953635",
+    "token_hash": "df6ea2b6292ff58ce4bcdd2107be115deea0251bb0f3a7537cba0c80cbb37bee",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T18:44:54.112Z",
+    "created_at": "2026-07-21T18:44:54.112Z"
+  },
+  {
+    "id": "sess_1784661381553",
+    "user_id": "user_1784658050118",
+    "token_hash": "2a8c233b1bb7c53c924c806a4dbea6ee37c69ee44524e14c5e594b63f1cc7394",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.22209.3 Chrome/148.0.7778.271 Electron/42.5.1 Safari/537.36 MSIX",
+    "expires_at": "2026-07-28T19:16:21.553Z",
+    "created_at": "2026-07-21T19:16:21.553Z"
+  },
+  {
+    "id": "sess_1784701696798",
+    "user_id": "user_1784657953635",
+    "token_hash": "ccce0c30c1d660fe99eed85a015a8c9db30d0ededeb1d28f021fdb5d0aaec5cf",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.24012.1 Chrome/148.0.7778.280 Electron/42.7.0 Safari/537.36 MSIX",
+    "expires_at": "2026-07-29T06:28:16.798Z",
+    "created_at": "2026-07-22T06:28:16.798Z"
+  },
+  {
+    "id": "sess_1784701866784",
+    "user_id": "user_1784658050118",
+    "token_hash": "c55a7c9c31aeb473732314aaf7b7e425430f29d108979572c783b944f05a67ee",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.24012.1 Chrome/148.0.7778.280 Electron/42.7.0 Safari/537.36 MSIX",
+    "expires_at": "2026-07-29T06:31:06.784Z",
+    "created_at": "2026-07-22T06:31:06.784Z"
   }
 ]

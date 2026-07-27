@@ -83,5 +83,25 @@
     "inventoryCount": 15,
     "whatsapp": "919999955555",
     "razorpayAccountId": null
+  },
+  {
+    "id": "test-ev-motors-x648",
+    "name": "Test EV Motors",
+    "address": "",
+    "state": "",
+    "district": "Hyderabad",
+    "whatsapp": "9876543210",
+    "gstNumber": "",
+    "createdAt": "2026-07-21T18:19:13.636Z"
+  },
+  {
+    "id": "test-used-car-motors-on2c",
+    "name": "Test Used Car Motors",
+    "address": "",
+    "state": "",
+    "district": "Hyderabad",
+    "whatsapp": "9876543211",
+    "gstNumber": "",
+    "createdAt": "2026-07-21T18:20:50.122Z"
   }
 ]
