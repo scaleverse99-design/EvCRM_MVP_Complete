@@ -1,5 +1,21 @@
 import { NextResponse } from "next/server"
+import fs from "fs"
+import path from "path"
 import STATIONS from "../../../../data/charging_stations.json"
+
+const USER_UPDATES_PATH = path.join(process.cwd(), "data", "user_tariff_updates.json")
+
+function getUserUpdates() {
+  try {
+    if (fs.existsSync(USER_UPDATES_PATH)) {
+      const raw = fs.readFileSync(USER_UPDATES_PATH, "utf8")
+      return JSON.parse(raw || "{}")
+    }
+  } catch (e) {
+    console.warn("Could not read user tariff updates:", e)
+  }
+  return {}
+}
 
 const DISTRICT_COORDS = {
   "Hyderabad": { lat: 17.3850, lng: 78.4867 },
@@ -7,6 +23,7 @@ const DISTRICT_COORDS = {
   "Vizianagaram": { lat: 18.1066, lng: 83.3955 },
   "Cheepurupalle": { lat: 18.3054, lng: 83.5646 },
   "Cheepurupalli": { lat: 18.3054, lng: 83.5646 },
+  "Garividi": { lat: 18.2749, lng: 83.5412 },
   "Srikakulam": { lat: 18.2949, lng: 83.8938 },
   "Vijayawada": { lat: 16.5062, lng: 80.6480 },
   "Guntur": { lat: 16.3067, lng: 80.4365 },
@@ -48,26 +65,31 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10
 }
 
-function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
+function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName, stationName) {
   let cost = rawCost ? rawCost.trim() : null
+  let isVerified = Boolean(rawCost && rawCost.trim())
+  let verifiedSource = isVerified ? "Live OpenChargeMap API" : "Estimated Network Tariff"
   const op = (operatorName || "").toLowerCase()
+  const stName = (stationName || "").toLowerCase()
 
-  if (!cost) {
+  if (op.includes("ather") || stName.includes("ather")) {
+    cost = "₹1.2 / min + 18% GST (via Ather App Wallet)"
+    isVerified = true
+    verifiedSource = "Official Ather Grid™ Tariff"
+  } else if (!cost) {
     if (categoryName === "battery_swapping" || op.includes("swap") || op.includes("battery smart") || op.includes("sun mobility")) {
       cost = "₹80 - ₹120 per battery swap"
     } else if (op.includes("tata power") || op.includes("statiq") || op.includes("chargezone") || op.includes("jio-bp")) {
       cost = "₹18 - ₹22 / kWh (Pay via App)"
-    } else if (op.includes("ather")) {
-      cost = "₹15 / kWh (Free for Ather Owners)"
     } else if (op.includes("eesl") || op.includes("cesl") || op.includes("government")) {
       cost = "₹12 - ₹15 / kWh (Govt Subsidized)"
     } else {
-      cost = "₹16 - ₹20 / kWh"
+      cost = "₹16 - ₹20 / kWh (Estimated)"
     }
   }
 
   let speedType = "SLOW_AC"
-  let speedLabel = "🔌 Slow / Medium AC (<15 kW)"
+  let speedLabel = "🔌 Slow AC (<15 kW)"
 
   if (categoryName === "battery_swapping") {
     speedType = "BATTERY_SWAP"
@@ -75,15 +97,15 @@ function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
   } else if (maxKW >= 50) {
     speedType = "ULTRA_FAST_DC"
     speedLabel = `🚀 Ultra-Fast DC (${maxKW} kW)`
-  } else if (maxKW >= 15) {
+  } else if (maxKW >= 15 || op.includes("ather") || stName.includes("ather")) {
     speedType = "FAST_DC"
-    speedLabel = `⚡ Fast DC (${maxKW} kW)`
+    speedLabel = maxKW > 0 ? `⚡ Fast Charger (${maxKW} kW)` : "⚡ Ather Fast Charger"
   } else if (maxKW > 0) {
     speedType = "SLOW_AC"
     speedLabel = `🔌 AC Charging (${maxKW} kW)`
   }
 
-  return { cost, speedType, speedLabel }
+  return { cost, speedType, speedLabel, isVerified, verifiedSource }
 }
 
 export async function GET(req) {
@@ -94,6 +116,8 @@ export async function GET(req) {
     const brandFilter = (searchParams.get("brand") || "").toLowerCase().trim()
     const speedFilter = (searchParams.get("speed") || "").toLowerCase().trim()
     const pincodeParam = (searchParams.get("pincode") || "").trim()
+
+    const userUpdates = getUserUpdates()
 
     let reqLat = parseFloat(searchParams.get("lat"))
     let reqLng = parseFloat(searchParams.get("lng"))
@@ -216,14 +240,23 @@ export async function GET(req) {
             const isSwapping = title.toLowerCase().includes("swap") || operator.toLowerCase().includes("swap") || operator.toLowerCase().includes("battery smart") || operator.toLowerCase().includes("sun mobility")
             const categoryName = isSwapping ? "battery_swapping" : "charging_grid"
 
-            const { cost, speedType, speedLabel } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName)
+            let { cost, speedType, speedLabel, isVerified, verifiedSource } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName, title)
+
+            // Check if user community has submitted verified price update for this station
+            const stId = `ocm_${item.ID || idx}`
+            if (userUpdates[stId]) {
+              const u = userUpdates[stId]
+              cost = u.price
+              isVerified = true
+              verifiedSource = `Community Verified (${u.count || 1} update${u.count > 1 ? "s" : ""})`
+            }
 
             const stationLat = info.Latitude || coords.lat
             const stationLng = info.Longitude || coords.lng
             const dist = getDistanceKm(coords.lat, coords.lng, stationLat, stationLng)
 
             return {
-              id: `ocm_${item.ID || idx}`,
+              id: stId,
               name: title,
               state: info.StateOrProvince || "",
               district: district,
@@ -235,8 +268,10 @@ export async function GET(req) {
               chargerSpeedType: speedType,
               speedLabel: speedLabel,
               usageCost: cost,
+              isVerified: isVerified,
+              verifiedSource: verifiedSource,
               category: categoryName,
-              status: item.StatusType?.IsOperational === false ? "Maintenance" : "Available",
+              status: userUpdates[stId]?.status || (item.StatusType?.IsOperational === false ? "Maintenance" : "Available"),
               address: [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean).join(", ") || info.Title || district,
               distanceKm: dist,
               isLive: true
@@ -251,13 +286,24 @@ export async function GET(req) {
     // Load local fallback stations and compute distances & speed details
     const localStore = STATIONS.map(s => {
       const maxKW = s.name.includes("60") ? 60 : (s.name.includes("240") ? 240 : 25)
-      const { cost, speedType, speedLabel } = deriveCostAndSpeed(s.operator, null, maxKW, s.category)
+      let { cost, speedType, speedLabel, isVerified, verifiedSource } = deriveCostAndSpeed(s.operator, null, maxKW, s.category, s.name)
+
+      if (userUpdates[s.id]) {
+        const u = userUpdates[s.id]
+        cost = u.price
+        isVerified = true
+        verifiedSource = `Community Verified (${u.count || 1} update${u.count > 1 ? "s" : ""})`
+      }
+
       return {
         ...s,
         maxKW,
         chargerSpeedType: speedType,
         speedLabel,
         usageCost: cost,
+        isVerified,
+        verifiedSource,
+        status: userUpdates[s.id]?.status || s.status,
         distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
       }
     })

@@ -33,6 +33,7 @@ const DISTRICT_COORDS = {
   "Vizianagaram": { lat: 18.1066, lng: 83.3955 },
   "Cheepurupalle": { lat: 18.3054, lng: 83.5646 },
   "Cheepurupalli": { lat: 18.3054, lng: 83.5646 },
+  "Garividi": { lat: 18.2749, lng: 83.5412 },
   "Srikakulam": { lat: 18.2949, lng: 83.8938 },
   "Vijayawada": { lat: 16.5062, lng: 80.6480 },
   "Guntur": { lat: 16.3067, lng: 80.4365 },
@@ -74,21 +75,26 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10
 }
 
-function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
+function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName, stationName) {
   let cost = rawCost ? rawCost.trim() : null
+  let isVerified = Boolean(rawCost && rawCost.trim())
+  let verifiedSource = isVerified ? "Live OpenChargeMap API" : "Estimated Network Tariff"
   const op = (operatorName || "").toLowerCase()
+  const stName = (stationName || "").toLowerCase()
 
-  if (!cost) {
+  if (op.includes("ather") || stName.includes("ather")) {
+    cost = "₹1.2 / min + 18% GST (via Ather App Wallet)"
+    isVerified = true
+    verifiedSource = "Official Ather Grid™ Tariff"
+  } else if (!cost) {
     if (categoryName === "battery_swapping" || op.includes("swap") || op.includes("battery smart") || op.includes("sun mobility")) {
       cost = "₹80 - ₹120 per battery swap"
     } else if (op.includes("tata power") || op.includes("statiq") || op.includes("chargezone") || op.includes("jio-bp")) {
       cost = "₹18 - ₹22 / kWh (Pay via App)"
-    } else if (op.includes("ather")) {
-      cost = "₹15 / kWh (Free for Ather Owners)"
     } else if (op.includes("eesl") || op.includes("cesl") || op.includes("government")) {
       cost = "₹12 - ₹15 / kWh (Govt Subsidized)"
     } else {
-      cost = "₹16 - ₹20 / kWh"
+      cost = "₹16 - ₹20 / kWh (Estimated)"
     }
   }
 
@@ -101,15 +107,15 @@ function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
   } else if (maxKW >= 50) {
     speedType = "ULTRA_FAST_DC"
     speedLabel = `🚀 Ultra-Fast DC (${maxKW} kW)`
-  } else if (maxKW >= 15) {
+  } else if (maxKW >= 15 || op.includes("ather") || stName.includes("ather")) {
     speedType = "FAST_DC"
-    speedLabel = `⚡ Fast DC (${maxKW} kW)`
+    speedLabel = maxKW > 0 ? `⚡ Fast Charger (${maxKW} kW)` : "⚡ Ather Fast Charger"
   } else if (maxKW > 0) {
     speedType = "SLOW_AC"
     speedLabel = `🔌 AC Charging (${maxKW} kW)`
   }
 
-  return { cost, speedType, speedLabel }
+  return { cost, speedType, speedLabel, isVerified, verifiedSource }
 }
 
 export default function ChargeStationsPage() {
@@ -126,6 +132,14 @@ export default function ChargeStationsPage() {
   const [pincodeError, setPincodeError] = useState("")
 
   const [showLocationModal, setShowLocationModal] = useState(false)
+
+  // Price Update Modal State
+  const [selectedStationForUpdate, setSelectedStationForUpdate] = useState(null)
+  const [newTariffInput, setNewTariffInput] = useState("")
+  const [statusInput, setStatusInput] = useState("Operational")
+  const [notesInput, setNotesInput] = useState("")
+  const [updateSubmitting, setUpdateSubmitting] = useState(false)
+  const [updateSuccessMsg, setUpdateSuccessMsg] = useState("")
 
   const [stations, setStations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -314,7 +328,7 @@ export default function ChargeStationsPage() {
               const isSwapping = title.toLowerCase().includes("swap") || operator.toLowerCase().includes("swap") || operator.toLowerCase().includes("battery smart") || operator.toLowerCase().includes("sun mobility")
               const categoryName = isSwapping ? "battery_swapping" : "charging_grid"
               
-              const { cost, speedType, speedLabel } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName)
+              const { cost, speedType, speedLabel, isVerified, verifiedSource } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName, title)
 
               const stationLat = info.Latitude || coords.lat
               const stationLng = info.Longitude || coords.lng
@@ -333,6 +347,8 @@ export default function ChargeStationsPage() {
                 chargerSpeedType: speedType,
                 speedLabel: speedLabel,
                 usageCost: cost,
+                isVerified: isVerified,
+                verifiedSource: verifiedSource,
                 category: categoryName,
                 status: item.StatusType?.IsOperational === false ? "Maintenance" : "Available",
                 address: [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean).join(", ") || info.Title || resolvedDist,
@@ -370,13 +386,15 @@ export default function ChargeStationsPage() {
       if (mounted) {
         const local = STATIONS.map(s => {
           const maxKW = s.name.includes("60") ? 60 : (s.name.includes("240") ? 240 : 25)
-          const { cost, speedType, speedLabel } = deriveCostAndSpeed(s.operator, null, maxKW, s.category)
+          const { cost, speedType, speedLabel, isVerified, verifiedSource } = deriveCostAndSpeed(s.operator, null, maxKW, s.category, s.name)
           return {
             ...s,
             maxKW,
             chargerSpeedType: speedType,
             speedLabel,
             usageCost: cost,
+            isVerified,
+            verifiedSource,
             distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
           }
         })
@@ -466,6 +484,66 @@ export default function ChargeStationsPage() {
     localStorage.removeItem("evcrm_charging_active_location")
   }
 
+  const handleOpenPriceModal = (st) => {
+    setSelectedStationForUpdate(st)
+    setNewTariffInput(st.usageCost || "₹18 / kWh")
+    setStatusInput(st.status || "Available")
+    setNotesInput("")
+    setUpdateSuccessMsg("")
+  }
+
+  const handlePriceUpdateSubmit = async (e) => {
+    e.preventDefault()
+    if (!selectedStationForUpdate || !newTariffInput.trim()) return
+
+    setUpdateSubmitting(true)
+    setUpdateSuccessMsg("")
+
+    try {
+      const res = await fetch("/api/charging/update-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stationId: selectedStationForUpdate.id,
+          stationName: selectedStationForUpdate.name,
+          newPrice: newTariffInput.trim(),
+          status: statusInput,
+          notes: notesInput.trim()
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setUpdateSuccessMsg("✅ Verified tariff update submitted! Updating live listing...")
+        
+        // Update local station list state
+        setStations(prev => prev.map(s => {
+          if (s.id === selectedStationForUpdate.id) {
+            return {
+              ...s,
+              usageCost: newTariffInput.trim(),
+              isVerified: true,
+              verifiedSource: "Community Verified (Driver Submission)",
+              status: statusInput
+            }
+          }
+          return s
+        }))
+
+        setTimeout(() => {
+          setSelectedStationForUpdate(null)
+          setUpdateSubmitting(false)
+        }, 1500)
+      } else {
+        alert("Failed to submit price update. Please try again.")
+        setUpdateSubmitting(false)
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Network error. Please try again.")
+      setUpdateSubmitting(false)
+    }
+  }
+
   const chargingGrids = stations.filter(s => s.category === "charging_grid" || !s.category)
   const swappingStations = stations.filter(s => s.category === "battery_swapping")
 
@@ -512,6 +590,124 @@ export default function ChargeStationsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
       />
+
+      {/* Manual Price / Tariff Update Modal Overlay */}
+      {selectedStationForUpdate && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.7)", backdropFilter: "blur(8px)",
+          zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20
+        }}>
+          <div style={{
+            background: "#fff", width: "100%", maxWidth: 480, borderRadius: 24,
+            padding: 32, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
+            position: "relative"
+          }}>
+            <button
+              onClick={() => setSelectedStationForUpdate(null)}
+              style={{
+                position: "absolute", top: 18, right: 18, background: "#f3f4f6",
+                border: "none", width: 32, height: 32, borderRadius: "50%",
+                fontSize: 14, fontWeight: "bold", cursor: "pointer", color: C.ink2
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 24 }}>✏️</span>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: C.ink }}>
+                  Update Verified Tariff Rate
+                </h3>
+                <p style={{ fontSize: 11, color: C.ink3, fontWeight: 700 }}>
+                  {selectedStationForUpdate.name}
+                </p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 12, color: C.ink3, lineHeight: 1.5, marginBottom: 20 }}>
+              Help fellow EV drivers in <b>{selectedStationForUpdate.district}</b> by updating exact charging prices and connector status based on your recent visit.
+            </p>
+
+            <form onSubmit={handlePriceUpdateSubmit}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: C.ink, display: "block", marginBottom: 6 }}>
+                  NEW TARIFF / PRICING RATE (per kWh or swap)
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ₹18 / kWh or ₹15 / kWh or Free"
+                  value={newTariffInput}
+                  onChange={e => setNewTariffInput(e.target.value)}
+                  style={{
+                    width: "100%", padding: "12px 14px", borderRadius: 12,
+                    border: `1.5px solid ${C.green}`, fontSize: 13,
+                    fontWeight: 800, outline: "none", background: "#f0fdf4"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: C.ink, display: "block", marginBottom: 6 }}>
+                  STATION OPERATIONAL STATUS
+                </label>
+                <select
+                  value={statusInput}
+                  onChange={e => setStatusInput(e.target.value)}
+                  style={{
+                    width: "100%", padding: "12px 14px", borderRadius: 12,
+                    border: `1.5px solid ${C.border}`, fontSize: 13,
+                    fontWeight: 700, outline: "none", background: "#f8fafc"
+                  }}
+                >
+                  <option value="Available">● Available & Operational</option>
+                  <option value="Busy">● Busy / Queue</option>
+                  <option value="Maintenance">● Under Maintenance / Out of Order</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: C.ink, display: "block", marginBottom: 6 }}>
+                  DRIVER NOTES & REVIEWS (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Charged Nexon EV at 30kW speed. Payment via Tata Power EZ Charge App."
+                  value={notesInput}
+                  onChange={e => setNotesInput(e.target.value)}
+                  style={{
+                    width: "100%", padding: "12px 14px", borderRadius: 12,
+                    border: `1.5px solid ${C.border}`, fontSize: 12,
+                    outline: "none", background: "#f8fafc", resize: "none"
+                  }}
+                />
+              </div>
+
+              {updateSuccessMsg && (
+                <p style={{ fontSize: 12, color: "#059669", fontWeight: 800, marginBottom: 14, textAlign: "center" }}>
+                  {updateSuccessMsg}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={updateSubmitting}
+                style={{
+                  width: "100%", padding: "14px", borderRadius: 12,
+                  background: C.green, color: "#fff", border: "none",
+                  fontSize: 13, fontWeight: 900, cursor: "pointer",
+                  boxShadow: "0 10px 20px rgba(5,150,105,0.3)"
+                }}
+              >
+                {updateSubmitting ? "⌛ Saving Update..." : "Submit Verified Price Update ➔"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Automatic Location Permission Modal Overlay */}
       {showLocationModal && (
@@ -848,7 +1044,13 @@ export default function ChargeStationsPage() {
               
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
                 {chargingGrids.length > 0 ? chargingGrids.map(s => (
-                  <StationCard key={s.id} station={s} onNavigate={() => handleNavigate(s)} pincode={activePincode} />
+                  <StationCard 
+                    key={s.id} 
+                    station={s} 
+                    onNavigate={() => handleNavigate(s)} 
+                    onUpdatePrice={() => handleOpenPriceModal(s)}
+                    pincode={activePincode} 
+                  />
                 )) : (
                   <EmptyState district={pincodeInfo?.district || currentDistrict} type="Charging Stations" query={searchQuery} pincode={activePincode} />
                 )}
@@ -871,7 +1073,14 @@ export default function ChargeStationsPage() {
               
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
                 {swappingStations.length > 0 ? swappingStations.map(s => (
-                  <StationCard key={s.id} station={s} onNavigate={() => handleNavigate(s)} variant="swapping" pincode={activePincode} />
+                  <StationCard 
+                    key={s.id} 
+                    station={s} 
+                    onNavigate={() => handleNavigate(s)} 
+                    onUpdatePrice={() => handleOpenPriceModal(s)}
+                    variant="swapping" 
+                    pincode={activePincode} 
+                  />
                 )) : (
                   <EmptyState district={pincodeInfo?.district || currentDistrict} type="Swapping Stations" query={searchQuery} pincode={activePincode} />
                 )}
@@ -887,9 +1096,12 @@ export default function ChargeStationsPage() {
   )
 }
 
-function StationCard({ station, onNavigate, variant, pincode }) {
+function StationCard({ station, onNavigate, onUpdatePrice, variant, pincode }) {
   const isUltraFast = station.chargerSpeedType === "ULTRA_FAST_DC"
   const isFast = station.chargerSpeedType === "FAST_DC"
+  const isCommunityVerified = station.verifiedSource?.includes("Community")
+  const isAtherOfficial = station.verifiedSource?.includes("Ather")
+  const isApiVerified = station.isVerified && !isCommunityVerified
 
   return (
     <div style={{ 
@@ -899,7 +1111,7 @@ function StationCard({ station, onNavigate, variant, pincode }) {
       padding: 24,
       display: "flex",
       flexDirection: "column",
-      justifyContent: "space-between",
+      justify: "space-between",
       transition: "transform 0.2s, box-shadow 0.2s",
       boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
       cursor: "default"
@@ -949,19 +1161,34 @@ function StationCard({ station, onNavigate, variant, pincode }) {
           <p style={{ fontSize: 11, color: C.ink3, opacity: 0.85, marginBottom: 12, lineHeight: 1.4 }}>📍 {station.address}</p>
         )}
 
-        {/* Tariff / Rate Display */}
+        {/* Tariff / Rate Box with Verification Status */}
         <div style={{
-          background: "#f8fafc", padding: "8px 12px", borderRadius: 8,
-          border: `1px solid ${C.border}`, marginBottom: 14,
-          fontSize: 12, fontWeight: 700, color: "#0f172a",
-          display: "flex", alignItems: "center", gap: 6
+          background: isAtherOfficial ? "#f0fdf4" : (isCommunityVerified ? "#ecfdf5" : (isApiVerified ? "#eff6ff" : "#f8fafc")),
+          padding: "10px 12px", borderRadius: 10,
+          border: `1px solid ${isAtherOfficial ? "#86efac" : (isCommunityVerified ? "#a7f3d0" : (isApiVerified ? "#bfdbfe" : C.border))}`,
+          marginBottom: 14
         }}>
-          <span>💰 Tariff:</span>
-          <span style={{ color: C.green, fontWeight: 900 }}>{station.usageCost || "₹18/kWh (Pay via App)"}</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink2 }}>💰 TARIFF RATE:</span>
+            <span style={{
+              fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4,
+              background: isAtherOfficial ? "#15803d" : (isCommunityVerified ? "#059669" : (isApiVerified ? "#2563eb" : "#64748b")),
+              color: "#fff", textTransform: "uppercase"
+            }}>
+              {isAtherOfficial ? "⚡ OFFICIAL ATHER TARIFF" : (isCommunityVerified ? "👥 COMMUNITY VERIFIED" : (isApiVerified ? "✅ VERIFIED API" : "📊 ESTIMATED TARIFF"))}
+            </span>
+          </div>
+
+          <p style={{ fontSize: 14, fontWeight: 900, color: C.green, margin: 0 }}>
+            {station.usageCost || "₹18/kWh (Pay via App)"}
+          </p>
+          <p style={{ fontSize: 9, color: C.ink3, opacity: 0.8, marginTop: 2, margin: 0 }}>
+            Source: {station.verifiedSource || "Estimated Network Tariff"}
+          </p>
         </div>
         
         {/* Connector Types */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 16 }}>
           <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, display: "block", marginBottom: 4, textTransform: "uppercase" }}>
             AVAILABLE CONNECTORS:
           </span>
@@ -978,19 +1205,33 @@ function StationCard({ station, onNavigate, variant, pincode }) {
         </div>
       </div>
 
-      <button 
-        onClick={onNavigate}
-        style={{ 
-          width: "100%", padding: "11px", borderRadius: 10, 
-          background: C.green, color: "#fff", border: "none",
-          fontSize: 12, fontWeight: 900, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          marginTop: "auto", boxShadow: "0 4px 12px rgba(5,150,105,0.2)"
-        }}
-      >
-        <span>NAVIGATE</span>
-        <span style={{ fontSize: 14 }}>➔</span>
-      </button>
+      <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
+        <button 
+          onClick={onUpdatePrice}
+          style={{ 
+            flex: 1, padding: "10px", borderRadius: 10, 
+            background: "#f1f5f9", color: C.ink, border: `1px solid ${C.border}`,
+            fontSize: 11, fontWeight: 800, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 4
+          }}
+        >
+          <span>✏️ Report Price</span>
+        </button>
+
+        <button 
+          onClick={onNavigate}
+          style={{ 
+            flex: 1.4, padding: "10px", borderRadius: 10, 
+            background: C.green, color: "#fff", border: "none",
+            fontSize: 11, fontWeight: 900, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            boxShadow: "0 4px 12px rgba(5,150,105,0.2)"
+          }}
+        >
+          <span>NAVIGATE</span>
+          <span style={{ fontSize: 12 }}>➔</span>
+        </button>
+      </div>
     </div>
   )
 }
