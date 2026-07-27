@@ -105,9 +105,9 @@ app.get('/api/v1/products', async (req, res) => {
 
     // Determine Category Focus (developer, automotive, or general universal)
     let resolvedCategory = 'universal_insight';
-    if (reqCategory === 'ev_two_wheeler' || reqCategory === 'ev_four_wheeler' || /(?:ather|ola|tvs|bajaj|tata|hero|mahindra|mg|hyundai|suzuki|honda|toyota|bmw|audi|sales|price|vahan|rto|registration|scooter|car|bike)/i.test(rQueryLower)) {
+    if (reqCategory === 'ev_two_wheeler' || reqCategory === 'ev_four_wheeler' || /(?:\bather\b|\bola\b|\btvs\b|\bbajaj\b|\btata\b|\bhero\b|\bmahindra\b|\bmg\b|\bhyundai\b|\bsuzuki\b|\bhonda\b|\btoyota\b|\bbmw\b|\baudi\b|\bsales\b|\bprice\b|\bvahan\b|\brto\b|\bregistration\b|\bscooter\b|\bcar\b|\bbike\b)/i.test(rQueryLower)) {
       resolvedCategory = 'ev_two_wheeler'; // maps to existing auto schema
-    } else if (/(?:npm|git|docker|rust|python|code|install|api|function|react|javascript|node|typescript|html|css|sql|class|struct|json|cmd|cli|terminal)/i.test(rQueryLower)) {
+    } else if (/(?:\bnpm\b|\bgit\b|\bdocker\b|\brust\b|\bpython\b|\bcode\b|\binstall\b|\bapi\b|\bfunction\b|\breact\b|\bjavascript\b|\bnode\b|\btypescript\b|\bhtml\b|\bcss\b|\bsql\b|\bclass\b|\bstruct\b|\bjson\b|\bcmd\b|\bcli\b|\bterminal\b)/i.test(rQueryLower)) {
       resolvedCategory = 'developer_insight';
     }
 
@@ -909,9 +909,9 @@ app.post('/mcp/message', async (req, res) => {
 
         // Determine Category Focus (developer, automotive, or general universal)
         let resolvedCategory = 'universal_insight';
-        if (name === 'execute_automotive_research' || /(?:ather|ola|tvs|bajaj|tata|hero|mahindra|mg|hyundai|suzuki|honda|toyota|bmw|audi|sales|price|vahan|rto|registration|scooter|car|bike)/i.test(rQueryLower)) {
+        if (name === 'execute_automotive_research' || /(?:\bather\b|\bola\b|\btvs\b|\bbajaj\b|\btata\b|\bhero\b|\bmahindra\b|\bmg\b|\bhyundai\b|\bsuzuki\b|\bhonda\b|\btoyota\b|\bbmw\b|\baudi\b|\bsales\b|\bprice\b|\bvahan\b|\brto\b|\bregistration\b|\bscooter\b|\bcar\b|\bbike\b)/i.test(rQueryLower)) {
           resolvedCategory = 'ev_two_wheeler'; // maps to existing auto schema
-        } else if (/(?:npm|git|docker|rust|python|code|install|api|function|react|javascript|node|typescript|html|css|sql|class|struct|json|cmd|cli|terminal)/i.test(rQueryLower)) {
+        } else if (/(?:\bnpm\b|\bgit\b|\bdocker\b|\brust\b|\bpython\b|\bcode\b|\binstall\b|\bapi\b|\bfunction\b|\breact\b|\bjavascript\b|\bnode\b|\btypescript\b|\bhtml\b|\bcss\b|\bsql\b|\bclass\b|\bstruct\b|\bjson\b|\bcmd\b|\bcli\b|\bterminal\b)/i.test(rQueryLower)) {
           resolvedCategory = 'developer_insight';
         }
 
