@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "cte_transparency_engine",
+  "name_for_human": "CTE Transparency Engine",
+  "description_for_model": "Retrieve real-time VAHAN RTO vehicle registration statistics, automotive specifications, historical price lists, and developer research query insights.",
+  "description_for_human": "Search real-time vehicle details, pricing insights, and developer documentation guides.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://cte-api-evcrm-541020907374.us-central1.run.app/openapi.json"
+  },
+  "logo_url": "https://evcrm.in/assets/logo.png",
+  "contact_email": "support@evcrm.in",
+  "legal_info_url": "https://evcrm.in/legal"
+}

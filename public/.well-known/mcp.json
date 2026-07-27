@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "cte-transparency-engine": {
+      "name": "CTE Transparency Engine",
+      "version": "1.0.0",
+      "description": "Universal automotive, developer intelligence, and real-time knowledge crawling server.",
+      "transport": {
+        "type": "sse",
+        "url": "https://cte-api-evcrm-541020907374.us-central1.run.app/mcp"
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "execute_universal_research",
+            "description": "Perform deep research on coding queries, development setup instructions, or general topics.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string" },
+                "include_code": { "type": "boolean" }
+              },
+              "required": ["query"]
+            }
+          },
+          {
+            "name": "execute_automotive_research",
+            "description": "Resolve target vehicle specs, registration insights, sales volumes, or price histories.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string" }
+              },
+              "required": ["query"]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
