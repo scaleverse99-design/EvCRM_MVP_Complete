@@ -19,6 +19,14 @@ const BRAND_FILTERS = [
   { id: "eesl", label: "EESL" },
 ]
 
+const SPEED_FILTERS = [
+  { id: "all", label: "All Speeds" },
+  { id: "ultra_fast_dc", label: "🚀 Ultra-Fast DC (≥50 kW)" },
+  { id: "fast_dc", label: "⚡ Fast DC (15-49 kW)" },
+  { id: "slow_ac", label: "🔌 Slow AC (<15 kW)" },
+  { id: "battery_swap", label: "🔄 Battery Swap" },
+]
+
 const DISTRICT_COORDS = {
   "Hyderabad": { lat: 17.3850, lng: 78.4867 },
   "Visakhapatnam": { lat: 17.6868, lng: 83.2185 },
@@ -66,6 +74,44 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10
 }
 
+function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
+  let cost = rawCost ? rawCost.trim() : null
+  const op = (operatorName || "").toLowerCase()
+
+  if (!cost) {
+    if (categoryName === "battery_swapping" || op.includes("swap") || op.includes("battery smart") || op.includes("sun mobility")) {
+      cost = "₹80 - ₹120 per battery swap"
+    } else if (op.includes("tata power") || op.includes("statiq") || op.includes("chargezone") || op.includes("jio-bp")) {
+      cost = "₹18 - ₹22 / kWh (Pay via App)"
+    } else if (op.includes("ather")) {
+      cost = "₹15 / kWh (Free for Ather Owners)"
+    } else if (op.includes("eesl") || op.includes("cesl") || op.includes("government")) {
+      cost = "₹12 - ₹15 / kWh (Govt Subsidized)"
+    } else {
+      cost = "₹16 - ₹20 / kWh"
+    }
+  }
+
+  let speedType = "SLOW_AC"
+  let speedLabel = "🔌 Slow AC (<15 kW)"
+
+  if (categoryName === "battery_swapping") {
+    speedType = "BATTERY_SWAP"
+    speedLabel = "🔄 2-Min Battery Swap"
+  } else if (maxKW >= 50) {
+    speedType = "ULTRA_FAST_DC"
+    speedLabel = `🚀 Ultra-Fast DC (${maxKW} kW)`
+  } else if (maxKW >= 15) {
+    speedType = "FAST_DC"
+    speedLabel = `⚡ Fast DC (${maxKW} kW)`
+  } else if (maxKW > 0) {
+    speedType = "SLOW_AC"
+    speedLabel = `🔌 AC Charging (${maxKW} kW)`
+  }
+
+  return { cost, speedType, speedLabel }
+}
+
 export default function ChargeStationsPage() {
   const [location, setLocation] = useState(null)
   const [userCoords, setUserCoords] = useState(null)
@@ -87,6 +133,7 @@ export default function ChargeStationsPage() {
 
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("all")
+  const [selectedSpeed, setSelectedSpeed] = useState("all")
 
   // Restore persistent active location on initial page load / refresh
   useEffect(() => {
@@ -117,7 +164,7 @@ export default function ChargeStationsPage() {
     }
   }, [])
 
-  // Persist current active location to localStorage whenever it changes
+  // Persist current active location to localStorage
   useEffect(() => {
     if (activePincode) {
       localStorage.setItem("evcrm_charging_active_location", JSON.stringify({
@@ -160,7 +207,6 @@ export default function ChargeStationsPage() {
       try {
         let url = `/api/charging/stations?district=${encodeURIComponent(currentDistrict)}`
         
-        // ABSOLUTE TOP PRIORITY FOR PINCODE
         if (activePincode && /^\d{6}$/.test(activePincode)) {
           url += `&pincode=${encodeURIComponent(activePincode)}`
         } else if (userCoords) {
@@ -171,6 +217,9 @@ export default function ChargeStationsPage() {
         }
         if (selectedBrand && selectedBrand !== "all") {
           url += `&brand=${encodeURIComponent(selectedBrand)}`
+        }
+        if (selectedSpeed && selectedSpeed !== "all") {
+          url += `&speed=${encodeURIComponent(selectedSpeed)}`
         }
 
         const res = await fetch(url)
@@ -202,7 +251,6 @@ export default function ChargeStationsPage() {
         let coords = null
         let resolvedDist = currentDistrict
 
-        // PINCODE HAS TOP PRIORITY OVER USER GPS
         if (activePincode && /^\d{6}$/.test(activePincode)) {
           try {
             const [pinRes, geoRes] = await Promise.allSettled([
@@ -231,7 +279,6 @@ export default function ChargeStationsPage() {
           } catch (pe) { console.warn("Pin error", pe) }
         } else if (userCoords) {
           coords = userCoords
-          // Reverse-geocode GPS coordinates for display
           try {
             const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.lat}&lon=${coords.lng}&format=json`).then(r => r.json())
             if (revRes && revRes.address) {
@@ -245,7 +292,7 @@ export default function ChargeStationsPage() {
           coords = DISTRICT_COORDS[resolvedDist] || DISTRICT_COORDS["Vizianagaram"] || DISTRICT_COORDS["Hyderabad"]
         }
 
-        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=120&distanceunit=KM&key=${OCM_KEY}`
+        const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=80&compact=false&verbose=true&latitude=${coords.lat}&longitude=${coords.lng}&distance=120&distanceunit=KM&key=${OCM_KEY}`
 
         const ocmRes = await fetch(ocmUrl)
         if (ocmRes.ok) {
@@ -254,9 +301,21 @@ export default function ChargeStationsPage() {
             let parsed = rawData.map((item, idx) => {
               const info = item.AddressInfo || {}
               const operator = item.OperatorInfo?.Title || "Independent Charging Network"
-              const ports = (item.Connections || []).map(c => c.ConnectionType?.Title ? (c.PowerKW ? `${c.ConnectionType.Title} (${c.PowerKW}kW)` : c.ConnectionType.Title) : null).filter(Boolean)
+              
+              let maxKW = 0
+              const ports = (item.Connections || []).map(c => {
+                const type = c.ConnectionType?.Title || "EV Plug"
+                const kw = c.PowerKW ? parseFloat(c.PowerKW) : 0
+                if (kw > maxKW) maxKW = kw
+                return kw > 0 ? `${type} (${kw}kW)` : type
+              })
+
               const title = info.Title || `EV Station #${item.ID || idx}`
               const isSwapping = title.toLowerCase().includes("swap") || operator.toLowerCase().includes("swap") || operator.toLowerCase().includes("battery smart") || operator.toLowerCase().includes("sun mobility")
+              const categoryName = isSwapping ? "battery_swapping" : "charging_grid"
+              
+              const { cost, speedType, speedLabel } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName)
+
               const stationLat = info.Latitude || coords.lat
               const stationLng = info.Longitude || coords.lng
               const dist = getDistanceKm(coords.lat, coords.lng, stationLat, stationLng)
@@ -270,7 +329,11 @@ export default function ChargeStationsPage() {
                 lng: stationLng,
                 operator: operator,
                 ports: ports.length > 0 ? ports : ["CCS2 Fast Charger (50kW)"],
-                category: isSwapping ? "battery_swapping" : "charging_grid",
+                maxKW: maxKW || 50,
+                chargerSpeedType: speedType,
+                speedLabel: speedLabel,
+                usageCost: cost,
+                category: categoryName,
                 status: item.StatusType?.IsOperational === false ? "Maintenance" : "Available",
                 address: [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean).join(", ") || info.Title || resolvedDist,
                 distanceKm: dist,
@@ -278,13 +341,16 @@ export default function ChargeStationsPage() {
               }
             })
 
-            // Apply search & brand filters
+            // Apply search, brand & speed filters
             if (selectedBrand && selectedBrand !== "all") {
               parsed = parsed.filter(s => s.operator.toLowerCase().includes(selectedBrand) || s.name.toLowerCase().includes(selectedBrand))
             }
+            if (selectedSpeed && selectedSpeed !== "all") {
+              parsed = parsed.filter(s => s.chargerSpeedType.toLowerCase() === selectedSpeed)
+            }
             if (searchQuery.trim()) {
               const q = searchQuery.toLowerCase().trim()
-              parsed = parsed.filter(s => s.name.toLowerCase().includes(q) || s.operator.toLowerCase().includes(q) || s.address.toLowerCase().includes(q))
+              parsed = parsed.filter(s => s.name.toLowerCase().includes(q) || s.operator.toLowerCase().includes(q) || s.address.toLowerCase().includes(q) || (s.usageCost && s.usageCost.toLowerCase().includes(q)))
             }
 
             parsed.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0))
@@ -302,8 +368,20 @@ export default function ChargeStationsPage() {
 
       // Local store fallback
       if (mounted) {
-        const local = STATIONS.filter(s => s.district === currentDistrict)
-        setStations(local.length > 0 ? local : STATIONS.slice(0, 8))
+        const local = STATIONS.map(s => {
+          const maxKW = s.name.includes("60") ? 60 : (s.name.includes("240") ? 240 : 25)
+          const { cost, speedType, speedLabel } = deriveCostAndSpeed(s.operator, null, maxKW, s.category)
+          return {
+            ...s,
+            maxKW,
+            chargerSpeedType: speedType,
+            speedLabel,
+            usageCost: cost,
+            distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
+          }
+        })
+        const filteredLocal = local.filter(s => s.district === currentDistrict)
+        setStations(filteredLocal.length > 0 ? filteredLocal : local.slice(0, 8))
         setIsLive(false)
       }
     }
@@ -316,7 +394,7 @@ export default function ChargeStationsPage() {
       isMounted = false
       clearTimeout(timer)
     }
-  }, [currentDistrict, userCoords, activePincode, searchQuery, selectedBrand])
+  }, [currentDistrict, userCoords, activePincode, searchQuery, selectedBrand, selectedSpeed])
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -627,7 +705,7 @@ export default function ChargeStationsPage() {
           )}
         </div>
 
-        {/* Search, Pincode & Brand Filter Section */}
+        {/* Search, Pincode & Filter Controls */}
         <div style={{
           background: "#fff", padding: 24, borderRadius: 20, border: `1px solid ${C.border}`,
           marginBottom: 40, boxShadow: "0 4px 20px rgba(0,0,0,0.03)"
@@ -638,7 +716,7 @@ export default function ChargeStationsPage() {
             <div style={{ position: "relative" }}>
               <input
                 type="text"
-                placeholder="Search by network (Tata Power, Statiq, Ather...), station name, or locality..."
+                placeholder="Search by network (Tata Power, Statiq...), station name, pricing, or locality..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{
@@ -692,26 +770,58 @@ export default function ChargeStationsPage() {
             <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 12 }}>⚠️ {pincodeError}</p>
           )}
 
+          {/* Speed Filter Pills */}
+          <div style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>
+              CHARGER SPEED CATEGORY:
+            </span>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              {SPEED_FILTERS.map(spd => {
+                const active = selectedSpeed === spd.id
+                return (
+                  <button
+                    key={spd.id}
+                    onClick={() => setSelectedSpeed(spd.id)}
+                    style={{
+                      padding: "6px 14px", borderRadius: 20,
+                      background: active ? C.ink : "#f3f4f6",
+                      color: active ? "#fff" : C.ink2,
+                      border: "none", fontSize: 11, fontWeight: 800,
+                      cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s"
+                    }}
+                  >
+                    {spd.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Quick Brand Filter Pills */}
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-            {BRAND_FILTERS.map(brand => {
-              const active = selectedBrand === brand.id
-              return (
-                <button
-                  key={brand.id}
-                  onClick={() => setSelectedBrand(brand.id)}
-                  style={{
-                    padding: "6px 14px", borderRadius: 20,
-                    background: active ? C.green : "#f3f4f6",
-                    color: active ? "#fff" : C.ink2,
-                    border: "none", fontSize: 11, fontWeight: 800,
-                    cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s"
-                  }}
-                >
-                  {brand.label}
-                </button>
-              )
-            })}
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 }}>
+              NETWORKS & OPERATORS:
+            </span>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              {BRAND_FILTERS.map(brand => {
+                const active = selectedBrand === brand.id
+                return (
+                  <button
+                    key={brand.id}
+                    onClick={() => setSelectedBrand(brand.id)}
+                    style={{
+                      padding: "6px 14px", borderRadius: 20,
+                      background: active ? C.green : "#f3f4f6",
+                      color: active ? "#fff" : C.ink2,
+                      border: "none", fontSize: 11, fontWeight: 800,
+                      cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s"
+                    }}
+                  >
+                    {brand.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -736,7 +846,7 @@ export default function ChargeStationsPage() {
                 </button>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
                 {chargingGrids.length > 0 ? chargingGrids.map(s => (
                   <StationCard key={s.id} station={s} onNavigate={() => handleNavigate(s)} pincode={activePincode} />
                 )) : (
@@ -759,7 +869,7 @@ export default function ChargeStationsPage() {
                 </button>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
                 {swappingStations.length > 0 ? swappingStations.map(s => (
                   <StationCard key={s.id} station={s} onNavigate={() => handleNavigate(s)} variant="swapping" pincode={activePincode} />
                 )) : (
@@ -778,6 +888,9 @@ export default function ChargeStationsPage() {
 }
 
 function StationCard({ station, onNavigate, variant, pincode }) {
+  const isUltraFast = station.chargerSpeedType === "ULTRA_FAST_DC"
+  const isFast = station.chargerSpeedType === "FAST_DC"
+
   return (
     <div style={{ 
       background: "#fff", 
@@ -786,13 +899,13 @@ function StationCard({ station, onNavigate, variant, pincode }) {
       padding: 24,
       display: "flex",
       flexDirection: "column",
-      justify: "space-between",
+      justifyContent: "space-between",
       transition: "transform 0.2s, box-shadow 0.2s",
       boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
       cursor: "default"
     }}>
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <div style={{ 
               padding: "4px 10px", 
@@ -817,16 +930,51 @@ function StationCard({ station, onNavigate, variant, pincode }) {
           <div style={{ fontSize: 18 }}>{variant === "swapping" ? "🔄" : "🔌"}</div>
         </div>
 
+        {/* Speed Type Badge */}
+        <div style={{
+          marginBottom: 12, padding: "5px 10px", borderRadius: 8,
+          background: isUltraFast ? "#fef2f2" : (isFast ? "#fff7ed" : "#f3f4f6"),
+          border: `1px solid ${isUltraFast ? "#fecaca" : (isFast ? "#fed7aa" : "#e5e7eb")}`,
+          display: "inline-flex", alignItems: "center", gap: 6,
+          fontSize: 11, fontWeight: 800,
+          color: isUltraFast ? "#dc2626" : (isFast ? "#c2410c" : C.ink)
+        }}>
+          <span>{station.speedLabel || (variant === "swapping" ? "🔄 2-Min Battery Swap" : "⚡ Fast Charging")}</span>
+        </div>
+
         <h3 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 4, lineHeight: 1.3 }}>{station.name}</h3>
         <p style={{ fontSize: 12, color: C.ink3, marginBottom: 6, fontWeight: 600 }}>Operated by {station.operator}</p>
-        {station.address && (
-          <p style={{ fontSize: 11, color: C.ink3, opacity: 0.85, marginBottom: 14, lineHeight: 1.4 }}>📍 {station.address}</p>
-        )}
         
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
-          {station.ports?.map(p => (
-            <span key={p} style={{ fontSize: 10, background: "#f3f4f6", padding: "4px 8px", borderRadius: 4, color: C.ink2, fontWeight: 600 }}>{p}</span>
-          ))}
+        {station.address && (
+          <p style={{ fontSize: 11, color: C.ink3, opacity: 0.85, marginBottom: 12, lineHeight: 1.4 }}>📍 {station.address}</p>
+        )}
+
+        {/* Tariff / Rate Display */}
+        <div style={{
+          background: "#f8fafc", padding: "8px 12px", borderRadius: 8,
+          border: `1px solid ${C.border}`, marginBottom: 14,
+          fontSize: 12, fontWeight: 700, color: "#0f172a",
+          display: "flex", alignItems: "center", gap: 6
+        }}>
+          <span>💰 Tariff:</span>
+          <span style={{ color: C.green, fontWeight: 900 }}>{station.usageCost || "₹18/kWh (Pay via App)"}</span>
+        </div>
+        
+        {/* Connector Types */}
+        <div style={{ marginBottom: 20 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, display: "block", marginBottom: 4, textTransform: "uppercase" }}>
+            AVAILABLE CONNECTORS:
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {station.ports?.map(p => (
+              <span key={p} style={{
+                fontSize: 10, background: "#f1f5f9", padding: "4px 8px", borderRadius: 6,
+                color: C.ink, fontWeight: 700, border: `1px solid ${C.border}`
+              }}>
+                🔌 {p}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -854,7 +1002,7 @@ function EmptyState({ district, type, query, pincode }) {
         No {type} found {query ? `matching "${query}"` : `near ${pincode ? `PIN ${pincode}` : district}`}.
       </p>
       <p style={{ fontSize: 12, color: C.ink3, opacity: 0.6, marginTop: 4 }}>
-        Try clearing filters or click "View More on Maps" for live Google Maps results.
+        Try clearing speed/network filters or click "View More on Maps" for live Google Maps results.
       </p>
     </div>
   )

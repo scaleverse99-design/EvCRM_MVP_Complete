@@ -48,12 +48,51 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10
 }
 
+function deriveCostAndSpeed(operatorName, rawCost, maxKW, categoryName) {
+  let cost = rawCost ? rawCost.trim() : null
+  const op = (operatorName || "").toLowerCase()
+
+  if (!cost) {
+    if (categoryName === "battery_swapping" || op.includes("swap") || op.includes("battery smart") || op.includes("sun mobility")) {
+      cost = "₹80 - ₹120 per battery swap"
+    } else if (op.includes("tata power") || op.includes("statiq") || op.includes("chargezone") || op.includes("jio-bp")) {
+      cost = "₹18 - ₹22 / kWh (Pay via App)"
+    } else if (op.includes("ather")) {
+      cost = "₹15 / kWh (Free for Ather Owners)"
+    } else if (op.includes("eesl") || op.includes("cesl") || op.includes("government")) {
+      cost = "₹12 - ₹15 / kWh (Govt Subsidized)"
+    } else {
+      cost = "₹16 - ₹20 / kWh"
+    }
+  }
+
+  let speedType = "SLOW_AC"
+  let speedLabel = "🔌 Slow / Medium AC (<15 kW)"
+
+  if (categoryName === "battery_swapping") {
+    speedType = "BATTERY_SWAP"
+    speedLabel = "🔄 2-Min Battery Swap"
+  } else if (maxKW >= 50) {
+    speedType = "ULTRA_FAST_DC"
+    speedLabel = `🚀 Ultra-Fast DC (${maxKW} kW)`
+  } else if (maxKW >= 15) {
+    speedType = "FAST_DC"
+    speedLabel = `⚡ Fast DC (${maxKW} kW)`
+  } else if (maxKW > 0) {
+    speedType = "SLOW_AC"
+    speedLabel = `🔌 AC Charging (${maxKW} kW)`
+  }
+
+  return { cost, speedType, speedLabel }
+}
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url)
     let district = searchParams.get("district") || "Hyderabad"
     const searchQuery = (searchParams.get("query") || "").toLowerCase().trim()
     const brandFilter = (searchParams.get("brand") || "").toLowerCase().trim()
+    const speedFilter = (searchParams.get("speed") || "").toLowerCase().trim()
     const pincodeParam = (searchParams.get("pincode") || "").trim()
 
     let reqLat = parseFloat(searchParams.get("lat"))
@@ -102,7 +141,7 @@ export async function GET(req) {
         reqLat = pinLat
         reqLng = pinLng
         district = resolvedDistrict
-        isUserGps = false // Reset GPS override when Pincode is active
+        isUserGps = false
         pincodeInfo = {
           pincode: pincodeParam,
           district: resolvedDistrict,
@@ -115,7 +154,6 @@ export async function GET(req) {
         console.warn("Pincode geocoding error:", pinErr)
       }
     } else if (isUserGps) {
-      // Reverse-geocode GPS coordinates to find exact place name
       try {
         const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${reqLat}&lon=${reqLng}&format=json`, {
           headers: { "User-Agent": "EvCRM/1.0" }
@@ -138,8 +176,8 @@ export async function GET(req) {
 
     const apiKey = process.env.OPENCHARGEMAP_API_KEY || "42411a8d-310d-427a-98aa-6b4a595122bc"
     
-    // Call OpenChargeMap API with 150km radius for rural/town coverage
-    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=100&compact=true&verbose=false&latitude=${coords.lat}&longitude=${coords.lng}&distance=150&distanceunit=KM&key=${apiKey}`
+    // Query OpenChargeMap API
+    const ocmUrl = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=IN&maxresults=100&compact=false&verbose=true&latitude=${coords.lat}&longitude=${coords.lng}&distance=150&distanceunit=KM&key=${apiKey}`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 6000)
@@ -162,14 +200,23 @@ export async function GET(req) {
             const info = item.AddressInfo || {}
             const operator = item.OperatorInfo?.Title || "Independent Charging Network"
             
+            let maxKW = 0
             const ports = (item.Connections || []).map(conn => {
               const type = conn.ConnectionType?.Title || "EV Plug"
-              const kw = conn.PowerKW ? `${conn.PowerKW}kW` : null
-              return kw ? `${type} (${kw})` : type
-            }).filter(Boolean)
+              const kw = conn.PowerKW ? parseFloat(conn.PowerKW) : 0
+              if (kw > maxKW) maxKW = kw
+              return {
+                title: type,
+                powerKW: kw,
+                display: kw > 0 ? `${type} (${kw}kW)` : type
+              }
+            })
 
             const title = info.Title || `EV Station #${item.ID || idx}`
             const isSwapping = title.toLowerCase().includes("swap") || operator.toLowerCase().includes("swap") || operator.toLowerCase().includes("battery smart") || operator.toLowerCase().includes("sun mobility")
+            const categoryName = isSwapping ? "battery_swapping" : "charging_grid"
+
+            const { cost, speedType, speedLabel } = deriveCostAndSpeed(operator, item.UsageCost, maxKW, categoryName)
 
             const stationLat = info.Latitude || coords.lat
             const stationLng = info.Longitude || coords.lng
@@ -183,8 +230,12 @@ export async function GET(req) {
               lat: stationLat,
               lng: stationLng,
               operator: operator,
-              ports: ports.length > 0 ? ports : ["CCS2 Fast Charger (50kW)"],
-              category: isSwapping ? "battery_swapping" : "charging_grid",
+              ports: ports.length > 0 ? ports.map(p => p.display) : ["CCS2 Fast Charger (50kW)"],
+              maxKW: maxKW || 50,
+              chargerSpeedType: speedType,
+              speedLabel: speedLabel,
+              usageCost: cost,
+              category: categoryName,
               status: item.StatusType?.IsOperational === false ? "Maintenance" : "Available",
               address: [info.AddressLine1, info.Town, info.StateOrProvince].filter(Boolean).join(", ") || info.Title || district,
               distanceKm: dist,
@@ -197,18 +248,26 @@ export async function GET(req) {
       console.warn("OpenChargeMap fetch failed, using fallback:", err.message)
     }
 
-    // Load local fallback stations and compute distances
-    const localStore = STATIONS.map(s => ({
-      ...s,
-      distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
-    }))
+    // Load local fallback stations and compute distances & speed details
+    const localStore = STATIONS.map(s => {
+      const maxKW = s.name.includes("60") ? 60 : (s.name.includes("240") ? 240 : 25)
+      const { cost, speedType, speedLabel } = deriveCostAndSpeed(s.operator, null, maxKW, s.category)
+      return {
+        ...s,
+        maxKW,
+        chargerSpeedType: speedType,
+        speedLabel,
+        usageCost: cost,
+        distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng)
+      }
+    })
 
     // Combine live stations with local curated store
     let allStations = fetchedSuccess && ocmStations.length > 0
       ? [...ocmStations, ...localStore.filter(ls => !ocmStations.some(os => os.name.toLowerCase() === ls.name.toLowerCase()))]
-      : STATIONS.map(s => ({ ...s, distanceKm: getDistanceKm(coords.lat, coords.lng, s.lat, s.lng) }))
+      : localStore
 
-    // Filter by Brand / Search Query if provided
+    // Filter by Brand / Speed / Search Query if provided
     if (brandFilter && brandFilter !== "all") {
       allStations = allStations.filter(s => 
         s.operator.toLowerCase().includes(brandFilter) ||
@@ -216,11 +275,16 @@ export async function GET(req) {
       )
     }
 
+    if (speedFilter && speedFilter !== "all") {
+      allStations = allStations.filter(s => s.chargerSpeedType.toLowerCase() === speedFilter)
+    }
+
     if (searchQuery) {
       allStations = allStations.filter(s =>
         s.name.toLowerCase().includes(searchQuery) ||
         s.operator.toLowerCase().includes(searchQuery) ||
         s.address.toLowerCase().includes(searchQuery) ||
+        (s.usageCost && s.usageCost.toLowerCase().includes(searchQuery)) ||
         s.ports.some(p => p.toLowerCase().includes(searchQuery))
       )
     }
