@@ -9,8 +9,10 @@ export default function AgentInterconnectDashboard() {
   const [syncState, setSyncState] = useState(null)
   const [loading, setLoading] = useState(true)
   const [newTaskDesc, setNewTaskDesc] = useState("")
-  const [targetAgent, setTargetAgent] = useState("Claude")
+  const [targetAgent, setTargetAgent] = useState("Antigravity")
+  const [autoRun, setAutoRun] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [executingIdx, setExecutingIdx] = useState(null)
 
   const fetchSyncState = async () => {
     try {
@@ -28,7 +30,7 @@ export default function AgentInterconnectDashboard() {
 
   useEffect(() => {
     fetchSyncState()
-    const interval = setInterval(fetchSyncState, 5000) // Poll every 5s for live state
+    const interval = setInterval(fetchSyncState, 4000) // Poll every 4s for live state
     return () => clearInterval(interval)
   }, [])
 
@@ -38,24 +40,58 @@ export default function AgentInterconnectDashboard() {
 
     setSubmitting(true)
     try {
-      const res = await fetch("/api/agents/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "assign-task",
-          agent: targetAgent,
-          description: newTaskDesc.trim()
+      if (autoRun) {
+        // Instant Remote Mobile Execution
+        const res = await fetch("/api/agents/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: newTaskDesc.trim(),
+            agent: targetAgent
+          })
         })
-      })
-      const data = await res.json()
-      if (data.success) {
-        setNewTaskDesc("")
-        fetchSyncState()
+        const data = await res.json()
+        if (data.success) {
+          setNewTaskDesc("")
+          fetchSyncState()
+        }
+      } else {
+        // Queue Task
+        const res = await fetch("/api/agents/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "assign-task",
+            agent: targetAgent,
+            description: newTaskDesc.trim()
+          })
+        })
+        const data = await res.json()
+        if (data.success) {
+          setNewTaskDesc("")
+          fetchSyncState()
+        }
       }
     } catch (err) {
       console.error(err)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleRunNow = async (idx) => {
+    setExecutingIdx(idx)
+    try {
+      await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskIndex: idx })
+      })
+      fetchSyncState()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setExecutingIdx(null)
     }
   }
 
@@ -85,140 +121,77 @@ export default function AgentInterconnectDashboard() {
     <div style={{ background: C.bg, minHeight: "100vh" }}>
       <TopBar />
 
-      <main style={{ maxWidth: 1140, margin: "0 auto", padding: "40px 20px" }}>
+      <main style={{ maxWidth: 1140, margin: "0 auto", padding: "24px 16px 60px" }}>
         
         {/* Header Title */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 32 }}>🤝</span>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 28 }}>📱</span>
               <div>
-                <h1 style={{ fontSize: 28, fontWeight: 900, color: C.ink, letterSpacing: "-0.8px" }}>
-                  AI Interconnect & Workload Hub
+                <h1 style={{ fontSize: 24, fontWeight: 900, color: C.ink, letterSpacing: "-0.5px", margin: 0 }}>
+                  Remote Agent Interconnect
                 </h1>
-                <p style={{ fontSize: 13, color: C.ink3, fontWeight: 700 }}>
-                  Antigravity (Gemini) ⚡ Claude Code Multi-Agent Coordination System
+                <p style={{ fontSize: 12, color: C.ink3, fontWeight: 700, margin: "2px 0 0" }}>
+                  Mobile Remote Task Execution & Real-Time Dashboard
                 </p>
               </div>
             </div>
 
             <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "8px 16px", borderRadius: 20, background: "#ecfdf5",
-              border: "1px solid #a7f3d0", fontSize: 12, fontWeight: 800, color: "#047857"
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "6px 14px", borderRadius: 20, background: "#ecfdf5",
+              border: "1px solid #a7f3d0", fontSize: 11, fontWeight: 800, color: "#047857"
             }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
-              <span>LIVE SYNC ACTIVE</span>
+              <span>MOBILE SYNC ACTIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Metrics Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
-          
-          <div style={{ background: "#fff", padding: 20, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>ESTIMATED TOKENS SAVED</span>
-            <div style={{ fontSize: 28, fontWeight: 900, color: C.green, marginTop: 4 }}>
-              ⚡ {(metrics.tokensSaved || 0).toLocaleString()}
+        {/* Mobile Remote Task Submission Box */}
+        <div style={{ background: "#fff", padding: 20, borderRadius: 20, border: `2px solid ${C.green}`, marginBottom: 28, boxShadow: "0 10px 30px rgba(5,150,105,0.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: C.green, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              ⚡ Assign & Run Remotely from Mobile
+            </span>
+            
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 800, color: C.ink2 }}>
+              <input
+                type="checkbox"
+                checked={autoRun}
+                onChange={e => setAutoRun(e.target.checked)}
+                style={{ accentColor: C.green, width: 16, height: 16 }}
+              />
+              <span>Instant Auto-Execute</span>
+            </label>
+          </div>
+
+          <form onSubmit={handleAssignTask} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <select
+                value={targetAgent}
+                onChange={e => setTargetAgent(e.target.value)}
+                style={{
+                  padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`,
+                  fontSize: 12, fontWeight: 800, outline: "none", background: "#f8fafc", flex: 1
+                }}
+              >
+                <option value="Antigravity">@Antigravity (Gemini)</option>
+                <option value="Claude">@Claude (Claude Code)</option>
+                <option value="Shared">@Shared Agent</option>
+              </select>
             </div>
-            <p style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>Saved via shared workload & lock coordination</p>
-          </div>
 
-          <div style={{ background: "#fff", padding: 20, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>ACTIVE AGENTS</span>
-            <div style={{ fontSize: 24, fontWeight: 900, color: C.ink, marginTop: 4, display: "flex", gap: 8 }}>
-              <span style={{ background: "#eff6ff", color: "#1d4ed8", padding: "2px 8px", borderRadius: 8, fontSize: 13 }}>Gemini 3.5 Flash</span>
-              <span style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: 8, fontSize: 13 }}>Claude Sonnet 3.5</span>
-            </div>
-            <p style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>Parallel execution with file lock safety</p>
-          </div>
-
-          <div style={{ background: "#fff", padding: 20, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>COLLABORATIVE SESSIONS</span>
-            <div style={{ fontSize: 28, fontWeight: 900, color: C.purple, marginTop: 4 }}>
-              🔄 {metrics.collaborations || 0}
-            </div>
-            <p style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>Task handoffs & file lock syncs</p>
-          </div>
-
-        </div>
-
-        {/* Live File Locks & Handoff Banner */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
-          
-          {/* Active File Locks */}
-          <div style={{ background: "#fff", padding: 24, borderRadius: 20, border: `1px solid ${C.border}` }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>🔒</span> Active File Locks ({lockKeys.length})
-            </h3>
-            {lockKeys.length === 0 ? (
-              <p style={{ fontSize: 13, color: C.ink3, fontStyle: "italic" }}>
-                No active file locks. All codebase files are available for instant editing.
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {lockKeys.map(file => (
-                  <div key={file} style={{
-                    padding: "10px 14px", background: "#f8fafc", borderRadius: 10,
-                    border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center"
-                  }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{file}</span>
-                    <span style={{ fontSize: 10, fontWeight: 800, background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: 6 }}>
-                      {locks[file].agent}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Agent Handoff Status */}
-          <div style={{ background: "#fff", padding: 24, borderRadius: 20, border: `1px solid ${C.border}` }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>📜</span> Latest Handoff Status
-            </h3>
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 14, borderRadius: 12, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#166534", textTransform: "uppercase" }}>{handoff.status || "Idle"}</span>
-              <p style={{ fontSize: 13, fontWeight: 800, color: C.ink, margin: "4px 0" }}>{handoff.lastAction || "No recent handoffs."}</p>
-              <p style={{ fontSize: 11, color: C.ink3, margin: 0 }}>Next: {handoff.nextSteps || "Awaiting task execution."}</p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Task Assignment & Shared Workload Board */}
-        <div style={{ background: "#fff", padding: 24, borderRadius: 20, border: `1px solid ${C.border}`, marginBottom: 40 }}>
-          
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: C.ink }}>
-              📋 CTE Task Queue & Workload Assignments ({tasks.length})
-            </h2>
-          </div>
-
-          {/* Add / Assign Task Form */}
-          <form onSubmit={handleAssignTask} style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
-            <select
-              value={targetAgent}
-              onChange={e => setTargetAgent(e.target.value)}
-              style={{
-                padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${C.border}`,
-                fontSize: 13, fontWeight: 800, outline: "none", background: "#f8fafc"
-              }}
-            >
-              <option value="Claude">Assign to @Claude</option>
-              <option value="Antigravity">Assign to @Antigravity</option>
-              <option value="Shared">Shared Task</option>
-            </select>
-
-            <input
-              type="text"
-              placeholder="Type task description (e.g. Optimize SEO Metadata, Fix Login Redirect, Add Token Booking)..."
+            <textarea
+              rows={2}
+              placeholder="Type task description (e.g. Update Ather 450 Apex specs, Fix login redirect, Sync station tariffs)..."
               value={newTaskDesc}
               onChange={e => setNewTaskDesc(e.target.value)}
               style={{
-                flex: 1, minWidth: 260, padding: "10px 16px", borderRadius: 12,
+                width: "100%", padding: "12px 14px", borderRadius: 12,
                 border: `1.5px solid ${C.green}`, fontSize: 13, outline: "none",
-                fontWeight: 700, background: "#f0fdf4"
+                fontWeight: 700, background: "#f0fdf4", resize: "vertical", boxSizing: "border-box"
               }}
             />
 
@@ -226,51 +199,130 @@ export default function AgentInterconnectDashboard() {
               type="submit"
               disabled={submitting}
               style={{
-                padding: "10px 20px", borderRadius: 12, background: C.green,
-                color: "#fff", border: "none", fontSize: 13, fontWeight: 900,
-                cursor: "pointer", boxShadow: "0 4px 12px rgba(5,150,105,0.2)"
+                width: "100%", padding: "14px", borderRadius: 12, background: C.green,
+                color: "#fff", border: "none", fontSize: 14, fontWeight: 900,
+                cursor: "pointer", boxShadow: "0 4px 14px rgba(5,150,105,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8
               }}
             >
-              {submitting ? "Assigning..." : "Assign Task ➔"}
+              <span>{submitting ? "Processing Remote Execution..." : autoRun ? "🚀 Execute Instantly from Mobile →" : "📌 Add to Task Queue →"}</span>
             </button>
           </form>
+        </div>
 
-          {/* Task List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Metrics Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
+          
+          <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>ESTIMATED TOKENS SAVED</span>
+            <div style={{ fontSize: 24, fontWeight: 900, color: C.green, marginTop: 2 }}>
+              ⚡ {(metrics.tokensSaved || 0).toLocaleString()}
+            </div>
+            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Workload & Remote Execution</p>
+          </div>
+
+          <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>ACTIVE AGENTS</span>
+            <div style={{ fontSize: 18, fontWeight: 900, color: C.ink, marginTop: 4, display: "flex", gap: 6 }}>
+              <span style={{ background: "#eff6ff", color: "#1d4ed8", padding: "2px 6px", borderRadius: 6, fontSize: 11 }}>Gemini 3.5</span>
+              <span style={{ background: "#fef3c7", color: "#b45309", padding: "2px 6px", borderRadius: 6, fontSize: 11 }}>Claude 3.5</span>
+            </div>
+            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Parallel Lock Safety</p>
+          </div>
+
+          <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>EXECUTIONS</span>
+            <div style={{ fontSize: 24, fontWeight: 900, color: C.purple, marginTop: 2 }}>
+              🔄 {metrics.collaborations || 0}
+            </div>
+            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Tasks Completed</p>
+          </div>
+
+        </div>
+
+        {/* Task List with Live Logs */}
+        <div style={{ background: "#fff", padding: 20, borderRadius: 20, border: `1px solid ${C.border}`, marginBottom: 32 }}>
+          
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 16 }}>
+            📋 Live Task Queue & Mobile Execution History ({tasks.length})
+          </h2>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {tasks.map((task, idx) => (
               <div key={idx} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 16px", borderRadius: 12, background: task.done ? "#f8fafc" : "#fff",
-                border: `1px solid ${task.done ? "#e2e8f0" : C.border}`, opacity: task.done ? 0.7 : 1
+                padding: "14px 16px", borderRadius: 14, background: task.done ? "#f8fafc" : "#fff",
+                border: `1px solid ${task.done ? "#e2e8f0" : C.border}`, opacity: task.done ? 0.85 : 1
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <input
-                    type="checkbox"
-                    checked={task.done}
-                    onChange={() => handleToggleTask(idx, task.done)}
-                    style={{ width: 18, height: 18, cursor: "pointer", accentColor: C.green }}
-                  />
-                  <span style={{
-                    fontSize: 13, fontWeight: 700, color: C.ink,
-                    textDecoration: task.done ? "line-through" : "none"
-                  }}>
-                    {task.description}
-                  </span>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 200 }}>
+                    <input
+                      type="checkbox"
+                      checked={task.done}
+                      onChange={() => handleToggleTask(idx, task.done)}
+                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: C.green, marginTop: 2 }}
+                    />
+                    <div>
+                      <div style={{
+                        fontSize: 13, fontWeight: 800, color: C.ink,
+                        textDecoration: task.done ? "line-through" : "none"
+                      }}>
+                        {task.description}
+                      </div>
+                      <div style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>
+                        Assigned by {task.assignedBy || "User"} · {task.executedAt ? `Executed ${new Date(task.executedAt).toLocaleTimeString()}` : "Queued"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6,
+                      background: task.assignedTo === "Claude" ? "#fef3c7" : "#eff6ff",
+                      color: task.assignedTo === "Claude" ? "#b45309" : "#1d4ed8"
+                    }}>
+                      @{task.assignedTo || "Antigravity"}
+                    </span>
+
+                    {!task.done && (
+                      <button
+                        onClick={() => handleRunNow(idx)}
+                        disabled={executingIdx === idx}
+                        style={{
+                          background: C.green, color: "#fff", border: "none",
+                          padding: "4px 10px", borderRadius: 8, fontSize: 11,
+                          fontWeight: 800, cursor: "pointer"
+                        }}
+                      >
+                        {executingIdx === idx ? "Executing..." : "Run Now ➔"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 6,
-                    background: task.assignedTo === "Claude" ? "#fef3c7" : (task.assignedTo === "Antigravity" ? "#eff6ff" : "#f1f5f9"),
-                    color: task.assignedTo === "Claude" ? "#b45309" : (task.assignedTo === "Antigravity" ? "#1d4ed8" : "#475569")
-                  }}>
-                    @{task.assignedTo || "Unassigned"}
-                  </span>
-                </div>
+                {/* Execution Log Output */}
+                {task.logs && task.logs.length > 0 && (
+                  <div style={{ marginTop: 10, background: "#1e293b", padding: "10px 12px", borderRadius: 10, color: "#38bdf8", fontSize: 11, fontFamily: "monospace", lineHeight: 1.5 }}>
+                    {task.logs.map((logLine, lIdx) => (
+                      <div key={lIdx}>{logLine}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
+        </div>
+
+        {/* Handoff Status */}
+        <div style={{ background: "#fff", padding: 20, borderRadius: 20, border: `1px solid ${C.border}` }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, color: C.ink, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <span>📜</span> Latest Handoff Log
+          </h3>
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#166534", textTransform: "uppercase" }}>{handoff.status || "Idle"}</span>
+            <p style={{ fontSize: 12, fontWeight: 800, color: C.ink, margin: "4px 0" }}>{handoff.lastAction || "No recent handoffs."}</p>
+            <p style={{ fontSize: 11, color: C.ink3, margin: 0 }}>{handoff.nextSteps || "Awaiting task execution."}</p>
+          </div>
         </div>
 
       </main>
