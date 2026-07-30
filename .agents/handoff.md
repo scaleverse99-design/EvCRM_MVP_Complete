@@ -1,34 +1,36 @@
-# Agent Coordination Board (Antigravity ↔ Claude Code)
+# ⚠️ Snapshot only — real source of truth is `HANDOFF.md` (capitalized, project root) + `TASKS.md`
 
-> [!IMPORTANT]
-> **LIVE AI COORDINATION DAEMON ACTIVE**: Read/write locks are managed automatically.
-> Please run `node .agents/sync.js status` to view the active state in terminal.
+> Per `HANDOFF.md` line 11: *"THIS file (HANDOFF.md, capitalized) + TASKS.md are the single source
+> of truth. Antigravity looks for `.agents/handoff.md` and `task.md` (lowercase) — those are
+> redirect/snapshot files pointing back here."* An earlier update in this session (2026-07-30)
+> mistakenly wrote full content directly into this file instead of HANDOFF.md — corrected below.
+> **`.agents/sync.js` (the "live coordination daemon" this file used to reference) does not exist
+> on disk** — there is no automatic locking; treat this purely as a manual snapshot.
 
-## ── MULTI-AGENT COORDINATION PROTOCOL ──
+**✅ 2026-07-30 — Both blockers resolved. Full detail in HANDOFF.md §8 issues #-1 and #-2.** Summary:
+1. `package.json` missing was only the visible symptom of a much bigger problem: commit `87b1549`
+   ("chore: resolve merge conflicts on handoff and env template") was a botched merge that deleted
+   **25 real source files** — `app/page.js`, `app/dealer/page.js`, `app/showroom/page.js`,
+   `app/login/page.js`, `app/layout.js`, `lib/constants.js` (design tokens, used by 50 files),
+   `lib/data.js`, and 18 more. Antigravity's reconstructed `package.json` (approximate, from
+   `package-lock.json`) got superseded — Claude Code found the fuller damage and restored all 25
+   files from their exact pre-accident originals via `git checkout 87b1549^ -- <paths>`. Verified
+   end-to-end locally (clean `.next` rebuild, real homepage content, real page title from the
+   restored `app/layout.js`, MCP tools responding correctly).
+2. Daily article publishing was silently broken since 2026-07-26 — `.env.production` missing
+   `INTERNAL_API_SECRET` + 5 other keys. Fix staged in `.env.production`.
 
-### 1. Active File Locks
-* *No active locks. All files are available for edit.*
+**Nothing is committed or deployed yet** — all fixes are staged locally, pending user go-ahead on
+commit/push (asked in chat, not yet confirmed). If you're picking this up before that happens,
+coordinate first — don't commit/push independently, to avoid conflicting with what's in flight.
 
-### 2. Limit Handoff Status
-* **Status**: Handoff from Antigravity
-* **Last Action**: Built and deployed 5-Year Historical Data Backfill & Analytics Engine with interactive Chart.js charts on the webpage
-* **Next Steps**: Awaiting next agent execution...
-
-### 3. Active Task board
-- [x] **[Task #0]** Resolve live Supabase database login redirect loop.
-- [x] **[Task #1]** Sync /leads page pipeline directly to Supabase.
-- [x] **[Task #2]** Streamline showroom booking modal details & calendar.
-- [x] **[Task #3]** Resolve Sales Rep / Dealer login 500 crashes.
-- [ ] **[Task #4]** Verify domain on Resend dashboard (evcrm.in) to enable outgoing emails.
-- [x] **[Task #5]** Add post-booking automated confirmation email to customers.
-- [ ] **[Task #6]** Build OEM dashboard
-
-### 4. Active Help & Delegation Requests
-* *No active help requests. Both agents working independently.*
+Full diagnosis, verification steps, and everything else built this session (new `search_market`/
+`compare_vehicles` MCP tools) are in **HANDOFF.md** (top status block + §7 + §8) and **TASKS.md**
+(top priority section) — read those, not this file, for anything beyond the summary above.
 
 ---
 
-## 5. Project Context & Environment
+## Project Context & Environment
 * **Live Site**: `https://evcrm.in`
 * **Local Test Environment**: `http://localhost:3001`
 * **Local Run Command**: `npm run dev`

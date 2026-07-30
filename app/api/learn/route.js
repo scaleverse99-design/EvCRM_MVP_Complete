@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { readTable } from "../../../lib/store"
+import { ensureDailyNewsRefresh, shouldTriggerDailyRefresh } from "../../../lib/orchestrator/dailyRefresh"
 
 const CATEGORIES = ["EV Fundamentals", "ICE Fundamentals", "Buying Guides", "Tech Trends"]
 
@@ -25,6 +26,10 @@ export async function GET(req) {
 
   if (category && CATEGORIES.includes(category)) {
     articles = articles.filter(p => p.category === category)
+  }
+
+  if (shouldTriggerDailyRefresh(all)) {
+    void ensureDailyNewsRefresh().catch(() => {})
   }
 
   articles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { readTable } from "../../../lib/store"
+import { ensureDailyNewsRefresh, shouldTriggerDailyRefresh } from "../../../lib/orchestrator/dailyRefresh"
 
 // Public GET — published posts only, newest first, no bodies (list view).
 export async function GET() {
@@ -17,5 +18,10 @@ export async function GET() {
       authorName: p.authorName,
       publishedAt: p.publishedAt || p.createdAt,
     }))
+
+  if (shouldTriggerDailyRefresh(all)) {
+    void ensureDailyNewsRefresh().catch(() => {})
+  }
+
   return Response.json({ success: true, posts: published })
 }

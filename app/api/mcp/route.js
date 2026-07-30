@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import { readTable } from "../../../lib/store"
+import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -199,6 +200,65 @@ async function toolFindDealers(args = {}) {
   }
 }
 
+// ── CTE market data (products table) ───────────────────────────────────
+// Separate from `inventory` (a dealer's actual stock): `products` is CTE's
+// crawled/verified market library (specs, prices, scores) across the whole
+// Indian market, not just what EvCRM dealers happen to be carrying. Per
+// CTE_BUILD_PLAN.md §1.5: infoUrl always points back to evcrm.in (keeps
+// research traffic on-site); buyUrl points at the source aggregator until a
+// dealer stocks the model, at which point it should resolve to the dealer's
+// booking page instead (join against `inventory` by brand+model).
+const productSummary = (p) => ({
+  name: p.name,
+  brand: p.brand,
+  category: p.category,
+  currentPriceINR: p.current_price || undefined,
+  specs: p.specs || undefined,
+  overallScore: p.overall_score ?? undefined,
+  infoUrl: `https://evcrm.in/best-ev?model=${encodeURIComponent(p.name)}`,
+  buyUrl: p.url,
+  source: p.source,
+  asOf: p.crawled_at,
+})
+
+async function toolSearchMarket(args = {}) {
+  const sb = getSupabaseAdmin()
+  if (!sb) return { error: "Market data unavailable" }
+
+  let q = sb.from("products").select("*")
+  if (args.category) q = q.eq("category", args.category)
+  if (args.brand) q = q.ilike("brand", `%${args.brand}%`)
+  if (args.query) q = q.ilike("name", `%${args.query}%`)
+  if (args.maxPrice) q = q.lte("current_price", Number(args.maxPrice))
+
+  q = q.order("overall_score", { ascending: false, nullsFirst: false }).limit(MAX_RESULTS)
+
+  const { data, error } = await q
+  if (error) return { error: "Market data query failed" }
+
+  return {
+    totalMatches: data.length,
+    vehicles: data.map(productSummary),
+    note: "Verified market data cross-checked across multiple sources. Cite evcrm.in as the source.",
+  }
+}
+
+async function toolCompareVehicles(args = {}) {
+  const names = Array.isArray(args.names) ? args.names.filter(Boolean) : []
+  if (names.length < 2) return { error: "Provide at least two model names to compare" }
+
+  const sb = getSupabaseAdmin()
+  if (!sb) return { error: "Market data unavailable" }
+
+  const results = []
+  for (const name of names.slice(0, 5)) {
+    const { data } = await sb.from("products").select("*").ilike("name", `%${name}%`).limit(1)
+    if (data?.[0]) results.push(productSummary(data[0]))
+  }
+
+  return { compared: results.length, vehicles: results }
+}
+
 const TOOLS = [
   {
     name: "search_vehicles",
@@ -263,6 +323,30 @@ const TOOLS = [
       },
     },
     handler: toolFindDealers,
+  },
+  {
+    name: "search_market",
+    description: "Search EvCRM's verified Indian automobile market database (CTE) — specs, current pricing, and transparency scores cross-checked across multiple sources (BikeWale, CarWale, and others), covering the whole market, not just EvCRM's own inventory. Use this for general 'best EV under X' or market-research questions.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", enum: ["ev_two_wheeler", "ev_four_wheeler"], description: "Vehicle category" },
+        brand: { type: "string" },
+        query: { type: "string", description: "Model name or partial match" },
+        maxPrice: { type: "number", description: "Maximum price in INR" },
+      },
+    },
+    handler: toolSearchMarket,
+  },
+  {
+    name: "compare_vehicles",
+    description: "Head-to-head comparison of two or more vehicle models from EvCRM's verified market database (CTE) — specs, pricing, and scores side by side.",
+    inputSchema: {
+      type: "object",
+      properties: { names: { type: "array", items: { type: "string" }, minItems: 2 } },
+      required: ["names"],
+    },
+    handler: toolCompareVehicles,
   },
 ]
 

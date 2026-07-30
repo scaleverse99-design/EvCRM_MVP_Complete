@@ -117,7 +117,7 @@
   },
   {
     "email": "testev@example.com",
-    "password_hash": "$2a$12$ShFrb.hR0RYZIl7MS243E..MlwSdFTM3l5UR/IEGzgitKPJn/VKAe",
+    "password_hash": "$2b$12$7R4usKLabQ01ytwKP4q8fuSbjYZ5HSrmqkVR6HMLfE40PKbY.ip7e",
     "role": "dealer",
     "name": "Test EV Dealer",
     "phone": "9876543210",
@@ -135,7 +135,7 @@
   },
   {
     "email": "testice@example.com",
-    "password_hash": "$2a$12$H21QSQINaNu1kmUhl1Io1O/ek7ZbvbD66UfusYw5o0.qx.YOEpZp.",
+    "password_hash": "$2b$12$7R4usKLabQ01ytwKP4q8fuSbjYZ5HSrmqkVR6HMLfE40PKbY.ip7e",
     "role": "dealer",
     "name": "Test Used Car Dealer",
     "phone": "9876543211",

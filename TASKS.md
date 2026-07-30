@@ -11,6 +11,17 @@
 
 ## 🔥 Top Priority (Blockers for Production)
 
+- [x] **✅ Restore 25 files deleted by botched merge commit `87b1549`** (2026-07-30, Claude Code) — `package.json` was only the visible symptom; real damage was `app/page.js`, `app/dealer/page.js`, `app/showroom/page.js`, `app/login/page.js`, `app/layout.js`, `lib/constants.js`, and 19 more. Restored all via `git checkout 87b1549^ -- <paths>`, verified locally end-to-end. See HANDOFF.md §8 issue #-1.
+
+- [ ] **🔴 Commit + redeploy** (2026-07-30, Claude Code — next actual blocker; everything above is fixed locally but nothing is shipped yet)
+  - Root cause found + fixed locally: `.env.production` was missing `INTERNAL_API_SECRET` + 5 other keys,
+    which silently broke daily article publishing since 2026-07-26 (`lib/orchestrator/auth.js` fails closed)
+  - Fix is staged in `.env.production` but can't deploy until `package.json` is restored
+  - After deploy: verify `curl https://evcrm.in/api/orchestrator/status` returns real data, trigger one
+    run, confirm an article publishes. Also confirm GitHub repo secrets `ORCHESTRATOR_URL`/`ORCHESTRATOR_TOKEN`
+    are actually set (Settings → Secrets → Actions) — unconfirmed whether the cron itself is enabled.
+  - See HANDOFF.md §8 issue #-2 for full diagnosis
+
 - [ ] **Vehicle Inspection Integration with Go-Mechanic (Phase 1: MVP)** (8-10 hours, **NEW FEATURE**)
   - **Problem**: Used-car customers can't verify vehicle condition → low conversion, post-purchase disputes
   - **Solution**: Integrate Go-Mechanic inspection booking + report display into EvCRM
