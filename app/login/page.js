@@ -100,16 +100,9 @@ function SuccessScreen({ role, name }) {
   const [msg,  setMsg] = useState("Accessing Expert Environment...")
 
   useEffect(()=>{
-    // Progress bar is purely cosmetic — keep it a PURE state updater with no
-    // side effects (React double-invokes updaters in StrictMode and drops
-    // side effects inside them, which previously stopped the redirect firing).
     const bar = setInterval(()=>{
       setPct(p => p >= 100 ? 100 : p + 2)
     }, 20)
-    // Navigation is driven by its own timeout, decoupled from render state.
-    // Full-page navigation (not router.replace) so the root AuthProvider
-    // re-mounts and re-reads the freshly-saved token — a soft navigation
-    // leaves the provider's user=null and Shell bounces back to /login (loop).
     const go = setTimeout(()=>{ window.location.assign(dest) }, 1100)
     return ()=>{ clearInterval(bar); clearTimeout(go) }
   }, [])
@@ -141,22 +134,11 @@ function SuccessScreen({ role, name }) {
 export default function LoginPage() {
   const router = useRouter()
 
-  // NOTE: deliberately no "already logged in? redirect away" pre-flight here.
-  // /login must always show the form — a user with a valid session for one
-  // role (e.g. dealer) needs to be able to sign in as a different role (e.g.
-  // OEM/rep) without being silently bounced back to their old dashboard first.
-  // handleLogin() below already saves the new token and routes correctly once
-  // they actually submit credentials, which is the only time this should happen.
-
   const [screen,   setScreen]   = useState("login")
   const [role,     setRole]     = useState("dealer")
-  const [dealerVariant, setDealerVariant] = useState("owner") // "owner" | "usedcar" — UI only, see ROLES
+  const [dealerVariant, setDealerVariant] = useState("owner")
   const [loggedUser, setLoggedUser] = useState(null)
 
-  // Founder tile is hidden from the public login screen — it's only revealed
-  // via a private link (?founder=<key>). This is NOT the access control (the
-  // real password still gates every login regardless of which tile is
-  // visible); it just keeps the founder role from being publicly discoverable.
   const [showFounder, setShowFounder] = useState(false)
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -189,9 +171,6 @@ export default function LoginPage() {
     }
   }, [cd, screen])
 
-  // Both dealer tiles submit role:"dealer" to the API (accounts are one role
-  // in the DB — see handoff.md "universal automobile CRM" note); dealerVariant
-  // is purely a UI selector so the two tiles can be distinguished/highlighted.
   const ROLES = [
     { key:"dealer-ev",  id:"dealer",     variant:"owner",   icon:"🏪", label:"EV Dealer",       sub:"Admin access",     color:ACCENT },
     { key:"dealer-ice", id:"dealer",     variant:"usedcar", icon:"🚙", label:"Used Car Dealer",  sub:"New / Pre-owned",  color:"#0EA5E9" },
@@ -207,8 +186,6 @@ export default function LoginPage() {
   // ── Login ─────────────────────────────────────────────────────
   const handleLogin = async () => {
     setLoginErr("")
-    // Chrome autofill often fills the inputs without firing React's onChange,
-    // leaving the state empty — so fall back to the live DOM values.
     const emailVal = (email.trim() || document.querySelector('input[type=email]')?.value?.trim() || "")
     const passVal  = (password || document.querySelector('input[type=password]')?.value || "")
     if (!emailVal) { setLoginErr("Email is required"); return }
@@ -221,7 +198,6 @@ export default function LoginPage() {
 
       if (!res.ok) { setLoginErr(data.error||"Invalid email or password"); return }
 
-      // Save JWT to localStorage (Firebase Hosting strips Set-Cookie headers)
       if (data.token) saveToken(data.token)
 
       setLoggedUser(data.user)
@@ -244,7 +220,6 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/auth/request-otp", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:emailClean }) })
       const data = await res.json()
-      // If dev mode sent us the OTP back because the email provider domain is unverified, show it directly!
       if (data._dev_otp) {
         setFpMsg({ type:"info", text:`[MVP TEST] Since the email domain isn't fully verified yet, here is your OTP: ${data._dev_otp}` })
       } else {
@@ -285,7 +260,6 @@ export default function LoginPage() {
   // ── Forgot: Reset password ────────────────────────────────────
   const handleReset = async () => {
     setFpErrors({})
-    // Autofill fallback: read live DOM values if React state is empty.
     const pwInputs = document.querySelectorAll('input[type=password]')
     const newVal     = fpNew     || pwInputs[0]?.value || ""
     const confirmVal = fpConfirm || pwInputs[1]?.value || ""
@@ -344,7 +318,24 @@ export default function LoginPage() {
                 {visibleRoles.map(r=>{
                   const active = isTileActive(r)
                   return (
-                  <button key={r.key} type="button" onClick={()=>{ setRole(r.id); setDealerVariant(r.variant || "owner"); setLoginErr("") }}
+                  <button key={r.key} type="button" onClick={()=>{ 
+                    setRole(r.id); 
+                    setDealerVariant(r.variant || "owner"); 
+                    setLoginErr("");
+                    if (r.variant === "usedcar") {
+                      setEmail("usedcar.demo@evcrm.in");
+                      setPassword("Password123!");
+                    } else if (r.key === "dealer-ev") {
+                      setEmail("hemanthlankalapalli67@gmail.com");
+                      setPassword("Password123!");
+                    } else if (r.id === "oem") {
+                      setEmail("oem@tatamotors.in");
+                      setPassword("Password123!");
+                    } else if (r.id === "rep") {
+                      setEmail("balaji@deccanev.in");
+                      setPassword("Password123!");
+                    }
+                  }}
                     style={{
                       flex:1, background:active?`${r.color}10`:C.bg,
                       border:`1.5px solid ${active?r.color:C.border}`,

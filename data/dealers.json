@@ -23,6 +23,30 @@
     "updatedAt": "2026-07-09T21:11:51.462Z"
   },
   {
+    "id": "used-car-d01",
+    "name": "Deccan Pre-Owned Auto Hub",
+    "badge": "Verified ✓",
+    "category": "ICE",
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "address": "Road No. 12, Banjara Hills, Hyderabad",
+    "geolocation": {
+      "lat": 17.4156,
+      "lng": 78.4347
+    },
+    "brands": [
+      "Maruti Suzuki True Value",
+      "Hyundai H-Promise",
+      "Mahindra First Choice"
+    ],
+    "responseTime": "Replies in ~1 hr",
+    "inventoryCount": 24,
+    "whatsapp": "919888877777",
+    "razorpayAccountId": null,
+    "gstNumber": "36BBBBB1111B2Z6",
+    "updatedAt": "2026-07-27T06:30:00.000Z"
+  },
+  {
     "id": "hyd-d02",
     "name": "Nizam Mobility Jubilee",
     "badge": "Verified ✓",

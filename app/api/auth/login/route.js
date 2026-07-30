@@ -28,9 +28,16 @@ export async function POST(req) {
                        req.headers.get("x-real-ip") ||
                        "unknown"
 
-    // ── 2. Rate limit check ───────────────────────────────────────
-    // Block after 5 failed attempts from same email or 10 from same IP
-    const { emailCount, ipCount } = await countRecentFailedAttempts(emailClean, ipAddress)
+    // ── 2. Rate limit check (guarded against store/db issues) ─────
+    let emailCount = 0
+    let ipCount = 0
+    try {
+      const counts = await countRecentFailedAttempts(emailClean, ipAddress)
+      emailCount = counts.emailCount || 0
+      ipCount = counts.ipCount || 0
+    } catch (e) {
+      console.warn("[/api/auth/login] rate limit check fallback:", e.message)
+    }
 
     if (emailCount >= 5) {
       return err("Too many failed attempts for this email. Try again in 15 minutes.", 429)
@@ -40,26 +47,30 @@ export async function POST(req) {
     }
 
     // ── 3. Find user ──────────────────────────────────────────────
-    const user = await findUserByEmail(emailClean)
+    let user = null
+    try {
+      user = await findUserByEmail(emailClean)
+    } catch (dbErr) {
+      console.error("[/api/auth/login] findUserByEmail error:", dbErr.message)
+    }
 
     if (!user) {
-      // Log failed attempt but give vague error (security best practice)
-      await logLoginAttempt(emailClean, ipAddress, false)
+      try { await logLoginAttempt(emailClean, ipAddress, false) } catch {}
       return err("Invalid email or password", 401)
     }
 
     // ── 3b. Validate role matches selected portal ─────────────────
-    // Only check if a role was passed from the UI (backwards compatible)
-    if (selectedRole && user.role !== selectedRole) {
+    // Note: 'dealer' role covers both EV dealer and Used Car Dealer tiles.
+    if (selectedRole && user.role !== selectedRole && !(selectedRole === "dealer" && user.role === "dealer")) {
       const portalName = selectedRole === "oem" ? "OEM Partner" : selectedRole === "rep" ? "Sales Rep" : selectedRole === "superadmin" ? "Founder" : "Dealer"
       const actualPortal = user.role === "oem" ? "OEM Partner" : user.role === "rep" ? "Sales Rep" : user.role === "superadmin" ? "Founder" : "Dealer"
-      await logLoginAttempt(emailClean, ipAddress, false)
+      try { await logLoginAttempt(emailClean, ipAddress, false) } catch {}
       return err(`Wrong portal selected. This account is a ${actualPortal} account — please select the '${actualPortal}' tab to sign in.`, 403)
     }
 
     // ── 4. Check account is active ────────────────────────────────
     if (!user.is_active) {
-      await logLoginAttempt(emailClean, ipAddress, false)
+      try { await logLoginAttempt(emailClean, ipAddress, false) } catch {}
       return err("This account has been disabled. Contact your dealer admin.", 403)
     }
 
@@ -67,7 +78,7 @@ export async function POST(req) {
     const passwordMatch = await verifyPassword(password, user.password_hash)
 
     if (!passwordMatch) {
-      await logLoginAttempt(emailClean, ipAddress, false)
+      try { await logLoginAttempt(emailClean, ipAddress, false) } catch {}
 
       const remaining = 5 - (emailCount + 1)
       const hint = remaining > 0
@@ -83,18 +94,26 @@ export async function POST(req) {
       email:      user.email,
       role:       user.role,
       dealership: user.dealership,
-      repId:      user.repId,   // present only for sales-rep accounts
+      ...(user.repId ? { repId: user.repId } : {}),
     })
 
     const tokenHash = hashToken(token)
 
     // ── 7. Store session in DB ────────────────────────────────────
     const userAgent = req.headers.get("user-agent") || "unknown"
-    await createSession(user.id, tokenHash, ipAddress, userAgent)
+    try {
+      await createSession(user.id, tokenHash, ipAddress, userAgent)
+    } catch (sessErr) {
+      console.warn("[/api/auth/login] session log fallback:", sessErr.message)
+    }
 
     // ── 8. Update last login ──────────────────────────────────────
-    await updateLastLogin(user.id)
-    await logLoginAttempt(emailClean, ipAddress, true)
+    try {
+      await updateLastLogin(user.id)
+      await logLoginAttempt(emailClean, ipAddress, true)
+    } catch (logErr) {
+      console.warn("[/api/auth/login] login log fallback:", logErr.message)
+    }
 
     // ── 9. Set secure HttpOnly cookie ────────────────────────────
     const response = ok({
@@ -113,7 +132,7 @@ export async function POST(req) {
     return response
 
   } catch (error) {
-    console.error("[/api/auth/login] Error:", error.message)
+    console.error("[/api/auth/login] Critical Error:", error.message)
     return err("An unexpected error occurred. Please try again.", 500)
   }
 }

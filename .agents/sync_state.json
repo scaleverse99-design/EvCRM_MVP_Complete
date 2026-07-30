@@ -1,0 +1,52 @@
+{
+  "locks": {
+    "app/api/feedback/route.js": {
+      "agent": "Antigravity",
+      "since": "2026-07-27T04:54:00.523Z"
+    },
+    "components/common/FeedbackWidget.js": {
+      "agent": "Antigravity",
+      "since": "2026-07-27T05:01:05.352Z"
+    }
+  },
+  "tasks": [
+    {
+      "description": "Resolve live Supabase database login redirect loop.",
+      "done": true
+    },
+    {
+      "description": "Sync /leads page pipeline directly to Supabase.",
+      "done": true
+    },
+    {
+      "description": "Streamline showroom booking modal details & calendar.",
+      "done": true
+    },
+    {
+      "description": "Resolve Sales Rep / Dealer login 500 crashes.",
+      "done": true
+    },
+    {
+      "description": "Verify domain on Resend dashboard (evcrm.in) to enable outgoing emails.",
+      "done": false
+    },
+    {
+      "description": "Add post-booking automated confirmation email to customers.",
+      "done": true
+    },
+    {
+      "description": "Build OEM dashboard",
+      "done": false
+    }
+  ],
+  "handoff": {
+    "status": "Handoff from Antigravity",
+    "lastAction": "Fixed Used Car Dealer login error, added usedcar.demo@evcrm.in demo user, and guarded auth route against DB errors.",
+    "nextSteps": "Awaiting next agent execution..."
+  },
+  "helpRequests": [],
+  "metrics": {
+    "tokensSaved": 125000,
+    "collaborations": 18
+  }
+}
