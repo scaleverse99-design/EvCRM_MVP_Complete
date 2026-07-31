@@ -10,7 +10,6 @@ export default function AgentInterconnectDashboard() {
   const [loading, setLoading] = useState(true)
   const [newTaskDesc, setNewTaskDesc] = useState("")
   const [targetAgent, setTargetAgent] = useState("Antigravity")
-  const [autoRun, setAutoRun] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [executingIdx, setExecutingIdx] = useState(null)
 
@@ -40,37 +39,22 @@ export default function AgentInterconnectDashboard() {
 
     setSubmitting(true)
     try {
-      if (autoRun) {
-        // Instant Remote Mobile Execution
-        const res = await fetch("/api/agents/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            description: newTaskDesc.trim(),
-            agent: targetAgent
-          })
+      // Queues the task as PENDING. An agent (Claude Code / Antigravity)
+      // picks it up off this board and does the actual work — this page
+      // cannot run agents itself, so it never marks anything complete.
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: newTaskDesc.trim(),
+          agent: targetAgent,
+          source: "Admin Dashboard"
         })
-        const data = await res.json()
-        if (data.success) {
-          setNewTaskDesc("")
-          fetchSyncState()
-        }
-      } else {
-        // Queue Task
-        const res = await fetch("/api/agents/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "assign-task",
-            agent: targetAgent,
-            description: newTaskDesc.trim()
-          })
-        })
-        const data = await res.json()
-        if (data.success) {
-          setNewTaskDesc("")
-          fetchSyncState()
-        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNewTaskDesc("")
+        fetchSyncState()
       }
     } catch (err) {
       console.error(err)
@@ -115,7 +99,8 @@ export default function AgentInterconnectDashboard() {
   const lockKeys = Object.keys(locks)
   const tasks = syncState?.tasks || []
   const handoff = syncState?.handoff || {}
-  const metrics = syncState?.metrics || { tokensSaved: 125000, collaborations: 18 }
+  // NOTE: metrics.tokensSaved was inflated by the old fake executor (+15000 per
+  // call, no real measurement) — the tiles now derive from the task list instead.
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh" }}>
@@ -133,7 +118,7 @@ export default function AgentInterconnectDashboard() {
                   Remote Agent Interconnect
                 </h1>
                 <p style={{ fontSize: 12, color: C.ink3, fontWeight: 700, margin: "2px 0 0" }}>
-                  Mobile Remote Task Execution & Real-Time Dashboard
+                  Assign tasks to Claude Code or Antigravity — they pick them up from here
                 </p>
               </div>
             </div>
@@ -153,18 +138,12 @@ export default function AgentInterconnectDashboard() {
         <div style={{ background: "#fff", padding: 20, borderRadius: 20, border: `2px solid ${C.green}`, marginBottom: 28, boxShadow: "0 10px 30px rgba(5,150,105,0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 900, color: C.green, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              ⚡ Assign & Run Remotely from Mobile
+              📌 Assign a Task
             </span>
             
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, fontWeight: 800, color: C.ink2 }}>
-              <input
-                type="checkbox"
-                checked={autoRun}
-                onChange={e => setAutoRun(e.target.checked)}
-                style={{ accentColor: C.green, width: 16, height: 16 }}
-              />
-              <span>Instant Auto-Execute</span>
-            </label>
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.ink3 }}>
+              Queues work for an agent — nothing runs from this page
+            </span>
           </div>
 
           <form onSubmit={handleAssignTask} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -205,7 +184,7 @@ export default function AgentInterconnectDashboard() {
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8
               }}
             >
-              <span>{submitting ? "Processing Remote Execution..." : autoRun ? "🚀 Execute Instantly from Mobile →" : "📌 Add to Task Queue →"}</span>
+              <span>{submitting ? "Queueing..." : "📌 Add to Task Queue →"}</span>
             </button>
           </form>
         </div>
@@ -214,11 +193,11 @@ export default function AgentInterconnectDashboard() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 24 }}>
           
           <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>ESTIMATED TOKENS SAVED</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>OPEN TASKS</span>
             <div style={{ fontSize: 24, fontWeight: 900, color: C.green, marginTop: 2 }}>
-              ⚡ {(metrics.tokensSaved || 0).toLocaleString()}
+              📋 {tasks.filter(t => !t.done).length}
             </div>
-            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Workload & Remote Execution</p>
+            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Waiting for an agent to pick up</p>
           </div>
 
           <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
@@ -231,11 +210,11 @@ export default function AgentInterconnectDashboard() {
           </div>
 
           <div style={{ background: "#fff", padding: 16, borderRadius: 16, border: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>EXECUTIONS</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase" }}>COMPLETED</span>
             <div style={{ fontSize: 24, fontWeight: 900, color: C.purple, marginTop: 2 }}>
-              🔄 {metrics.collaborations || 0}
+              ✓ {tasks.filter(t => t.done).length}
             </div>
-            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Tasks Completed</p>
+            <p style={{ fontSize: 10, color: C.ink3, margin: "2px 0 0" }}>Marked done by an agent</p>
           </div>
 
         </div>
@@ -269,7 +248,7 @@ export default function AgentInterconnectDashboard() {
                         {task.description}
                       </div>
                       <div style={{ fontSize: 10, color: C.ink3, marginTop: 4 }}>
-                        Assigned by {task.assignedBy || "User"} · {task.executedAt ? `Executed ${new Date(task.executedAt).toLocaleTimeString()}` : "Queued"}
+                        Assigned by {task.assignedBy || "User"} · {task.done ? "Done" : task.status === "PENDING" ? "Pending — not picked up yet" : "Queued"}
                       </div>
                     </div>
                   </div>
@@ -287,13 +266,14 @@ export default function AgentInterconnectDashboard() {
                       <button
                         onClick={() => handleRunNow(idx)}
                         disabled={executingIdx === idx}
+                        title="Puts this task back at the top of the queue. An agent still has to pick it up — this does not run it."
                         style={{
                           background: C.green, color: "#fff", border: "none",
                           padding: "4px 10px", borderRadius: 8, fontSize: 11,
                           fontWeight: 800, cursor: "pointer"
                         }}
                       >
-                        {executingIdx === idx ? "Executing..." : "Run Now ➔"}
+                        {executingIdx === idx ? "Queueing..." : "Re-queue ➔"}
                       </button>
                     )}
                   </div>
