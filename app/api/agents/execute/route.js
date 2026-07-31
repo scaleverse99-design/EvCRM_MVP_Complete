@@ -1,26 +1,38 @@
 import { NextResponse } from "next/server"
 import { readTable, writeTable } from "@/lib/store"
 
-const TABLE = "agent_sync"
+const TABLE = "feed"
+const SYNC_ID = "global_agent_sync_state"
 
 async function getSyncState() {
   try {
     const rows = await readTable(TABLE)
-    if (rows && rows.length > 0 && rows[0].state) {
-      return rows[0].state
+    const syncRow = rows.find(r => r.id === SYNC_ID)
+    if (syncRow && syncRow.data) {
+      return syncRow.data
     }
   } catch (e) {
-    console.warn("Could not read agent_sync from store:", e)
+    console.warn("Could not read agent_sync from feed table:", e)
   }
   return { locks: {}, tasks: [], handoff: { status: "Idle" }, metrics: { tokensSaved: 125000, collaborations: 18 } }
 }
 
 async function writeSyncState(state) {
   try {
-    await writeTable(TABLE, [{ id: "global_agent_sync_state", state, updatedAt: new Date().toISOString() }])
+    const rows = await readTable(TABLE)
+    const existingIndex = rows.findIndex(r => r.id === SYNC_ID)
+    const newRow = { id: SYNC_ID, data: state, updatedAt: new Date().toISOString() }
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = newRow
+    } else {
+      rows.push(newRow)
+    }
+
+    await writeTable(TABLE, rows)
     return true
   } catch (e) {
-    console.error("Could not write agent_sync to store:", e)
+    console.error("Could not write agent_sync to feed table:", e)
     return false
   }
 }
@@ -32,6 +44,8 @@ export async function POST(req) {
 
     const state = await getSyncState()
     let idx = taskIndex
+
+    if (!state.tasks) state.tasks = []
 
     if (typeof idx !== "number" && description) {
       // Add new task if not existing
