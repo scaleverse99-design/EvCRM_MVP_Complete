@@ -1,5 +1,6 @@
 "use client"
-import Shell from "../../components/layout/Shell"
+import TopBar from "../../components/home/TopBar"
+import Footer from "../../components/home/Footer"
 import { C } from "../../lib/constants"
 
 const Section = ({ children, style: xs = {} }) => (
@@ -19,7 +20,8 @@ const Tool = ({ name, desc }) => (
 
 export default function CTEPage() {
   return (
-    <Shell>
+    <>
+      <TopBar />
       <Section style={{ padding: "48px 20px 16px" }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.green, letterSpacing: 0.5, textTransform: "uppercase" }}>Consumer Transparency Engine</div>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: C.ink, margin: "8px 0 12px" }}>Verified Indian automobile data, built for AI tools</h1>
@@ -55,6 +57,7 @@ export default function CTEPage() {
         <Tool name="find_dealers" desc="Find verified dealer storefronts by city or category." />
         <Tool name="search_blog_articles / search_knowledge_hub" desc="EvCRM's buyer's guides and EV/automobile knowledge base." />
       </Section>
-    </Shell>
+      <Footer />
+    </>
   )
 }
