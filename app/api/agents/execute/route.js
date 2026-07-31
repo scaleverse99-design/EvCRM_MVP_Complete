@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { readTable, writeTable } from "../../../lib/store"
+import { readTable, writeTable } from "@/lib/store"
 
 const TABLE = "agent_sync"
 

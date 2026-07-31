@@ -1,49 +1,43 @@
 export const dynamic = "force-dynamic"
 
-import { readTable } from "../../../lib/store"
-import { ensureDailyNewsRefresh, shouldTriggerDailyRefresh } from "../../../lib/orchestrator/dailyRefresh"
+import { readTable } from "@/lib/store"
+import { ensureDailyNewsRefresh, shouldTriggerDailyRefresh } from "@/lib/orchestrator/dailyRefresh"
 
 const CATEGORIES = ["EV Fundamentals", "ICE Fundamentals", "Buying Guides", "Tech Trends"]
 
 // Public GET — published knowledge-hub articles, grouped by category.
 // Separate content type from the per-model blog_posts (type:"knowledge"
 // vs the default model-hub articles) sharing the same table/schema-free
-// jsonb storage. Staggered rollout: an article only appears once its
-// publishedAt has passed, even though its status is already "published" —
-// this is what lets a batch be pre-generated but drip out N per day.
-export async function GET(req) {
-  const { searchParams } = new URL(req.url)
-  const category = searchParams.get("category")
-
+// jsonb structure.
+export async function GET() {
   const all = await readTable("blog_posts")
-  const now = new Date()
+  const knowledge = all
+    .filter(p => p.status === "published" && p.type === "knowledge")
+    .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
+    .map(({ body, ...rest }) => rest)
 
-  let articles = all.filter(p =>
-    p.type === "knowledge" &&
-    p.status === "published" &&
-    new Date(p.publishedAt) <= now
-  )
-
-  if (category && CATEGORIES.includes(category)) {
-    articles = articles.filter(p => p.category === category)
-  }
-
+  // Fire-and-forget background news refresh if stale (> 6 hours old).
   if (shouldTriggerDailyRefresh(all)) {
-    void ensureDailyNewsRefresh().catch(() => {})
+    ensureDailyNewsRefresh().catch(err =>
+      console.error("[/api/learn] Background news refresh failed:", err.message)
+    )
   }
 
-  articles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+  // Group by category for the /learn hero grid
+  const byCategory = {}
+  CATEGORIES.forEach(cat => {
+    byCategory[cat] = knowledge.filter(p => p.category === cat)
+  })
+  const uncategorized = knowledge.filter(p => !CATEGORIES.includes(p.category))
+  if (uncategorized.length > 0) {
+    byCategory["Other Guides"] = uncategorized
+  }
 
   return Response.json({
     success: true,
-    categories: CATEGORIES,
-    articles: articles.map(p => ({
-      slug: p.slug,
-      title: p.title,
-      excerpt: p.excerpt,
-      category: p.category,
-      coverEmoji: p.coverEmoji,
-      publishedAt: p.publishedAt,
-    })),
+    articles: knowledge,
+    total: knowledge.length,
+    byCategory,
+    categories: Object.keys(byCategory).filter(cat => byCategory[cat].length > 0),
   })
 }
