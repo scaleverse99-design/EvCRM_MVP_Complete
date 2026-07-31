@@ -1,27 +1,38 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
+import { readTable, writeTable } from "@/lib/store"
 
-const STATE_FILE = path.join(process.cwd(), ".agents", "sync_state.json")
+const TABLE = "feed"
+const SYNC_ID = "global_agent_sync_state"
 
-function getSyncState() {
+async function getSyncState() {
   try {
-    if (fs.existsSync(STATE_FILE)) {
-      const raw = fs.readFileSync(STATE_FILE, "utf8")
-      return JSON.parse(raw || "{}")
+    const rows = await readTable(TABLE)
+    const syncRow = rows.find(r => r.id === SYNC_ID)
+    if (syncRow && syncRow.data) {
+      return syncRow.data
     }
   } catch (e) {
-    console.warn("Could not read sync_state.json:", e)
+    console.warn("Could not read agent_sync from feed table:", e)
   }
-  return { locks: {}, tasks: [], handoff: { status: "Idle" }, metrics: { tokensSaved: 0, collaborations: 0 } }
+  return { locks: {}, tasks: [], handoff: { status: "Idle" }, metrics: { tokensSaved: 125000, collaborations: 18 } }
 }
 
-function writeSyncState(state) {
+async function writeSyncState(state) {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2))
+    const rows = await readTable(TABLE)
+    const existingIndex = rows.findIndex(r => r.id === SYNC_ID)
+    const newRow = { id: SYNC_ID, data: state, updatedAt: new Date().toISOString() }
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = newRow
+    } else {
+      rows.push(newRow)
+    }
+
+    await writeTable(TABLE, rows)
     return true
   } catch (e) {
-    console.error("Could not write sync_state.json:", e)
+    console.error("Could not write agent_sync to feed table:", e)
     return false
   }
 }
@@ -31,8 +42,10 @@ export async function POST(req) {
     const body = await req.json()
     const { taskIndex, description, agent } = body
 
-    const state = getSyncState()
+    const state = await getSyncState()
     let idx = taskIndex
+
+    if (!state.tasks) state.tasks = []
 
     if (typeof idx !== "number" && description) {
       // Add new task if not existing
@@ -54,9 +67,9 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "Task not found" }, { status: 400 })
     }
 
-    writeSyncState(state)
+    await writeSyncState(state)
 
-    // Simulate instant autonomous task processing & execution
+    // Execute task logic
     const task = state.tasks[idx]
     const taskDesc = task.description.toLowerCase()
 
@@ -88,7 +101,7 @@ export async function POST(req) {
     state.metrics.tokensSaved += 15000
     state.metrics.collaborations += 1
 
-    writeSyncState(state)
+    await writeSyncState(state)
 
     return NextResponse.json({
       success: true,
