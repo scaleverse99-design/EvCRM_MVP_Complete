@@ -343,6 +343,22 @@ alter table article_vehicles enable row level security;
 
 ## 8. Known Issues & Open Bugs (⚠️ START HERE)
 
+0. **🔴 2026-07-31 — `/api/agents/execute` was faking task completion (FIXED).** User reported `/admin/agents` "was not working" — it wasn't crashing, it was **fabricating completion**. The route keyword-matched the task description, picked a canned success string, and marked the task `COMPLETED`:
+   ```js
+   if (taskDesc.includes("seo") || taskDesc.includes("blog")) {
+     executionOutput = "✓ Generated & updated SEO article metadata. Indexed in sitemap."
+   } else if (taskDesc.includes("dealer") || taskDesc.includes("login")) {
+     executionOutput = "✓ Database user records & login credentials verified against Supabase."
+   }
+   task.done = true; task.status = "COMPLETED"
+   state.metrics.tokensSaved += 15000   // ← source of the dashboard's "140,000 tokens saved"
+   ```
+   No agent ran, no code changed, nothing was "verified against Supabase" (hardcoded string). A real user task — *"im seeing lot of 404 pages please check solve them"* — was marked COMPLETED while the 404s were never investigated. **Those 404s are still unfixed; the task needs re-queueing.**
+   - **Root architectural cause**: a Next.js route on Cloud Run cannot invoke Claude Code or Antigravity — those are agents on a dev machine or cloud sandbox. This endpoint can only ever *record* a task, never *perform* one. The fake execution papered over that gap.
+   - **Fixed**: route now queues tasks as `PENDING` with an honest log line — no synthetic completion, no metrics inflation. UI updated to match: removed the "Instant Auto-Execute" toggle and "Execute Instantly from Mobile" button (both promised something impossible), "Run Now" → "Re-queue", and the fabricated "ESTIMATED TOKENS SAVED" tile replaced with real open/completed counts derived from the task list. **Verified**: the same POST that returned `COMPLETED`/`done:true` now returns `PENDING`/`done:false`.
+   - **Correct flow going forward**: assign on `/admin/agents` → task sits `PENDING` → a real agent (Claude Code / Antigravity, via `node .agents/sync.js status`) picks it up, does the work, and marks it done with real evidence (commit SHA, files changed).
+   - **This is the third instance of the same pattern in one day** — fabricated VAHAN rows (issue #-1), the hardcoded token benchmark (`scripts/benchmark-mcp-token-savings.js`, fixed in `68933b0`), and now fake task execution. Common shape: output that *looks* like work product but is generated rather than measured or performed. **If a component can't actually do the thing, it must say so — never emit a plausible success string.**
+
 -0. **🔴 CRITICAL, IN PROGRESS 2026-07-31 — mass data fabrication in CTE (`cte-engine`) found and being purged.** Investigating "why do we only have ~1.29L records" led to discovering most of `cte-engine`'s ingestion scripts don't crawl anything real — they generate synthetic data (`Math.random()`/hardcoded templates) and write it to Supabase labeled as real government/marketplace data. **Full detail in `CTE_BUILD_PLAN.md` §7b** — summary:
    - `registration_data` table: **1,021,244 fabricated rows** (fake "VAHAN registration" numbers from `crawler/lakhs-scale-ingest.js` + a second generator via `database/generate-seed.js`) — was being actively served through CTE's separate live public API. Purge in progress (batched delete, ~25K/1.02M done as of this write, check current count before assuming complete).
    - `products` table: 4,053 of 4,112 rows were fabricated (98.6%!) — **✅ purged**, 59 real rows remain. Fabricated sources: an unidentified script producing 4,050 fake "Used Car & Bike Market Aggregator" listings (proven fake by an exact 450-per-brand-×-9-brands distribution + templated sequential URLs) + `crawler/cardekho-carwale-enricher.js`'s 3 hardcoded fake CarWale/CarDekho rows — the latter was reachable through the **canonical `evcrm.in/api/mcp` `search_market`/`compare_vehicles` tools** (added earlier this session), meaning those tools could have served fabricated data before this purge.
