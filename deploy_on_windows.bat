@@ -2,7 +2,15 @@
 set FIREBASE_CLI_EXPERIMENTS=webframeworks
 
 echo Taking pre-deploy snapshot (working tree + git history) into ..\evcrm-backups ...
-sh scripts/snapshot.sh "pre-deploy"
+REM "sh" alone is NOT on the plain Windows PATH that .bat files use (only inside a Git Bash
+REM session) — this silently failed ("'sh' is not recognized") on every deploy since 2026-07-15,
+REM meaning NO pre-deploy backups were taken for over two weeks of deploys. Call Git's sh.exe by
+REM its known install path instead so this doesn't depend on PATH at all.
+if exist "C:\Program Files\Git\bin\sh.exe" (
+  "C:\Program Files\Git\bin\sh.exe" scripts/snapshot.sh "pre-deploy"
+) else (
+  echo WARNING: Git's sh.exe not found at the expected path — pre-deploy snapshot SKIPPED. Fix scripts/snapshot.sh invocation before relying on backups again.
+)
 
 REM Local dev overrides live in .env.development.local, which production
 REM builds ignore by design — no env-file renaming needed here anymore.

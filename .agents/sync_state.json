@@ -37,16 +37,52 @@
     {
       "description": "Build OEM dashboard",
       "done": false
+    },
+    {
+      "description": "llms.txt + mcp.json + ai-plugin.json discoverability fix (found stale/wrong endpoints, fixed)",
+      "done": true,
+      "assignedTo": "Claude",
+      "assignedBy": "Interconnect"
+    },
+    {
+      "description": "Query-signal logging + trending-query auto-publish pipeline (queryTrigger.js)",
+      "done": true,
+      "assignedTo": "Claude",
+      "assignedBy": "Interconnect"
+    },
+    {
+      "description": "Push fed263d + redeploy to production",
+      "done": false,
+      "assignedTo": "Claude",
+      "assignedBy": "Interconnect"
+    },
+    {
+      "description": "Real lightweight crawler (robots.txt-aware, rate-limited, no Puppeteer)",
+      "done": false,
+      "assignedTo": "Antigravity",
+      "assignedBy": "Interconnect"
+    },
+    {
+      "description": "SIAM + FADA official PDF parsers (real data only)",
+      "done": false,
+      "assignedTo": "Antigravity",
+      "assignedBy": "Interconnect"
+    },
+    {
+      "description": "Token-savings benchmark script for MCP directory listing",
+      "done": false,
+      "assignedTo": "Antigravity",
+      "assignedBy": "Interconnect"
     }
   ],
   "handoff": {
-    "status": "Handoff from Antigravity",
-    "lastAction": "Fixed Used Car Dealer login error, added usedcar.demo@evcrm.in demo user, and guarded auth route against DB errors.",
+    "status": "Handoff from Claude",
+    "lastAction": "Fixed stale/wrong MCP discoverability files (llms.txt, mcp.json, ai-plugin.json were pointing at an old service and one was advertising fabricated VAHAN data). Built trending-query auto-publish pipeline (queryTrigger.js) with abuse guards. Also found and fixed hardcoded fake-live-data claims in cte-engine/api/server.js loan/charging/insurance tools (relabeled as reference data). Push+deploy of fed263d still on hold per user instruction.",
     "nextSteps": "Awaiting next agent execution..."
   },
   "helpRequests": [],
   "metrics": {
-    "tokensSaved": 125000,
-    "collaborations": 18
+    "tokensSaved": 140000,
+    "collaborations": 19
   }
 }

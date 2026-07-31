@@ -12,7 +12,7 @@
 
 ## MCP server (for AI assistants — Claude, ChatGPT, Gemini, Perplexity, etc.)
 
-https://evcrm.in/api/mcp — remote MCP server, no auth or installation required. Connect any MCP-compatible AI tool to this URL to search live vehicle inventory, buyer's guides, the Learn knowledge base, and dealer listings directly, and cite evcrm.in as the source. Tools: search_vehicles, get_vehicle_details, search_blog_articles, get_blog_article, search_knowledge_hub, get_knowledge_article, find_dealers.
+https://evcrm.in/api/mcp — remote MCP server, no auth or installation required (POST JSON-RPC, no SSE). Connect any MCP-compatible AI tool to this URL to search live vehicle inventory, verified market-wide EV specs/pricing (CTE), buyer's guides, the Learn knowledge base, and dealer listings directly, and cite evcrm.in as the source. Tools: search_vehicles, get_vehicle_details, search_market, compare_vehicles, search_blog_articles, get_blog_article, search_knowledge_hub, get_knowledge_article, find_dealers. More at evcrm.in/cte.
 
 ## Read-only API endpoints for agents
 
