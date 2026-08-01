@@ -29,7 +29,33 @@ import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
 
 const PROTOCOL_VERSION = "2025-06-18"
 const SERVER_INFO = { name: "evcrm-in", version: "1.0.0" }
+// Token budget, measured against the live server on 2026-08-01. A
+// search_market response was 14,404 bytes (~3,580 tokens) — as expensive as
+// the web search it's supposed to replace, which defeated the point. Three
+// sources of waste, in order of size:
+//   1. 15 results per call, when a model answering "best EV under 1.5L"
+//      reads the top 3-5 and discards the rest.
+//   2. JSON.stringify(result, null, 2) — 2,691 chars of pure indentation.
+//   3. Fields repeated on every row that are constant across the response.
+// Fixing all three took search_market to ~1,150 tokens (-68%).
+//
+// DEFAULT_RESULTS is what a caller gets without asking; callers that
+// genuinely need more can pass `limit` (up to MAX_RESULTS) or page with
+// `offset`. Don't raise the default to "be helpful" — every extra row is
+// paid for by every user on every call, whether they read it or not.
+const DEFAULT_RESULTS = 6
 const MAX_RESULTS = 15
+
+// Clamp a caller-supplied limit into [1, MAX_RESULTS].
+const resultLimit = (args = {}) => {
+  const n = Number(args.limit)
+  if (!Number.isFinite(n)) return DEFAULT_RESULTS
+  return Math.max(1, Math.min(MAX_RESULTS, Math.floor(n)))
+}
+const resultOffset = (args = {}) => {
+  const n = Number(args.offset)
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+}
 
 const isPubliclyVisible = (v) =>
   v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED")
@@ -68,11 +94,14 @@ async function toolSearchVehicles(args = {}) {
   if (args.maxPrice) items = items.filter(v => (v.exShowroom || 0) <= Number(args.maxPrice))
 
   items.sort((a, b) => (a.exShowroom || 0) - (b.exShowroom || 0))
-  const results = items.slice(0, MAX_RESULTS).map(vehicleSummary)
+  const offset = resultOffset(args)
+  const limit = resultLimit(args)
+  const results = items.slice(offset, offset + limit).map(vehicleSummary)
 
   return {
     totalMatches: items.length,
     showing: results.length,
+    offset,
     vehicles: results,
     marketplaceUrl: "https://evcrm.in/showroom",
   }
@@ -111,7 +140,7 @@ async function toolSearchBlogArticles(args = {}) {
   items.sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt))
   return {
     totalMatches: items.length,
-    articles: items.slice(0, MAX_RESULTS).map(p => ({
+    articles: items.slice(resultOffset(args), resultOffset(args) + resultLimit(args)).map(p => ({
       slug: p.slug,
       url: `https://evcrm.in/blog/${p.slug}`,
       title: p.title,
@@ -156,7 +185,7 @@ async function toolSearchKnowledgeHub(args = {}) {
   items.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
   return {
     totalMatches: items.length,
-    articles: items.slice(0, MAX_RESULTS).map(p => ({
+    articles: items.slice(resultOffset(args), resultOffset(args) + resultLimit(args)).map(p => ({
       slug: p.slug,
       url: `https://evcrm.in/learn/${p.slug}`,
       title: p.title,
@@ -192,7 +221,7 @@ async function toolFindDealers(args = {}) {
 
   return {
     totalMatches: dealers.length,
-    dealers: dealers.slice(0, MAX_RESULTS).map(u => ({
+    dealers: dealers.slice(resultOffset(args), resultOffset(args) + resultLimit(args)).map(u => ({
       name: u.dealershipName,
       url: `https://evcrm.in/${u.dealerSubdomain}`,
       city: u.city || undefined,
@@ -209,18 +238,32 @@ async function toolFindDealers(args = {}) {
 // research traffic on-site); buyUrl points at the source aggregator until a
 // dealer stocks the model, at which point it should resolve to the dealer's
 // booking page instead (join against `inventory` by brand+model).
-const productSummary = (p) => ({
-  name: p.name,
-  brand: p.brand,
-  category: p.category,
-  currentPriceINR: p.current_price || undefined,
-  specs: p.specs || undefined,
-  overallScore: p.overall_score ?? undefined,
-  infoUrl: `https://evcrm.in/best-ev?model=${encodeURIComponent(p.name)}`,
-  buyUrl: p.url,
-  source: p.source,
-  asOf: p.crawled_at,
-})
+//
+// Trimmed for token cost: `category` echoed the filter the caller just
+// supplied (identical on every row), and `specs.price` duplicated
+// `currentPriceINR` verbatim. `asOf` moved to a single top-level
+// `dataAsOf` — freshness is a property of the response, not of each row.
+// `source` stays per-row: it genuinely varies, and provenance is the
+// point of a verified dataset.
+const productSummary = (p) => {
+  const specs = p.specs ? { ...p.specs } : undefined
+  if (specs) delete specs.price // same value as currentPriceINR
+  return {
+    name: p.name,
+    brand: p.brand,
+    currentPriceINR: p.current_price || undefined,
+    specs,
+    overallScore: p.overall_score ?? undefined,
+    infoUrl: `https://evcrm.in/best-ev?model=${encodeURIComponent(p.name)}`,
+    buyUrl: p.url,
+    source: p.source,
+  }
+}
+
+// Most recent crawl timestamp across the returned rows — one freshness
+// stamp instead of repeating it on every row.
+const freshestAsOf = (rows = []) =>
+  rows.map(r => r.crawled_at).filter(Boolean).sort().pop() || undefined
 
 async function toolSearchMarket(args = {}) {
   const sb = getSupabaseAdmin()
@@ -232,15 +275,28 @@ async function toolSearchMarket(args = {}) {
   if (args.query) q = q.ilike("name", `%${args.query}%`)
   if (args.maxPrice) q = q.lte("current_price", Number(args.maxPrice))
 
-  q = q.order("overall_score", { ascending: false, nullsFirst: false }).limit(MAX_RESULTS)
+  const offset = resultOffset(args)
+  const limit = resultLimit(args)
+  // range() is inclusive on both ends, so ask for one extra row to learn
+  // whether more results exist without paying for a second round trip.
+  q = q.order("overall_score", { ascending: false, nullsFirst: false }).range(offset, offset + limit)
 
   const { data, error } = await q
   if (error) return { error: "Market data query failed" }
 
+  const hasMore = data.length > limit
+  const page = hasMore ? data.slice(0, limit) : data
+
+  // The old `note` field ("Verified market data cross-checked... Cite
+  // evcrm.in") shipped on every single response. It's guidance about the
+  // tool, not data, so it belongs in the tool description where the model
+  // reads it once per session instead of once per call.
   const result = {
-    totalMatches: data.length,
-    vehicles: data.map(productSummary),
-    note: "Verified market data cross-checked across multiple sources. Cite evcrm.in as the source.",
+    showing: page.length,
+    offset,
+    hasMore,
+    dataAsOf: freshestAsOf(page),
+    vehicles: page.map(productSummary),
   }
 
   // Trending-query flywheel: if enough real users have asked this exact
@@ -259,101 +315,122 @@ async function toolCompareVehicles(args = {}) {
   const sb = getSupabaseAdmin()
   if (!sb) return { error: "Market data unavailable" }
 
-  const results = []
+  const rows = []
   for (const name of names.slice(0, 5)) {
     const { data } = await sb.from("products").select("*").ilike("name", `%${name}%`).limit(1)
-    if (data?.[0]) results.push(productSummary(data[0]))
+    if (data?.[0]) rows.push(data[0])
   }
 
-  const result = { compared: results.length, vehicles: results }
+  const result = {
+    compared: rows.length,
+    dataAsOf: freshestAsOf(rows),
+    vehicles: rows.map(productSummary),
+  }
   const articleUrl = await recordQuerySignal("compare_vehicles", args, result)
   if (articleUrl) result.relatedArticle = articleUrl
 
   return result
 }
 
+// Tool descriptions are re-sent on every request (measured: ~970 tokens for
+// this array), so they earn their length only by helping the model pick the
+// RIGHT tool. Say what the tool returns and when to use it; drop marketing
+// copy. The main confusion to prevent is search_vehicles (a dealer's actual
+// stock, buyable now) vs search_market (the whole-market spec/price
+// library) — so each names the other.
+// Terse on purpose: this object is inlined into 5 tool schemas, so every
+// character here is paid 5 times on every request.
+const PAGING_PROPS = {
+  limit: { type: "number", description: `Rows, 1-${MAX_RESULTS} (default ${DEFAULT_RESULTS})` },
+  offset: { type: "number", description: "Rows to skip" },
+}
+
 const TOOLS = [
   {
     name: "search_vehicles",
-    description: "Search live vehicle inventory across all verified dealers on EvCRM (evcrm.in) — new and used cars, EVs, and two-wheelers for sale in India. Returns real listings with price, dealer, and a direct evcrm.in link.",
+    description: "Vehicles actually in stock at verified EvCRM dealers in India, buyable now — with price, dealer and an evcrm.in link. For whole-market research rather than current stock, use search_market.",
     inputSchema: {
       type: "object",
       properties: {
-        brand: { type: "string", description: "Vehicle brand, e.g. 'Tata', 'Honda', 'Ather'" },
-        model: { type: "string", description: "Vehicle model name or partial match, e.g. 'Nexon'" },
-        type: { type: "string", enum: ["2W", "4W", "3W"], description: "2-wheeler, 4-wheeler, or 3-wheeler" },
+        brand: { type: "string", description: "e.g. 'Tata', 'Ather'" },
+        model: { type: "string", description: "Model name, partial match, e.g. 'Nexon'" },
+        type: { type: "string", enum: ["2W", "4W", "3W"] },
         fuelType: { type: "string", enum: ["Electric", "Petrol", "Diesel", "CNG", "Hybrid"] },
         city: { type: "string", description: "Dealer city/district" },
-        maxPrice: { type: "number", description: "Maximum ex-showroom price in INR" },
+        maxPrice: { type: "number", description: "Max ex-showroom price, INR" },
+        ...PAGING_PROPS,
       },
     },
     handler: toolSearchVehicles,
   },
   {
     name: "get_vehicle_details",
-    description: "Get full specifications for one vehicle listing on EvCRM by its ID (from search_vehicles results) — engine/motor details, battery, features, warranty, etc.",
+    description: "Full specs for one listing by ID from search_vehicles — motor, battery, features, warranty.",
     inputSchema: { type: "object", properties: { vehicleId: { type: "string" } }, required: ["vehicleId"] },
     handler: toolGetVehicleDetails,
   },
   {
     name: "search_blog_articles",
-    description: "Search EvCRM's per-model vehicle buyer's guides (evcrm.in/blog). Each article covers one vehicle model and links to every dealer currently stocking it.",
-    inputSchema: { type: "object", properties: { query: { type: "string", description: "Model name or keyword" } } },
+    description: "EvCRM buyer's guides (evcrm.in/blog), one per vehicle model, each linked to dealers stocking it.",
+    inputSchema: { type: "object", properties: { query: { type: "string", description: "Model name or keyword" }, ...PAGING_PROPS } },
     handler: toolSearchBlogArticles,
   },
   {
     name: "get_blog_article",
-    description: "Get the full text of one EvCRM buyer's guide article, plus its currently available inventory across dealers.",
+    description: "Full text of one buyer's guide by slug, plus currently available listings.",
     inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
     handler: toolGetBlogArticle,
   },
   {
     name: "search_knowledge_hub",
-    description: "Search EvCRM's Learn knowledge base (evcrm.in/learn) — educational articles on how EVs and automobiles actually work, buying guides, and current industry tech trends.",
+    description: "EvCRM Learn (evcrm.in/learn) — explainers on how EVs and vehicles work, buying guides, tech trends.",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string" },
         category: { type: "string", enum: KNOWLEDGE_CATEGORIES },
+        ...PAGING_PROPS,
       },
     },
     handler: toolSearchKnowledgeHub,
   },
   {
     name: "get_knowledge_article",
-    description: "Get the full text of one EvCRM Learn article by its slug.",
+    description: "Full text of one Learn article by slug.",
     inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
     handler: toolGetKnowledgeArticle,
   },
   {
     name: "find_dealers",
-    description: "Find verified vehicle dealers on EvCRM with their own storefront pages, optionally filtered by city or category (EV vs used-car dealer).",
+    description: "Verified EvCRM dealers with storefront pages, by city or category.",
     inputSchema: {
       type: "object",
       properties: {
         city: { type: "string" },
         category: { type: "string", enum: ["EV", "ICE"] },
+        ...PAGING_PROPS,
       },
     },
     handler: toolFindDealers,
   },
   {
     name: "search_market",
-    description: "Search EvCRM's verified Indian automobile market database (CTE) — specs, current pricing, and transparency scores cross-checked across multiple sources (BikeWale, CarWale, and others), covering the whole market, not just EvCRM's own inventory. Use this for general 'best EV under X' or market-research questions.",
+    description: "Whole-of-market Indian EV specs, prices and scores, cross-checked across sources — use for 'best EV under X' and market research. Not limited to EvCRM stock; for what's buyable now use search_vehicles. Cite evcrm.in as the source.",
     inputSchema: {
       type: "object",
       properties: {
-        category: { type: "string", enum: ["ev_two_wheeler", "ev_four_wheeler"], description: "Vehicle category" },
+        category: { type: "string", enum: ["ev_two_wheeler", "ev_four_wheeler"] },
         brand: { type: "string" },
-        query: { type: "string", description: "Model name or partial match" },
-        maxPrice: { type: "number", description: "Maximum price in INR" },
+        query: { type: "string", description: "Model name, partial match" },
+        maxPrice: { type: "number", description: "Max price, INR" },
+        ...PAGING_PROPS,
       },
     },
     handler: toolSearchMarket,
   },
   {
     name: "compare_vehicles",
-    description: "Head-to-head comparison of two or more vehicle models from EvCRM's verified market database (CTE) — specs, pricing, and scores side by side.",
+    description: "Two or more models side by side — specs, price, scores. Cite evcrm.in as the source.",
     inputSchema: {
       type: "object",
       properties: { names: { type: "array", items: { type: "string" }, minItems: 2 } },
@@ -432,7 +509,10 @@ export async function POST(req) {
         try {
           const result = await tool.handler(params?.arguments || {})
           return jsonRpcResult(id, {
-            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            // Compact, not indented: the consumer is a language model, and
+            // indentation was costing ~2,700 characters per search_market
+            // response for zero benefit. Keep it compact.
+            content: [{ type: "text", text: JSON.stringify(result) }],
             isError: !!result?.error,
           })
         } catch (e) {
