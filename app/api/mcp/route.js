@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-import { readTable } from "../../../lib/store"
+import { readTableCached } from "../../../lib/store"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
 
@@ -83,7 +83,7 @@ const vehicleSummary = (v) => ({
 })
 
 async function toolSearchVehicles(args = {}) {
-  const inventory = await readTable("inventory")
+  const inventory = await readTableCached("inventory")
   let items = inventory.filter(isPubliclyVisible)
 
   if (args.brand) items = items.filter(v => v.brand?.toLowerCase() === String(args.brand).toLowerCase())
@@ -109,7 +109,7 @@ async function toolSearchVehicles(args = {}) {
 
 async function toolGetVehicleDetails(args = {}) {
   if (!args.vehicleId) return { error: "vehicleId is required" }
-  const inventory = await readTable("inventory")
+  const inventory = await readTableCached("inventory")
   const v = inventory.find(x => x.id === args.vehicleId && isPubliclyVisible(x))
   if (!v) return { error: "Vehicle not found or no longer available" }
   return {
@@ -128,7 +128,7 @@ async function toolGetVehicleDetails(args = {}) {
 }
 
 async function toolSearchBlogArticles(args = {}) {
-  const posts = await readTable("blog_posts")
+  const posts = await readTableCached("blog_posts")
   const now = new Date()
   let items = posts.filter(p => p.status === "published" && p.type !== "knowledge" && (!p.publishedAt || new Date(p.publishedAt) <= now))
 
@@ -151,13 +151,13 @@ async function toolSearchBlogArticles(args = {}) {
 
 async function toolGetBlogArticle(args = {}) {
   if (!args.slug) return { error: "slug is required" }
-  const posts = await readTable("blog_posts")
+  const posts = await readTableCached("blog_posts")
   const post = posts.find(p => p.slug === args.slug && p.status === "published" && p.type !== "knowledge")
   if (!post) return { error: "Article not found" }
 
-  const links = await readTable("article_vehicles")
+  const links = await readTableCached("article_vehicles")
   const linkedIds = links.filter(l => l.articleId === post.id).map(l => l.vehicleId)
-  const inventory = await readTable("inventory")
+  const inventory = await readTableCached("inventory")
   const vehicles = inventory.filter(v => linkedIds.includes(v.id) && isPubliclyVisible(v)).slice(0, MAX_RESULTS).map(vehicleSummary)
 
   return {
@@ -172,7 +172,7 @@ async function toolGetBlogArticle(args = {}) {
 const KNOWLEDGE_CATEGORIES = ["EV Fundamentals", "ICE Fundamentals", "Buying Guides", "Tech Trends"]
 
 async function toolSearchKnowledgeHub(args = {}) {
-  const posts = await readTable("blog_posts")
+  const posts = await readTableCached("blog_posts")
   const now = new Date()
   let items = posts.filter(p => p.type === "knowledge" && p.status === "published" && new Date(p.publishedAt) <= now)
 
@@ -197,7 +197,7 @@ async function toolSearchKnowledgeHub(args = {}) {
 
 async function toolGetKnowledgeArticle(args = {}) {
   if (!args.slug) return { error: "slug is required" }
-  const posts = await readTable("blog_posts")
+  const posts = await readTableCached("blog_posts")
   const now = new Date()
   const post = posts.find(p => p.slug === args.slug && p.type === "knowledge" && p.status === "published" && new Date(p.publishedAt) <= now)
   if (!post) return { error: "Article not found" }
@@ -213,7 +213,7 @@ async function toolGetKnowledgeArticle(args = {}) {
 }
 
 async function toolFindDealers(args = {}) {
-  const users = await readTable("users")
+  const users = await readTableCached("users")
   let dealers = users.filter(u => u.role === "dealer" && u.is_active !== false && u.dealerSubdomain)
 
   if (args.city) dealers = dealers.filter(u => u.city?.toLowerCase() === String(args.city).toLowerCase())
