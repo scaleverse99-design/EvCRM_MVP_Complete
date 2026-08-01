@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import { readTableCached } from "../../../lib/store"
+import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../../../lib/cte/places"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
 
@@ -212,6 +213,17 @@ async function toolGetKnowledgeArticle(args = {}) {
   }
 }
 
+// Partner dealers first; real nearby dealerships as a clearly-labelled
+// fallback. EvCRM has 4 dealers today and none have adopted the subdomain
+// storefront, so the partner list is empty for essentially every city —
+// this tool answered "no dealers" while 994 seeded rows sat in `users`
+// (deleted 2026-08-01; they had @example.invalid addresses and were never
+// real businesses).
+//
+// The two lists are kept SEPARATE and the nearby ones carry onEvCRM:false
+// plus a disclaimer, because they are real third-party businesses that
+// never agreed to be listed here. An AI citing us must be able to tell the
+// user the truth: these exist nearby, they are not on EvCRM.
 async function toolFindDealers(args = {}) {
   const users = await readTableCached("users")
   let dealers = users.filter(u => u.role === "dealer" && u.is_active !== false && u.dealerSubdomain)
@@ -219,15 +231,27 @@ async function toolFindDealers(args = {}) {
   if (args.city) dealers = dealers.filter(u => u.city?.toLowerCase() === String(args.city).toLowerCase())
   if (args.category) dealers = dealers.filter(u => (u.dealerCategory || "EV") === args.category)
 
-  return {
-    totalMatches: dealers.length,
-    dealers: dealers.slice(resultOffset(args), resultOffset(args) + resultLimit(args)).map(u => ({
-      name: u.dealershipName,
-      url: `https://evcrm.in/${u.dealerSubdomain}`,
-      city: u.city || undefined,
-      category: u.dealerCategory || "EV",
-    })),
+  const partners = dealers.slice(resultOffset(args), resultOffset(args) + resultLimit(args)).map(u => ({
+    name: u.dealershipName,
+    url: `https://evcrm.in/${u.dealerSubdomain}`,
+    city: u.city || undefined,
+    category: u.dealerCategory || "EV",
+  }))
+
+  const result = { partnerDealers: partners, totalPartnerMatches: dealers.length }
+
+  // Only reach for Places when we have a city to search and nothing of our
+  // own to show — no point paying for a lookup we won't use.
+  if (args.city && partners.length === 0) {
+    const type = classifyDealerQuery(`${args.category || ""} ${args.query || ""}`)
+    const nearby = await findNearbyDealers(args.city, type)
+    if (nearby.length) {
+      result.nearbyDealers = nearby.map(nearbyDealerSummary)
+      result.note = "Nearby dealers found via Google Places. They are NOT EvCRM partners — listings are informational and not verified by EvCRM."
+    }
   }
+
+  return result
 }
 
 // ── CTE market data (products table) ───────────────────────────────────
@@ -402,12 +426,13 @@ const TOOLS = [
   },
   {
     name: "find_dealers",
-    description: "Verified EvCRM dealers with storefront pages, by city or category.",
+    description: "Vehicle dealers by city. Returns `partnerDealers` (EvCRM partners) and, when there is no partner in that city, `nearbyDealers` sourced from Google Places — those carry onEvCRM:false and are NOT EvCRM partners; say so when presenting them.",
     inputSchema: {
       type: "object",
       properties: {
-        city: { type: "string" },
+        city: { type: "string", description: "Required to find nearby dealers" },
         category: { type: "string", enum: ["EV", "ICE"] },
+        query: { type: "string", description: "Free text, e.g. 'used car', 'scooter showroom'" },
         ...PAGING_PROPS,
       },
     },
