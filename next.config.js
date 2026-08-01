@@ -8,7 +8,7 @@ const nextConfig = {
     return [
       // Legacy routes flagged in Google Search Console (301 Permanent Redirect to active features)
       { source: "/shortlisted", destination: "/mygarage", permanent: true },
-      { source: "/pricing", destination: "/buildprice", permanent: true },
+      { source: "/pricing", destination: "/showroom", permanent: true },
       { source: "/vehicles", destination: "/showroom", permanent: true },
 
       // 2026-07-31: near-duplicate news articles (same real-world event,
