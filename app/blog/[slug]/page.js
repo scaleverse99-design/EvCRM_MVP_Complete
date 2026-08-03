@@ -36,6 +36,7 @@ function citationLink(raw, key) {
 function cleanProse(str) {
   if (!str || typeof str !== "string") return ""
   return str
+    .replace(/##\s*/g, "")
     .replace(/\[([^\]]+)\]\((https?:\/\/(?!evcrm\.in)[^)\s]+)\)/gi, "")
     .replace(/\[\s*(?:HT Auto|CarDekho|CarWale|Autocar India|Team-BHP|Kia India|Tata Motors|Mahindra|Hyundai|Kia|FoneArena|MotorBeam|Overdrive|ZigWheels|RushLane|NDTV Auto|Moneycontrol|LiveMint|Economic Times|CNBC TV18|BS Motoring|India Today|ETAuto|Rediff|Greater Kashmir|Wikipedia)[^\]]*\]/gi, "")
     .replace(/(?:FoneArena\.com|CarDekho\.com|CarWale\.com|AutocarIndia\.com|Livemint\.com)[,\s]*/gi, "")
@@ -159,16 +160,45 @@ function ComparisonTable({ table }) {
 // a giant unprocessed <h2>. We split on blank lines first (to preserve
 // paragraph grouping), then break any heading line out of the block it leads.
 function parseBlocks(text) {
+  if (!text || typeof text !== "string") return []
+
+  // Step 1: Ensure any '## ' starts on a new double-newline block
+  let normalized = text.replace(/([^\n])\s*##\s+/g, "$1\n\n## ")
+
   const out = []
-  for (const chunk of (text || "").split(/\n{2,}/)) {
-    let buf = []
-    const flush = () => { const t = buf.join("\n").trim(); if (t) out.push({ type: "p", text: t }); buf = [] }
-    for (const line of chunk.split("\n")) {
-      if (line.trim().startsWith("## ")) { flush(); out.push({ type: "h2", text: line.trim().slice(3) }) }
-      else buf.push(line)
+  for (const chunk of normalized.split(/\n{2,}/)) {
+    const trimmed = chunk.trim()
+    if (!trimmed) continue
+
+    if (trimmed.startsWith("## ")) {
+      const content = trimmed.slice(3).trim()
+      let headingText = ""
+      let bodyText = ""
+
+      if (content.includes("? ")) {
+        const idx = content.indexOf("? ")
+        headingText = content.slice(0, idx + 1).trim()
+        bodyText = content.slice(idx + 2).trim()
+      } else {
+        // If heading and body text are on the same line, find split point
+        const match = content.match(/^(.+?\b(?:Months|Years|Days|Market|Growth|Guide|Price|Specs|Policy|India|Overview|Features|Details|Hub|Launch|Platform|Segment|Sale|Sales|Leaders|Ahead|Charge|Future|FY\d+))\s+([A-Z][a-z0-9'"].*)$/i)
+        if (match) {
+          headingText = match[1].trim()
+          bodyText = match[2].trim()
+        } else {
+          headingText = content
+        }
+      }
+
+      if (headingText) out.push({ type: "h2", text: headingText })
+      if (bodyText) out.push({ type: "p", text: bodyText })
+    } else {
+      // Regular paragraph block — strip any stray raw '##' characters
+      const cleanP = trimmed.replace(/##\s*/g, "").trim()
+      if (cleanP) out.push({ type: "p", text: cleanP })
     }
-    flush()
   }
+
   return out
 }
 
