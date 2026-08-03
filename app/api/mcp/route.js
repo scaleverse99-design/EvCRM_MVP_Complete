@@ -5,6 +5,7 @@ import { readTableCached } from "../../../lib/store"
 import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../../../lib/cte/places"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
+import { fetchPeopleAlsoAsk } from "../../../lib/orchestrator/intentEngine.js"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -369,6 +370,18 @@ const PAGING_PROPS = {
   offset: { type: "number", description: "Rows to skip" },
 }
 
+async function toolGetSearchIntent(args = {}) {
+  if (!args.query) return { error: "query is required" }
+  const intentData = await fetchPeopleAlsoAsk(args.query)
+  return {
+    query: args.query,
+    peopleAlsoAsk: intentData.peopleAlsoAsk,
+    searchIntentBreakdown: intentData.searchIntentBreakdown,
+    totalDiscovered: intentData.totalQueriesDiscovered,
+    source: "Google Autocomplete & Search Intent API (India)",
+  }
+}
+
 const TOOLS = [
   {
     name: "search_vehicles",
@@ -462,6 +475,16 @@ const TOOLS = [
       required: ["names"],
     },
     handler: toolCompareVehicles,
+  },
+  {
+    name: "get_search_intent",
+    description: "Fetch live Google Autocomplete search queries, People Also Ask (PAA) questions, and real user search intent phrasing for any Indian automobile, EV, charging, or dealer query.",
+    inputSchema: {
+      type: "object",
+      properties: { query: { type: "string", description: "Search query, model, or topic" } },
+      required: ["query"],
+    },
+    handler: toolGetSearchIntent,
   },
 ]
 
