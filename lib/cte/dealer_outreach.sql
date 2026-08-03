@@ -60,12 +60,19 @@ alter table dealer_outreach enable row level security;
 -- from the app would lose counts whenever two requests for the same city
 -- overlap, which is exactly what happens for the popular cities that matter
 -- most.
+-- Deliberately does NOT touch last_sourced_at. That column means "last
+-- actually fetched from Places" and the 14-day cache TTL is measured
+-- against it. An earlier version bumped it here, which meant every cache
+-- hit pushed the expiry forward — so a city nobody asked about refreshed
+-- on schedule while a city everyone asked about never refreshed at all,
+-- and its prices and phone numbers went stale forever. The busiest cities
+-- would have been the most out of date. Caught 2026-08-01 by watching the
+-- counter go 1 -> 4 across four live calls and checking what else moved.
 create or replace function bump_dealer_surfaced(ids text[])
 returns void
 language sql
 as $$
   update dealer_outreach
-     set times_surfaced = times_surfaced + 1,
-         last_sourced_at = now()
+     set times_surfaced = times_surfaced + 1
    where place_id = any(ids);
 $$;
