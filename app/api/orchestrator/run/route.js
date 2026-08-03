@@ -23,9 +23,9 @@ export async function POST(req) {
 
   let body = {}
   try { body = await req.json() } catch { /* optional */ }
-  const discoverN = Number(body.discover) || 10
-  const researchN = Number(body.research) || 5
-  const writeN    = Number(body.write)    || 3
+  const discoverN = Number(body.discover) || 20
+  const researchN = Number(body.research) || 10
+  const writeN    = Number(body.write)    || 6
 
   const startedAt = new Date().toISOString()
   const summary = { startedAt, stages: {} }

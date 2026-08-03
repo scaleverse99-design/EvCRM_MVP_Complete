@@ -19,15 +19,15 @@ on:
       discover:
         description: "How many topics to discover"
         required: false
-        default: "10"
+        default: "20"
       research:
         description: "How many topics to research"
         required: false
-        default: "5"
+        default: "10"
       write:
         description: "How many articles to write and publish"
         required: false
-        default: "3"
+        default: "5"
 
 jobs:
   run:
@@ -38,9 +38,9 @@ jobs:
         env:
           URL: ${{ secrets.ORCHESTRATOR_URL }}
           TOKEN: ${{ secrets.ORCHESTRATOR_TOKEN }}
-          DISCOVER: ${{ github.event.inputs.discover || '10' }}
-          RESEARCH: ${{ github.event.inputs.research || '5' }}
-          WRITE:    ${{ github.event.inputs.write    || '3' }}
+          DISCOVER: ${{ github.event.inputs.discover || '20' }}
+          RESEARCH: ${{ github.event.inputs.research || '10' }}
+          WRITE:    ${{ github.event.inputs.write    || '5' }}
         run: |
           if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
             echo "::error::ORCHESTRATOR_URL or ORCHESTRATOR_TOKEN not set in repo secrets"
