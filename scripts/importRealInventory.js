@@ -229,9 +229,9 @@ async function main() {
     console.log("No existing inventory table found, starting fresh.")
   }
 
-  // Filter out any older versions of our seeded JIT vehicles to prevent duplicates
+  // Filter out any older versions of our seeded JIT vehicles or simulated stocks to prevent duplicates and clean old cities
   const jitIds = HIGH_FIDELITY_VEHICLES.map(v => v.id)
-  let updatedList = currentInventory.filter(v => !jitIds.includes(v.id))
+  let updatedList = currentInventory.filter(v => !jitIds.includes(v.id) && !v.tags?.includes("SIMULATED_STOCK"))
 
   // Append new high-fidelity vehicles
   updatedList = [...updatedList, ...HIGH_FIDELITY_VEHICLES]
@@ -243,11 +243,7 @@ async function main() {
   const fuelTypes = ["Electric", "Petrol"]
   const cities = [
     { name: "Hyderabad", state: "Telangana" },
-    { name: "Bangalore", state: "Karnataka" },
-    { name: "Delhi", state: "Delhi" },
-    { name: "Mumbai", state: "Maharashtra" },
-    { name: "Chennai", state: "Tamil Nadu" },
-    { name: "Visakhapatnam", state: "Andhra Pradesh" }
+    { name: "Bangalore", state: "Karnataka" }
   ]
 
   for (let i = 1; i <= 1000; i++) {
