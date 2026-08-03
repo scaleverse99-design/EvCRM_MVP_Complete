@@ -46,3 +46,26 @@ create index if not exists dealer_outreach_status_idx
 -- Service-role only. This is a private sales list plus third-party business
 -- contact data; the public anon key must never be able to read it.
 alter table dealer_outreach enable row level security;
+
+-- Bump the demand counter for a set of dealers.
+--
+-- times_surfaced is the whole point of this table: it is what lets the
+-- outreach pitch be "47 people searched for used cars in your city through
+-- AI assistants last month" instead of "we have some traffic". The first
+-- version only incremented on a live Places fetch, which happens once per
+-- city per 14 days — so 500 people asking about Vijayawada moved the
+-- counter by 1, and the list ranked cities by how often the cache expired.
+--
+-- Done as an RPC so the increment is atomic in Postgres. A read-modify-write
+-- from the app would lose counts whenever two requests for the same city
+-- overlap, which is exactly what happens for the popular cities that matter
+-- most.
+create or replace function bump_dealer_surfaced(ids text[])
+returns void
+language sql
+as $$
+  update dealer_outreach
+     set times_surfaced = times_surfaced + 1,
+         last_sourced_at = now()
+   where place_id = any(ids);
+$$;
