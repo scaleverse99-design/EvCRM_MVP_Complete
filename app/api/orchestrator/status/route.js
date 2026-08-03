@@ -34,8 +34,26 @@ export async function GET(req) {
     error: t.error || null,
   }))
 
+  const blogPosts = await readTable("blog_posts").catch(() => [])
+  const inventory = await readTable("inventory").catch(() => [])
+
+  const nowMs = Date.now()
+  const twoHoursAgo = nowMs - (2 * 3600 * 1000)
+  const twentyFourHoursAgo = nowMs - (24 * 3600 * 1000)
+
+  const topicsSourcedLast2h = topics.filter(t => new Date(t.discoveredAt || 0).getTime() >= twoHoursAgo).length
+  const topicsSourcedLast24h = topics.filter(t => new Date(t.discoveredAt || 0).getTime() >= twentyFourHoursAgo).length
+
   return Response.json({
     success: true,
+    sourcingCadence: "Every 2 Hours (12 runs/day)",
+    sourcingMetrics: {
+      topicsSourcedLast2Hours: topicsSourcedLast2h,
+      topicsSourcedLast24Hours: topicsSourcedLast24h,
+      totalTopicsDiscovered: topics.length,
+      totalArticlesPublished: blogPosts.length,
+      totalVehiclesSourced: inventory.length
+    },
     counts,
     total: topics.length,
     recent,

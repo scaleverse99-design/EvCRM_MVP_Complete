@@ -12,10 +12,8 @@ name: News orchestrator cron
 
 on:
   schedule:
-    # IST times: 8:00 AM, 2:00 PM, 8:00 PM (UTC-5:30)
-    - cron: "30 2 * * *"
-    - cron: "30 8 * * *"
-    - cron: "30 14 * * *"
+    # Runs every 2 hours (12 times per day)
+    - cron: "0 */2 * * *"
   workflow_dispatch:
     inputs:
       discover:
