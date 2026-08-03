@@ -1,10 +1,4 @@
-"use client"
-import { useParams } from "next/navigation"
-import Link from "next/link"
-import TopBar from "../../../components/home/TopBar"
-import Footer from "../../../components/home/Footer"
-import { C, fmt } from "../../../lib/constants"
-import { POPULAR_MODELS, TOP_CITIES, calculateOnRoadPrice, getCityPricePairs } from "../../../lib/masterCatalog"
+import { generateVehicleSchemaLD } from "../../../lib/dripPublisher.js"
 
 export default function CityPricePage() {
   const params = useParams()
@@ -13,7 +7,6 @@ export default function CityPricePage() {
   const cityPairs = getCityPricePairs()
   let currentPair = cityPairs.find(p => p.slug === slug)
 
-  // Fallback parser if slug didn't hit exact match (e.g. tata-nexon-ev-price-in-hyderabad)
   if (!currentPair && slug.includes("-price-in-")) {
     const [modelId, citySlug] = slug.split("-price-in-")
     const model = POPULAR_MODELS.find(m => m.id === modelId || m.id.includes(modelId))
@@ -33,9 +26,14 @@ export default function CityPricePage() {
 
   const { model, city } = currentPair
   const price = calculateOnRoadPrice(model, city)
+  const schemaData = generateVehicleSchemaLD(model, city, price)
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <TopBar />
 
       <main style={{ maxWidth: 960, margin: "0 auto", padding: "32px 16px 60px" }}>

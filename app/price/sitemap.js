@@ -1,17 +1,15 @@
-import { getCityPricePairs } from "../../lib/masterCatalog"
+import { getActiveDripUrls } from "../../lib/dripPublisher.js"
 
 // ── /price/sitemap.xml ─────────────────────────────────────────────
-// Dynamic sitemap for all model-x-city programmatic on-road price pages.
+// Dynamic sitemap dripping 2,000 Google-approved articles daily.
 export const dynamic = "force-dynamic"
 
 export default function sitemap() {
-  const baseUrl = "https://evcrm.in"
   const now = new Date().toISOString()
+  const activeUrls = getActiveDripUrls()
 
-  const pairs = getCityPricePairs()
-
-  return pairs.map(p => ({
-    url: `${baseUrl}/price/${p.slug}`,
+  return activeUrls.map(url => ({
+    url,
     lastModified: now,
     changeFrequency: "weekly",
     priority: 0.8,
