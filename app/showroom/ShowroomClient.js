@@ -811,22 +811,41 @@ function ProductDetail({ v, vehicles = [], onBack, onView, onBook }) {
 
             {/* CTA Buttons */}
             <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <button className="sd-book-btn" onClick={() => setBookingMode("testdrive")}>
-                🗓 Book free test drive
-              </button>
-              <button className="sd-reserve-btn" onClick={() => setBookingMode("reserve")}>
-                ⚡ Reserve Vehicle (₹1,000)
-              </button>
+              {v.redirectUrl ? (
+                <>
+                  <a href={v.redirectUrl} target="_blank" rel="noopener noreferrer" className="sd-book-btn" style={{ textDecoration: "none", textAlign: "center", display: "block" }}>
+                    🗓 Book free test drive (Aggregator) ➔
+                  </a>
+                  <a href={v.redirectUrl} target="_blank" rel="noopener noreferrer" className="sd-reserve-btn" style={{ textDecoration: "none", textAlign: "center", display: "block" }}>
+                    ⚡ Reserve Vehicle (Aggregator) ➔
+                  </a>
+                </>
+              ) : (
+                <>
+                  <button className="sd-book-btn" onClick={() => setBookingMode("testdrive")}>
+                    🗓 Book free test drive
+                  </button>
+                  <button className="sd-reserve-btn" onClick={() => setBookingMode("reserve")}>
+                    ⚡ Reserve Vehicle (₹1,000)
+                  </button>
+                </>
+              )}
               {v.condition !== "new" && (
-                <button onClick={() => setShowInspection(true)}
+                <button onClick={() => {
+                  if (v.redirectUrl) {
+                    window.open(v.redirectUrl, "_blank")
+                  } else {
+                    setShowInspection(true)
+                  }
+                }}
                   style={{ width: "100%", background: "#EFF6FF", color: "#2563EB", border: "1.5px solid #BFDBFE", borderRadius: 14, padding: "14px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s" }}>
-                  🔍 Book Mechanic Inspection
+                  🔍 {v.redirectUrl ? "View Inspection Report (Aggregator) ➔" : "Book Mechanic Inspection"}
                 </button>
               )}
               <p style={{ textAlign: "center", fontSize: 10, color: "#9CA3AF", margin: "4px 0 0", lineHeight: 1.5 }}>
                 {v.condition !== "new"
-                  ? "Bring your own mechanic to inspect before you buy"
-                  : "Token of ₹1,000 is fully adjustable against the final purchase price"}
+                  ? "Verify vehicle details directly with the verified partner aggregator"
+                  : "Token adjustments and bookings are completed securely on the partner site"}
               </p>
             </div>
           </div>
