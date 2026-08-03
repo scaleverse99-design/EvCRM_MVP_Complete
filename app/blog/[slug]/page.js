@@ -5,6 +5,7 @@ import Link from "next/link"
 import { C, fmt } from "../../../lib/constants"
 import TopBar from "../../../components/home/TopBar"
 import Footer from "../../../components/home/Footer"
+import SmartBuyWidget from "../../../components/marketplace/SmartBuyWidget"
 
 // Inline markdown renderer for article paragraphs. Handles three things the
 // orchestrator's news writer actually emits, in one pass so they compose:
@@ -318,6 +319,7 @@ export default function BlogPostPage() {
   const { slug } = useParams()
   const [post, setPost] = useState(null)
   const [vehicles, setVehicles] = useState([])
+  const [purchaseOptions, setPurchaseOptions] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -325,7 +327,11 @@ export default function BlogPostPage() {
     if (!slug) return
     fetch(`/api/blog/${slug}`)
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => { setPost(d.post); setVehicles(d.matchedVehicles || []) })
+      .then(d => { 
+        setPost(d.post); 
+        setVehicles(d.matchedVehicles || []);
+        setPurchaseOptions(d.purchaseOptions || null);
+      })
       .catch(() => setError("Article not found"))
       .finally(() => setLoading(false))
   }, [slug])
@@ -402,6 +408,12 @@ export default function BlogPostPage() {
         <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: "28px 28px 12px" }}>
           <ArticleBody text={post.body} pullQuote={post.pullQuote} comparisonTable={post.comparisonTable} midImage={midImage} />
         </div>
+
+        <SmartBuyWidget 
+          brand={post.tags?.[0] || "Tata"} 
+          model={post.tags?.[1] || "Nexon EV"} 
+          purchaseOptions={purchaseOptions} 
+        />
       </article>
 
       {/* Specifications & available variants — the conversion block, powered

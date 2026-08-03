@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
-import { readTable } from "../../../../lib/store"
+import { readTable } from "../../../../lib/store.js"
+import { resolveVehiclePurchaseOptions } from "../../../../lib/affiliateRouter.js"
 
 // Public GET — one published post by slug (model hub page), plus all linked
 // vehicles sorted by distance to customer location (if lat/lng provided).
@@ -49,6 +50,10 @@ export async function GET(req, { params }) {
     return (a.exShowroom || 0) - (b.exShowroom || 0)
   })
 
+  const brandName = post.tags?.[0] || post.title.split(" ")[0] || "Tata"
+  const modelName = post.tags?.[1] || post.title.split(" ")[1] || "Nexon EV"
+  const purchaseOptions = await resolveVehiclePurchaseOptions(brandName, modelName)
+
   return Response.json({
     success: true,
     post: {
@@ -61,13 +66,12 @@ export async function GET(req, { params }) {
       authorName: post.authorName,
       publishedAt: post.publishedAt || post.createdAt,
       modelKey: post.modelKey,
-      // Visual-layout fields the orchestrator's news writer emits — without
-      // these the news article renders as a plain wall of paragraphs.
       keyTakeaways: post.keyTakeaways || [],
       pullQuote: post.pullQuote || "",
       comparisonTable: post.comparisonTable || null,
       images: Array.isArray(post.images) ? post.images : [],
     },
-    matchedVehicles: vehicles.slice(0, 50), // cap at 50 vehicles per article
+    matchedVehicles: vehicles.slice(0, 50),
+    purchaseOptions
   })
 }
