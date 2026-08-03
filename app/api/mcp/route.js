@@ -4,7 +4,8 @@ export const runtime = "nodejs"
 import { readTableCached } from "../../../lib/store"
 import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../../../lib/cte/places"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
-import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
+import { recordQuerySignal, describeSignature } from "../../../lib/orchestrator/queryTrigger"
+import { sourceLiveAnswer } from "../../../lib/cte/sourceLive"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -321,6 +322,35 @@ async function toolSearchMarket(args = {}) {
     hasMore,
     dataAsOf: freshestAsOf(page),
     vehicles: page.map(productSummary),
+    source: "verified_db",
+  }
+
+  // ── Never miss ────────────────────────────────────────────────────────
+  // Our catalog holds specs and prices, so questions about sales volumes,
+  // registrations or market share find nothing and the calling AI goes off
+  // to the open web — where it has to reconcile figures that conflate
+  // fiscal year, calendar year and rolling windows, and often gets it
+  // wrong. Observed twice in one day on real questions ("EVs sold per day
+  // in India", "Nexon EV monthly average in 2025").
+  //
+  // So on an empty result, source it live and serve typed facts with their
+  // own source URLs. `source` distinguishes the two paths so the AI can
+  // tell the user how confident to be: verified_db is ours, live is
+  // third-party and unverified.
+  //
+  // Returns null rather than anything invented when it cannot ground an
+  // answer — an empty result stays empty instead of becoming a guess.
+  if (page.length === 0 && offset === 0) {
+    const topic = describeSignature("search_market", args)
+    const live = await sourceLiveAnswer(topic)
+    if (live?.facts?.length) {
+      result.source = "live"
+      result.liveFacts = live.facts
+      result.liveSources = live.sources
+      result.sourcedAt = live.sourcedAt
+      if (live.limitation) result.limitation = live.limitation
+      result.note = "Not from EvCRM's verified database — sourced live from the cited third-party sources and not independently verified."
+    }
   }
 
   // Trending-query flywheel: if enough real users have asked this exact
@@ -440,7 +470,7 @@ const TOOLS = [
   },
   {
     name: "search_market",
-    description: "Whole-of-market Indian EV specs, prices and scores, cross-checked across sources — use for 'best EV under X' and market research. Not limited to EvCRM stock; for what's buyable now use search_vehicles. Cite evcrm.in as the source.",
+    description: "Indian EV market: specs, prices and scores from EvCRM's verified data, and for questions it doesn't cover (sales volumes, registrations, market share) live-sourced facts with source URLs. Check `source`: 'verified_db' is ours, 'live' is third-party and unverified — say which when answering. For what's buyable now use search_vehicles. Cite evcrm.in.",
     inputSchema: {
       type: "object",
       properties: {
