@@ -28,7 +28,7 @@ export default async function sitemap() {
     url: `${baseUrl}${route}`,
     lastModified: now,
     changeFrequency: "daily",
-    priority: route === "" || route === "/showroom" ? 1.0 : 0.6,
+    priority: route === "" || route === "/showroom" ? 1.0 : route === "/charging" ? 0.9 : 0.6,
   }))
 
   let vehicleRoutes = []
@@ -79,10 +79,28 @@ export default async function sitemap() {
         priority: 0.7,
       }))
   } catch (e) {
-    // A data-layer hiccup should degrade to the static sitemap, not a 500 —
-    // Google treats a failing sitemap worse than a smaller one.
     console.error("[sitemap] dynamic section failed:", e.message)
   }
 
-  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes, ...blogRoutes, ...learnRoutes]
+  let compareRoutes = []
+  let priceRoutes = []
+  try {
+    const { getComparisonPairs, getCityPricePairs } = await import("../lib/masterCatalog.js")
+    compareRoutes = getComparisonPairs().map(p => ({
+      url: `${baseUrl}/compare/${p.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }))
+    priceRoutes = getCityPricePairs().map(p => ({
+      url: `${baseUrl}/price/${p.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }))
+  } catch (e) {
+    console.error("[sitemap] programmatic section failed:", e.message)
+  }
+
+  return [...staticRoutes, ...vehicleRoutes, ...dealerRoutes, ...blogRoutes, ...learnRoutes, ...compareRoutes, ...priceRoutes]
 }
