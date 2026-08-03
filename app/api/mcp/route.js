@@ -5,7 +5,6 @@ import { readTableCached } from "../../../lib/store"
 import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../../../lib/cte/places"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal } from "../../../lib/orchestrator/queryTrigger"
-import { fetchPeopleAlsoAsk } from "../../../lib/orchestrator/intentEngine.js"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -370,18 +369,6 @@ const PAGING_PROPS = {
   offset: { type: "number", description: "Rows to skip" },
 }
 
-async function toolGetSearchIntent(args = {}) {
-  if (!args.query) return { error: "query is required" }
-  const intentData = await fetchPeopleAlsoAsk(args.query)
-  return {
-    query: args.query,
-    peopleAlsoAsk: intentData.peopleAlsoAsk,
-    searchIntentBreakdown: intentData.searchIntentBreakdown,
-    totalDiscovered: intentData.totalQueriesDiscovered,
-    source: "Google Autocomplete & Search Intent API (India)",
-  }
-}
-
 const TOOLS = [
   {
     name: "search_vehicles",
@@ -476,16 +463,27 @@ const TOOLS = [
     },
     handler: toolCompareVehicles,
   },
-  {
-    name: "get_search_intent",
-    description: "Fetch live Google Autocomplete search queries, People Also Ask (PAA) questions, and real user search intent phrasing for any Indian automobile, EV, charging, or dealer query.",
-    inputSchema: {
-      type: "object",
-      properties: { query: { type: "string", description: "Search query, model, or topic" } },
-      required: ["query"],
-    },
-    handler: toolGetSearchIntent,
-  },
+  // get_search_intent was exposed here and has been withdrawn (2026-08-03).
+  // It fetched Google Autocomplete phrasings — genuinely valuable data, but
+  // this is the wrong place for it, for two reasons:
+  //
+  //   1. It gave the keyword research away. Those phrasings are the raw
+  //      material for articles that rank; publishing them to anyone who
+  //      calls the server hands a competitor the same list for free, and
+  //      returns nothing to us — it reads no EvCRM data and cites nothing.
+  //   2. Amplification. fetchIntentQuestionTree() expands one query across
+  //      22 modifiers, each its own request to suggestqueries.google.com
+  //      (417 suggestions came back for "Tata Nexon EV"). This endpoint is
+  //      public and unauthenticated, so that is a 22x lever a stranger can
+  //      pull to get our Cloud Run IPs rate-limited or blocked — losing us
+  //      the data source entirely.
+  //
+  // The engine is kept and now runs internally, where it earns its keep:
+  // lib/orchestrator/queryTrigger.js builds each auto-published article
+  // around the real phrasings people search rather than a guessed topic.
+  //
+  // If it is ever re-exposed it needs a cache and a daily cap first — the
+  // pattern proven in lib/cte/places.js.
 ]
 
 const CORS_HEADERS = {
