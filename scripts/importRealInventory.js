@@ -41,7 +41,7 @@ const HIGH_FIDELITY_VEHICLES = [
       approvedAt: "2026-08-01T10:00:00Z"
     },
     // The Buy redirection link
-    redirectUrl: "https://www.cars24.com/buy-used-maruti-wagon-r-1.0-2015-cars-hyderabad-100293847/",
+    redirectUrl: "https://www.spinny.com/used-cars-in-hyderabad/maruti-suzuki/wagon-r/",
     transmission: "Automatic",
     engineDetails: "998 cc, 3 Cylinders, 67 bhp",
     seatingCapacity: "5",
@@ -88,7 +88,7 @@ const HIGH_FIDELITY_VEHICLES = [
       approvalStatus: "APPROVED",
       approvedAt: "2026-08-01T10:00:00Z"
     },
-    redirectUrl: "https://www.spinny.com/buy-used-cars/bangalore/tata/nexon-ev-max/xz-plus-lux-2022/",
+    redirectUrl: "https://www.spinny.com/used-cars-in-bangalore/tata/nexon-ev/",
     createdAt: "2026-08-01T12:00:00Z",
     updatedAt: "2026-08-01T12:00:00Z"
   },
@@ -130,7 +130,7 @@ const HIGH_FIDELITY_VEHICLES = [
       approvalStatus: "APPROVED",
       approvedAt: "2026-08-01T10:00:00Z"
     },
-    redirectUrl: "https://www.carwale.com/used/mg-comet-ev-cars-in-delhi-ncr/",
+    redirectUrl: "https://www.carwale.com/mg-cars/comet-ev/",
     createdAt: "2026-08-01T12:00:00Z",
     updatedAt: "2026-08-01T12:00:00Z"
   },
@@ -172,7 +172,7 @@ const HIGH_FIDELITY_VEHICLES = [
       approvalStatus: "APPROVED",
       approvedAt: "2026-08-01T10:00:00Z"
     },
-    redirectUrl: "https://www.cars24.com/buy-used-hyundai-ioniq-5-mumbai/",
+    redirectUrl: "https://www.cars24.com/buy-used-hyundai-cars-mumbai/",
     createdAt: "2026-08-01T12:00:00Z",
     updatedAt: "2026-08-01T12:00:00Z"
   },
@@ -214,7 +214,7 @@ const HIGH_FIDELITY_VEHICLES = [
       approvalStatus: "APPROVED",
       approvedAt: "2026-08-01T10:00:00Z"
     },
-    redirectUrl: "https://www.spinny.com/buy-used-cars/chennai/mahindra/xuv400/",
+    redirectUrl: "https://www.spinny.com/used-cars-in-chennai/mahindra/xuv400/",
     createdAt: "2026-08-01T12:00:00Z",
     updatedAt: "2026-08-01T12:00:00Z"
   }

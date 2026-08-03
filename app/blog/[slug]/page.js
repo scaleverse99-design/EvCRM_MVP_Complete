@@ -155,11 +155,7 @@ function ComparisonTable({ table }) {
 
 // Splits body text into typed blocks. Critically, a '## ' heading is peeled
 // onto its OWN block even when the writer put it on the line directly above
-// the paragraph (a single '\n', not a blank line) — the Gemini writer does
-// exactly that, and the old "split on blank lines only" logic swallowed the
-// entire section (heading + body + citations) into one block that rendered as
-// a giant unprocessed <h2>. We split on blank lines first (to preserve
-// paragraph grouping), then break any heading line out of the block it leads.
+// the paragraph. Detects if a paragraph contains key-value list structures or on-road breakdown text.
 function parseBlocks(text) {
   if (!text || typeof text !== "string") return []
 
@@ -181,7 +177,6 @@ function parseBlocks(text) {
         headingText = content.slice(0, idx + 1).trim()
         bodyText = content.slice(idx + 2).trim()
       } else {
-        // If heading and body text are on the same line, find split point
         const match = content.match(/^(.+?\b(?:Months|Years|Days|Market|Growth|Guide|Price|Specs|Policy|India|Overview|Features|Details|Hub|Launch|Platform|Segment|Sale|Sales|Leaders|Ahead|Charge|Future|FY\d+))\s+([A-Z][a-z0-9'"].*)$/i)
         if (match) {
           headingText = match[1].trim()
@@ -194,20 +189,75 @@ function parseBlocks(text) {
       if (headingText) out.push({ type: "h2", text: headingText })
       if (bodyText) out.push({ type: "p", text: bodyText })
     } else {
-      // Regular paragraph block — strip any stray raw '##' characters
       const cleanP = trimmed.replace(/##\s*/g, "").trim()
-      if (cleanP) out.push({ type: "p", text: cleanP })
+      if (cleanP) {
+        // Detect if it is a price list or bullet block
+        if (cleanP.includes("Ex-Showroom Price:") || cleanP.includes("RTO Road Tax:") || cleanP.includes("Net On-Road Price:")) {
+          out.push({ type: "price_breakdown", text: cleanP })
+        } else if (cleanP.includes(" - ") || cleanP.includes("\n-") || cleanP.includes("\n•")) {
+          out.push({ type: "bullet_list", text: cleanP })
+        } else {
+          out.push({ type: "p", text: cleanP })
+        }
+      }
     }
   }
 
   return out
 }
 
-// Renders the article body. The pull quote and comparison table are woven in
-// AT SECTION BOUNDARIES rather than stacked at the top, so the visuals break
-// up the middle of the article. The comparison table slots in right before a
-// "comparison / vs" heading when the article has one; otherwise the visuals
-// fall back to evenly-spaced section breaks.
+// Render dynamic on-road price tables for the user
+function PriceBreakdownCard({ text }) {
+  // Extract key-values e.g. "Ex-Showroom Price: ₹14.49L" or "- Ex-Showroom Price: ₹14.49L"
+  const lines = text.split(/[-–•\n]+/).map(x => x.trim()).filter(Boolean)
+  const parsed = []
+  
+  lines.forEach(line => {
+    const parts = line.split(":")
+    if (parts.length >= 2) {
+      const label = parts[0].trim()
+      const val = parts.slice(1).join(":").trim()
+      parsed.push({ label, val })
+    }
+  })
+
+  if (parsed.length === 0) {
+    return <p style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{renderInline(text)}</p>
+  }
+
+  return (
+    <div style={{ background: "#F8FAFC", border: `1.5px solid ${C.border}`, borderRadius: 16, padding: "20px 24px", margin: "20px 0 24px" }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12 }}>⚡ Localized Cost Breakdown</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {parsed.map((item, idx) => {
+          const isTotal = item.label.toLowerCase().includes("total") || item.label.toLowerCase().includes("net on-road")
+          return (
+            <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: isTotal ? "none" : `1px dashed ${C.border}`, paddingBottom: isTotal ? 0 : 8, paddingTop: isTotal ? 6 : 0, marginTop: isTotal ? 6 : 0 }}>
+              <span style={{ fontSize: isTotal ? 14 : 13, fontWeight: isTotal ? 800 : 600, color: isTotal ? C.ink : C.ink2 }}>{item.label}</span>
+              <span style={{ fontSize: isTotal ? 18 : 14, fontWeight: 900, color: isTotal ? C.green : C.ink }}>{item.val}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// Render clean bullet list grids
+function BulletListGrid({ text }) {
+  const items = text.split(/[-–•\n]+/).map(x => x.trim()).filter(x => x.length > 2)
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, margin: "16px 0 24px" }}>
+      {items.map((item, idx) => (
+        <div key={idx} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "#FAFBFD", borderRadius: 12, padding: "12px 14px", border: `1px solid ${C.border}` }}>
+          <span style={{ fontSize: 14, color: C.green, marginTop: 1 }}>⚡</span>
+          <span style={{ fontSize: 13.5, color: C.ink2, lineHeight: 1.6 }}>{renderInline(item)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function ArticleBody({ text, pullQuote, comparisonTable, midImage }) {
   const blocks = parseBlocks(text)
   const headingIdx = blocks.map((b, i) => (b.type === "h2" ? i : -1)).filter(i => i >= 0)
@@ -215,8 +265,6 @@ function ArticleBody({ text, pullQuote, comparisonTable, midImage }) {
     ? headingIdx[Math.min(headingIdx.length - 1, Math.max(1, Math.round(headingIdx.length * frac)))]
     : -1
 
-  // Space the three visuals across the body so none collide: photo ~1/4 in,
-  // pull quote ~1/2 in, table before a comparison heading (else ~3/4 in).
   const imageAt = midImage?.url ? at(1 / 4) : -1
   let quoteAt = pullQuote ? at(1 / 2) : -1
   const cmpHeading = comparisonTable?.rows?.length
@@ -225,7 +273,6 @@ function ArticleBody({ text, pullQuote, comparisonTable, midImage }) {
   let tableAt = comparisonTable?.rows?.length
     ? (cmpHeading !== undefined ? cmpHeading : at(3 / 4))
     : -1
-  // Nudge collisions apart so two blocks never anchor to the same heading.
   if (quoteAt !== -1 && quoteAt === imageAt) quoteAt = at(1 / 2 + 0.15)
   if (tableAt !== -1 && (tableAt === imageAt || tableAt === quoteAt)) tableAt = at(3 / 4 + 0.1)
 
@@ -236,12 +283,19 @@ function ArticleBody({ text, pullQuote, comparisonTable, midImage }) {
         if (i === imageAt) injected.push(<ArticleImage key={`img-${i}`} image={midImage} />)
         if (i === quoteAt) injected.push(<PullQuote key={`pq-${i}`} text={pullQuote} />)
         if (i === tableAt) injected.push(<ComparisonTable key={`ct-${i}`} table={comparisonTable} />)
-        const node = block.type === "h2"
-          ? <h2 key={i} style={{ fontSize: 20, fontWeight: 800, color: C.ink, margin: "28px 0 10px" }}>{renderInline(block.text)}</h2>
-          : <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{renderInline(block.text)}</p>
+
+        let node = null
+        if (block.type === "h2") {
+          node = <h2 key={i} style={{ fontSize: 20, fontWeight: 800, color: C.ink, margin: "28px 0 10px" }}>{renderInline(block.text)}</h2>
+        } else if (block.type === "price_breakdown") {
+          node = <PriceBreakdownCard key={i} text={block.text} />
+        } else if (block.type === "bullet_list") {
+          node = <BulletListGrid key={i} text={block.text} />
+        } else {
+          node = <p key={i} style={{ fontSize: 15, lineHeight: 1.75, color: C.ink2, margin: "0 0 16px" }}>{renderInline(block.text)}</p>
+        }
         return <span key={`w-${i}`} style={{ display: "contents" }}>{injected}{node}</span>
       })}
-      {/* If the article had no headings to anchor to, still show the visuals. */}
       {imageAt === -1 && midImage?.url ? <ArticleImage image={midImage} /> : null}
       {quoteAt === -1 && pullQuote && <PullQuote text={pullQuote} />}
       {tableAt === -1 && comparisonTable?.rows?.length ? <ComparisonTable table={comparisonTable} /> : null}
