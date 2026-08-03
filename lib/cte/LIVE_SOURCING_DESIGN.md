@@ -106,3 +106,66 @@ Known factors that shrink the win, so the number may disappoint:
 The claim that does **not** depend on any of this: coverage. `find_dealers`
 returned six real Vijayawada dealerships with phone numbers in ~658 tokens.
 No web page contains that list. Lead with coverage, not cost.
+
+---
+
+## Source research, 2026-08-04 — checked, not assumed
+
+The plan was to replace the LLM extraction with deterministic per-source
+parsers: free, no quota, same input → same output, and no surface on which
+a number can be invented. Right idea. But the sources have to exist first,
+so each was probed directly rather than assumed.
+
+### data.gov.in — DEAD for this purpose
+
+The API works (public sample key, `/lists`, 237,327 resources). The vehicle
+data does not. Scanned 1,000 resources; all 25 vehicle-related ones are
+historical statistical-yearbook extracts:
+
+  Total Registered Motor Vehicles in India 1951-2013   portal-updated 2018-11-29
+  Newly Registered Motor Vehicles 2011-12              portal-updated 2018-11-29
+  Category-wise Registered Motor Vehicles ... 2015     portal-updated 2018-11-29
+  Road Accidents / Registered Vehicles ... to 2017     portal-updated 2019-08-20
+
+Latest data year 2017, portal last touched 2019. Nothing monthly, nothing
+EV-specific, nothing after 2017. Useless for "EV sales in June 2026".
+
+Caveat: 1,000 of 237,327 scanned, so not exhaustive — but the pattern is
+consistent and every hit is the same vintage. Do not build an ingester here
+without re-checking first.
+
+### FADA — blocked
+
+https://www.fada.in/ returns **HTTP 406** to our requests. Bot protection.
+Their monthly retail releases are the cleanest tabulated retail data in the
+market, but they are not fetchable from a server without an arrangement.
+
+### SIAM — accessible
+
+https://www.siam.in/statistics.aspx returns **200, ~90KB HTML**. Currently
+the only structured industry source we can actually reach. Note SIAM
+publishes DISPATCHES (factory → dealer), not retail registrations — the two
+differ by thousands of units monthly and conflating them is the single most
+common error in this data.
+
+### Where that leaves it
+
+No deterministic source is validated well enough to build against yet. The
+honest order of work:
+
+1. Inspect the SIAM statistics page structure and decide if it is stably
+   parseable, or if it is JS-rendered/session-bound.
+2. OEM press-release pages (Tata, Mahindra, Ather, Ola, TVS, Bajaj) — each
+   publishes its own monthly numbers, unambiguous provenance, and no bot
+   protection encountered so far. Most promising, needs per-OEM parsers.
+3. EVreporter / Autopunditz — already tabulate VAHAN monthly. Aggregators,
+   so attribution matters, but reachable.
+
+### Why the LLM path was NOT ripped out yet
+
+Deleting working code before its replacement is validated would leave live
+sourcing with nothing at all. The Gemini path fails closed (returns null,
+invents nothing, logs the real reason) and costs nothing when unused, so it
+stays as the fallback until a parser proves itself. Once a source-specific
+parser handles a question, it should take precedence — deterministic first,
+model only as backstop.
