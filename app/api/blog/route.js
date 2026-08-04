@@ -6,10 +6,21 @@ import { ensureDailyNewsRefresh, shouldTriggerDailyRefresh } from "@/lib/orchest
 // Public GET — published posts only, newest first, no bodies (list view).
 export async function GET() {
   const all = await readTable("blog_posts")
-  const published = all
-    .filter(p => p.status === "published" && p.type !== "knowledge")
-    .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
-    .map(({ body, ...rest }) => rest)
+  // Deduplicate by slug to ensure zero duplicate cards appear
+  const seenSlugs = new Set()
+  const published = []
+
+  for (const p of all) {
+    if (p.type === "knowledge") continue
+    if (p.status && p.status !== "published") continue
+    const key = (p.slug || "").toLowerCase().trim()
+    if (!key || seenSlugs.has(key)) continue
+    seenSlugs.add(key)
+    const { body, ...rest } = p
+    published.push(rest)
+  }
+
+  published.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
 
   // Fire-and-forget background news refresh if stale (> 6 hours old).
   // Ensures the blog auto-updates even if Cloud Scheduler is paused.
