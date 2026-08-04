@@ -343,6 +343,47 @@ alter table article_vehicles enable row level security;
 
 ## 8. Known Issues & Open Bugs (⚠️ START HERE)
 
+### 🔵 2026-08-04 — PAUSED pending Google Cloud startup credits (decision expected ~2026-08-09)
+
+Founder has applied for Google for Startups Cloud credits. Infrastructure
+decisions are deliberately on hold until the outcome is known. Budget is
+severely constrained (paid ₹144 for GCP; ceiling is ~₹200/month until
+~₹10K revenue). Do not start migrations or anything that adds recurring
+cost during this window.
+
+**Costing money right now, unrelated to the credits decision:**
+- Artifact Registry holds **12.7 GB of container images** (gcf-artifacts
+  10.6 GB, gcr.io 1.9 GB) — 28 images, of which exactly ONE is in use
+  (tag `:version_1`, what Cloud Run serves). ≈₹105/month of the ₹144 bill.
+  Every deploy adds ~380 MB. Cleanup was offered and deferred by the
+  founder until after the credits decision.
+- Durable fix when resumed: delete all but the in-use image plus 2 for
+  rollback, then set an Artifact Registry cleanup policy (keep 3 most
+  recent). Also lower Cloud Run `maxScale` 20 → 5 as a spend guardrail.
+  `minScale` is already unset (scales to zero) — correct, leave it.
+
+**Decided, so nobody relitigates it:**
+- Do NOT migrate off Supabase (Azure Postgres or Cloud SQL). `lib/store.js`,
+  the RLS policies and the RPCs are all `supabase-js`; a data-layer rewrite
+  is the highest-risk change available for ~$25/month, and Supabase free
+  (500 MB) projects to ~280 MB at 1,000 dealers. The only real reason to pay
+  is that free-tier projects pause after a week idle.
+- If Google credits land: no migration at all. Move Gemini to Vertex on the
+  billed project — that alone removes the AI Studio free-tier cliff of 20
+  requests/day per key, which is what blocked live sourcing on 2026-08-03.
+- If they don't: use Azure credits narrowly (Document Intelligence for
+  FADA/SIAM PDF tables, Azure OpenAI for non-search paths). Not for hosting
+  or the database.
+
+**Egress is architecture, not vendor.** Target is 1 lakh visits/day.
+`readTable()` fetches WHOLE tables; at 10K articles that is ~34 MB per cache
+miss, ≈490 GB/day, which blows any free tier regardless of provider.
+Fix before driving traffic: (1) filter push-down into Postgres for
+search_blog_articles / search_vehicles / find_dealers — search_market
+already does this correctly, (2) static generation/ISR for article pages so
+a page view costs zero queries, (3) Cloudflare cache rules on HTML.
+
+
 0. **🟢 2026-08-01 — MCP token cost cut 67% (measured); intent capture finally live; multi-day connector test starting.**
    - **The problem, measured before touching anything:** a live `search_market` response was **14,404 bytes (~3,580 tokens)**, and `tools/list` adds **~970 tokens to every request**. At ~4,550 tokens for one market query, the MCP server was no cheaper than the web search it exists to replace. The "97.1% token savings" figure in circulation was never measured (see the fabricated-benchmark note in §8) — do not quote it.
    - **Fixed in `app/api/mcp/route.js` (commit `092fb35`), largest saving first:**
