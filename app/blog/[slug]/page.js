@@ -38,6 +38,7 @@ function cleanProse(str) {
   if (!str || typeof str !== "string") return ""
   return str
     .replace(/##\s*/g, "")
+    .replace(/\*{3,}/g, "")
     .replace(/\[([^\]]+)\]\((https?:\/\/(?!evcrm\.in)[^)\s]+)\)/gi, "")
     .replace(/\[\s*(?:HT Auto|CarDekho|CarWale|Autocar India|Team-BHP|Kia India|Tata Motors|Mahindra|Hyundai|Kia|FoneArena|MotorBeam|Overdrive|ZigWheels|RushLane|NDTV Auto|Moneycontrol|LiveMint|Economic Times|CNBC TV18|BS Motoring|India Today|ETAuto|Rediff|Greater Kashmir|Wikipedia)[^\]]*\]/gi, "")
     .replace(/(?:FoneArena\.com|CarDekho\.com|CarWale\.com|AutocarIndia\.com|Livemint\.com)[,\s]*/gi, "")
@@ -58,8 +59,13 @@ function renderInline(rawText) {
   while ((m = INLINE.exec(text)) !== null) {
     if (m.index > lastIndex) nodes.push(text.slice(lastIndex, m.index))
     if (m[1]) {
-      // **bold**
-      nodes.push(<strong key={m.index} style={{ fontWeight: 800, color: C.ink }}>{m[2]}</strong>)
+      // **bold** inline tags — limit to short inline phrases so whole paragraphs aren't turned bold
+      const boldStr = m[2]
+      if (boldStr.length < 120) {
+        nodes.push(<strong key={m.index} style={{ fontWeight: 700, color: C.ink }}>{boldStr}</strong>)
+      } else {
+        nodes.push(boldStr)
+      }
     } else if (m[3]) {
       // [text](url)
       const url = m[5]
