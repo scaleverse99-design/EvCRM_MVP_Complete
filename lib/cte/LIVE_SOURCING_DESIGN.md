@@ -116,7 +116,33 @@ parsers: free, no quota, same input → same output, and no surface on which
 a number can be invented. Right idea. But the sources have to exist first,
 so each was probed directly rather than assumed.
 
-### data.gov.in — DEAD for this purpose
+### data.gov.in — CORRECTED 2026-08-04: usable, my first check was wrong
+
+**The finding below was reached by a bad method and is wrong.** I paged
+blindly through 1,000 of 237,327 resources and concluded from that sample
+that the portal held nothing current. A title-filtered search
+(`/lists?filters[title]=vahan`) finds real e-VAHAN datasets:
+
+  State/UT-wise EV Charging Stations Installed      portal-updated 2026-02-25
+  State/UT-wise EVs Registered                      portal-updated 2025-10-10
+  State/UT-wise Electric Buses per VAHAN            portal-updated 2025-03-05
+  Year-wise Registered EVs per e-vahan Portal       portal-updated 2024-11-02
+  Category-wise EVs Sold per e-vahan Portal         portal-updated 2024-04-24
+
+These are Rajya Sabha parliamentary answers sourced from e-VAHAN — official
+and citable. Granularity appears to be state/year/category, NOT model-month,
+so they likely answer "EV registrations in Telangana" but not "Nexon EV
+monthly average" — to be confirmed by reading actual rows.
+
+Blocked on a key: the public sample key everyone shares returns HTTP 429
+"Rate limit exceeded". Register a free key (Dashboard -> My Account ->
+Generate Key) and set DATA_GOV_IN_API_KEY.
+
+Lesson for the next source check: search the catalogue, do not sample it.
+A negative result from an unrepresentative sample is worse than no result,
+because it closes off a real option.
+
+### The original, incorrect finding, kept for the record
 
 The API works (public sample key, `/lists`, 237,327 resources). The vehicle
 data does not. Scanned 1,000 resources; all 25 vehicle-related ones are
