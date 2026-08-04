@@ -17,6 +17,44 @@ import { getSupabaseAdmin } from "../../lib/supabaseAdmin"
 // The redirect is not the product. The recorded demand is.
 //
 // Usage: /go?to=<url>&model=Nexon%20EV&brand=Tata&city=Vijayawada
+//
+// ── ⚠️ AFFILIATE PROGRAMME RULES — READ BEFORE CHANGING THIS FILE ─────
+//
+// Some allow-listed destinations (Spinny, and likely Cars24/CarDekho later)
+// run affiliate programmes whose terms this route must not breach.
+// Violation is stated grounds for termination of the partnership, which
+// would cost us both the commission and the referral relationship.
+//
+// NO COOKIE STUFFING. This is the rule this file can break by accident.
+// Cookie stuffing means dropping an affiliate cookie without a real user
+// click. This route is compliant today ONLY because it runs on genuine
+// navigation. Therefore, never:
+//   • add <link rel="prefetch"> or Next.js `prefetch` to any /go link —
+//     a prefetch fires the redirect with no human involved, which IS
+//     cookie stuffing even though nobody intended it
+//   • auto-redirect here on page load, on a timer, or from a useEffect
+//   • embed /go in a hidden or zero-size iframe, or fire it as a pixel
+// Links to /go must be plain <a> elements the user actually clicks, with
+// rel="nofollow sponsored" (`sponsored` is also the correct signal to
+// Google for paid/affiliate links).
+//
+// NO IMPERSONATION, NO BRANDING. Link text says "View on Spinny →" or
+// similar — factual reference to where the buyer is going. Never imply the
+// listing is ours, that we are the destination, or that we are part of
+// them. Do not use their logo, screenshots or listing photos without
+// written consent. Never put a partner's name in an email subject or SMS
+// header (we send via Resend — mail is from EvCRM, about EvCRM).
+//
+// NO PAID TRAFFIC INTO THESE LINKS. Spinny's terms bar affiliates from
+// search advertising outright (Google/Bing/Yahoo — not merely branded-
+// keyword bidding), Meta ads, and native networks like Outbrain/Taboola.
+// Organic ranking is NOT advertising and is unaffected, which is fortunate,
+// because organic is the entire strategy.
+//
+// Separately, and regardless of any partner: outreach by SMS or call is
+// subject to India's DND / NDNC rules under the TRAI TCCCP framework, and
+// penalties fall on the sender. That applies to the dealer phone numbers in
+// `dealer_outreach` too — they came from Google Places, not from consent.
 
 // ⚠️ SECURITY: an unvalidated `to` parameter is an OPEN REDIRECT — anyone
 // could send evcrm.in/go?to=<phishing-site> and the link would carry our
@@ -55,7 +93,26 @@ function isAllowed(rawUrl) {
   }
 }
 
+// Browsers announce speculative fetches. Enforcing the no-cookie-stuffing
+// rule here rather than trusting every future contributor to remember it:
+// if this request wasn't caused by a human, we neither redirect (which
+// would drop the partner's affiliate cookie without a click) nor log it
+// (which would inflate the click counts we show dealers). The real click
+// re-requests and is handled normally.
+function isSpeculativeFetch(req) {
+  const h = req.headers
+  const purpose = `${h.get("sec-purpose") || ""} ${h.get("purpose") || ""} ${h.get("x-purpose") || ""}`.toLowerCase()
+  if (/prefetch|prerender|preview/.test(purpose)) return true
+  // Next.js router prefetches carry this; a user click never does.
+  if (h.get("next-router-prefetch") === "1") return true
+  return false
+}
+
 export async function GET(req) {
+  if (isSpeculativeFetch(req)) {
+    return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } })
+  }
+
   const { searchParams } = new URL(req.url)
   const to = searchParams.get("to")
   if (!to) return Response.redirect("https://evcrm.in/showroom", 302)
