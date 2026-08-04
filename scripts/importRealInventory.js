@@ -221,76 +221,12 @@ const HIGH_FIDELITY_VEHICLES = [
 ]
 
 async function main() {
-  console.log("Reading existing inventory...")
-  let currentInventory = []
-  try {
-    currentInventory = await readTable("inventory")
-  } catch (e) {
-    console.log("No existing inventory table found, starting fresh.")
-  }
+  console.log("Replacing database inventory with verified high-fidelity listings...")
+  let updatedList = HIGH_FIDELITY_VEHICLES
 
-  // Filter out any older versions of our seeded JIT vehicles or simulated stocks to prevent duplicates and clean old cities
-  const jitIds = HIGH_FIDELITY_VEHICLES.map(v => v.id)
-  let updatedList = currentInventory.filter(v => !jitIds.includes(v.id) && !v.tags?.includes("SIMULATED_STOCK"))
-
-  // Append new high-fidelity vehicles
-  updatedList = [...updatedList, ...HIGH_FIDELITY_VEHICLES]
-
-  // Optional: Scale to 1,000+ simulated items
-  console.log("Generating 1,000 extra simulated vehicle stocks...")
-  const brands = ["Tata", "MG", "Mahindra", "Hyundai", "Maruti Suzuki"]
-  const types = ["4W", "2W"]
-  const fuelTypes = ["Electric", "Petrol"]
-  const cities = [
-    { name: "Hyderabad", state: "Telangana" },
-    { name: "Bangalore", state: "Karnataka" }
-  ]
-
-  for (let i = 1; i <= 1000; i++) {
-    const brand = brands[i % brands.length]
-    const type = types[i % types.length]
-    const fuel = fuelTypes[i % fuelTypes.length]
-    const city = cities[i % cities.length]
-    const id = `inv_simulated_${i}`
-
-    // Skip if already in list
-    if (updatedList.some(v => v.id === id)) continue
-
-    const simulatedVal = {
-      id,
-      dealership: `dealer-simulated-${i}`,
-      dealerName: `${brand} Partner Dealership #${i}`,
-      brand,
-      model: `${brand} Model-S${i}`,
-      variant: "Standard",
-      type,
-      bodyType: type === "4W" ? "SUV" : "Scooter",
-      year: 2024 - (i % 5),
-      km: (i % 2 === 0) ? 0 : 5000 + (i * 27) % 50000,
-      condition: (i % 2 === 0) ? "new" : "used",
-      fuelType: fuel,
-      color: "Metallic Silver",
-      range: fuel === "Electric" ? 250 + (i % 10) * 20 : null,
-      exShowroom: 150000 + (i * 12345) % 1500000,
-      onRoadPrice: 175000 + (i * 12345) % 1500000,
-      tokenAmount: 1000,
-      status: "IN_STOCK",
-      vin: `VINSIMULATED${i}XYZ8888`,
-      isDemo: false,
-      state: city.state,
-      district: city.name,
-      tags: ["SIMULATED_STOCK"],
-      images: ["🚗"],
-      redirectUrl: `https://www.carwale.com/used/${brand.toLowerCase()}-cars-in-${city.name.toLowerCase()}/`,
-      createdAt: new Date().toISOString()
-    }
-
-    updatedList.push(simulatedVal)
-  }
-
-  console.log(`Writing ${updatedList.length} total inventory records back to store...`)
+  console.log(`Writing ${updatedList.length} verified real/JIT inventory records back to store...`)
   await writeTable("inventory", updatedList)
-  console.log("✅ Seed import complete!")
+  console.log("✅ Database cleaned! Only verified listings remain.")
 }
 
 main().catch(console.error)

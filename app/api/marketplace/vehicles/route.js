@@ -18,9 +18,14 @@ export async function GET(req) {
   const sort       = searchParams.get("sort") || "default"
 
   const all = await readTable("inventory")
-  // Used vehicles must be dealer-approved (inspection report) before they're
-  // publicly visible; new vehicles are unaffected by this check.
-  let items = all.filter(v => v.status === "IN_STOCK" && (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED"))
+  // Exclude dummy/simulated stocks and unverified listings
+  let items = all.filter(v => 
+    v.status === "IN_STOCK" && 
+    !v.tags?.includes("SIMULATED_STOCK") && 
+    !v.isDemo &&
+    (v.condition !== "used" || v.inspectionReport?.approvalStatus === "APPROVED") &&
+    (Array.isArray(v.images) && v.images.length > 0 && typeof v.images[0] === "string" && v.images[0].startsWith("http"))
+  )
 
   // Attach each vehicle's dealer storefront slug so consumer pages can route
   // visitors onward to the dealer's page on the main domain (the hub model:
