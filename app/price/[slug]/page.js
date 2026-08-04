@@ -1,3 +1,18 @@
+"use client"
+// Every symbol below was used by this component but never imported, and
+// there was no "use client" despite calling useParams — so every render
+// threw a ReferenceError and all 1,344 /price/ URLs in the sitemap returned
+// HTTP 500. Found 2026-08-04 by scripts/site-preflight.js, which samples
+// sitemap URLs rather than trusting that they resolve.
+//
+// Imports mirror app/compare/[slug]/page.js, the sibling route with the
+// same shape that works.
+import { useParams } from "next/navigation"
+import Link from "next/link"
+import TopBar from "../../../components/home/TopBar"
+import Footer from "../../../components/home/Footer"
+import { C, fmt } from "../../../lib/constants"
+import { POPULAR_MODELS, TOP_CITIES, calculateOnRoadPrice, getCityPricePairs } from "../../../lib/masterCatalog"
 import { generateVehicleSchemaLD } from "../../../lib/dripPublisher.js"
 
 export default function CityPricePage() {
