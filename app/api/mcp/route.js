@@ -6,6 +6,7 @@ import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal, describeSignature } from "../../../lib/orchestrator/queryTrigger"
 import { sourceLiveAnswer } from "../../../lib/cte/sourceLive"
+import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -492,6 +493,48 @@ const TOOLS = [
       required: ["names"],
     },
     handler: toolCompareVehicles,
+  },
+  // ── Calculators ───────────────────────────────────────────────────────
+  // Every other tool here is a lookup: it can only answer what is in the
+  // database, and on a miss it has to source or decline. These are
+  // arithmetic — same inputs, same answer, always. No key, no quota, no
+  // cache, and no surface on which a number can be invented, which is why
+  // they are the cheapest useful thing this server can offer.
+  //
+  // Deliberately NOT exposed: estimate_on_road_price. It exists in
+  // lib/cte/calculators.js but road tax is set per state, varies by slab,
+  // and several states waive it for EVs — and I have no verified rates. A
+  // national average would be wrong in most states, and a wrong on-road
+  // price is a number someone budgets against. It stays unexposed until the
+  // per-state rates are filled in from each state's own notification.
+  {
+    name: "calculate_emi",
+    description: "Loan EMI, total interest and total payable for a vehicle loan. Pure arithmetic — reducing-balance amortisation. Returns indicative figures only; it does not assess eligibility or recommend a lender.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        principal: { type: "number", description: "Loan amount in INR" },
+        annualRatePercent: { type: "number", description: "Annual interest rate, e.g. 9.5" },
+        tenureMonths: { type: "number", description: "Loan tenure in months, e.g. 60" },
+      },
+      required: ["principal", "annualRatePercent", "tenureMonths"],
+    },
+    handler: async (args) => calculateEmi(args || {}),
+  },
+  {
+    name: "vehicle_budget_from_emi",
+    description: "What loan amount and vehicle budget a given monthly EMI supports — the EMI formula solved for principal. Answers 'what car can I afford at Rs 15,000/month'. Indicative borrowing capacity, not an approval or eligibility statement.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        emiPerMonth: { type: "number", description: "Monthly budget in INR" },
+        annualRatePercent: { type: "number", description: "Annual interest rate, e.g. 9.5" },
+        tenureMonths: { type: "number", description: "Loan tenure in months, e.g. 60" },
+        downPayment: { type: "number", description: "Cash down payment in INR, optional" },
+      },
+      required: ["emiPerMonth", "annualRatePercent", "tenureMonths"],
+    },
+    handler: async (args) => affordabilityFromEmi(args || {}),
   },
   // get_search_intent was exposed here and has been withdrawn (2026-08-03).
   // It fetched Google Autocomplete phrasings — genuinely valuable data, but

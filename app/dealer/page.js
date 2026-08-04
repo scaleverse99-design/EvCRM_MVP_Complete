@@ -215,6 +215,7 @@ function InventorySection({ dealership, user }) {
   // Brochure upload → AI extraction → step-through review
   const [brochureParsing, setBrochureParsing] = useState(false)
   const [brochureError,   setBrochureError]   = useState("")
+  const [urlParsing,      setUrlParsing]      = useState(false)
   const [reviewQueue,     setReviewQueue]     = useState(null) // array of extracted vehicles awaiting review, or null when not reviewing
   const [reviewIndex,     setReviewIndex]     = useState(0)
   const [reviewForm,      setReviewForm]      = useState(null)
@@ -303,6 +304,37 @@ function InventorySection({ dealership, user }) {
       }
     }
     reader.readAsDataURL(file)
+  }
+
+  // Paste a vehicle page URL instead of uploading a PDF. Feeds the same
+  // review queue as the brochure flow — nothing is saved until the dealer
+  // confirms each vehicle, which matters more here than for a brochure:
+  // a brochure is the dealer's own document, a web page is someone else's,
+  // so what comes back is a catalog CANDIDATE and not confirmed stock.
+  const handleUrlParse = async () => {
+    const url = window.prompt("Paste a vehicle page link (a specific model or variant page works best):")
+    if (!url) return
+
+    setBrochureError("")
+    setUrlParsing(true)
+    try {
+      const res = await authFetch("/api/dealer/inventory/parse-url", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setBrochureError(data.error || "Could not read that page"); return }
+      if (!data.vehicles?.length) { setBrochureError(data.note || "No vehicles found on that page — try a specific model page rather than a listing index."); return }
+
+      setReviewQueue(data.vehicles)
+      setReviewIndex(0)
+      setReviewForm(brochureVehicleToForm(data.vehicles[0]))
+      setReviewAdded(0)
+    } catch {
+      setBrochureError("Could not reach that page. Please try again.")
+    } finally {
+      setUrlParsing(false)
+    }
   }
 
   const advanceReview = () => {
@@ -514,6 +546,10 @@ function InventorySection({ dealership, user }) {
             {brochureParsing ? "⏳ Reading brochure…" : "📄 Upload Brochure"}
             <input type="file" accept="application/pdf" onChange={handleBrochureFile} disabled={brochureParsing} style={{ display:"none" }} />
           </label>
+          <button onClick={handleUrlParse} disabled={urlParsing}
+            style={{ background:"none", border:`1px solid ${C.border}`, color:C.ink2, borderRadius:20, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:urlParsing?"wait":"pointer", fontFamily:"inherit", opacity:urlParsing?0.6:1 }}>
+            {urlParsing ? "⏳ Reading page…" : "🔗 Paste Link"}
+          </button>
           <button onClick={openAdd}
             style={{ background:C.green, border:"none", color:"#fff", borderRadius:20, padding:"8px 18px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
             + Add Vehicle
