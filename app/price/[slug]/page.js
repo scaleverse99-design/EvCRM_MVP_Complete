@@ -14,6 +14,7 @@ import Footer from "../../../components/home/Footer"
 import { C, fmt } from "../../../lib/constants"
 import { POPULAR_MODELS, TOP_CITIES, calculateOnRoadPrice, getCityPricePairs } from "../../../lib/masterCatalog"
 import { generateVehicleSchemaLD } from "../../../lib/dripPublisher.js"
+import { LiveVisitorBadge, LiveActivityToast } from "../../../components/common/LiveVisitorBadge"
 
 export default function CityPricePage() {
   const params = useParams()
@@ -61,9 +62,7 @@ export default function CityPricePage() {
 
         {/* Hero Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: "uppercase", letterSpacing: 0.8, background: `${C.green}15`, padding: "4px 12px", borderRadius: 20 }}>
-            📍 RTO & Subsidy Breakdown 2026
-          </span>
+          <LiveVisitorBadge location={city.name} />
           <h1 style={{ fontSize: 32, fontWeight: 900, color: C.ink, marginTop: 12, lineHeight: 1.2 }}>
             {model.name} On-Road Price in <span style={{ color: C.green }}>{city.name}</span>
           </h1>
@@ -159,6 +158,7 @@ export default function CityPricePage() {
         </div>
       </main>
 
+      <LiveActivityToast location={city.name} />
       <Footer />
     </div>
   )

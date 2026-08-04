@@ -6,6 +6,7 @@ import { C, fmt } from "../../../lib/constants"
 import TopBar from "../../../components/home/TopBar"
 import Footer from "../../../components/home/Footer"
 import SmartBuyWidget from "../../../components/marketplace/SmartBuyWidget"
+import { LiveVisitorBadge, LiveActivityToast } from "../../../components/common/LiveVisitorBadge"
 
 // Inline markdown renderer for article paragraphs. Handles three things the
 // orchestrator's news writer actually emits, in one pass so they compose:
@@ -453,6 +454,7 @@ export default function BlogPostPage() {
         ) : (
           <div style={{ fontSize: 64, textAlign: "center", margin: "16px 0" }}>{post.coverEmoji || "🚗"}</div>
         )}
+        <LiveVisitorBadge location={post.tags?.[3] || "Hyderabad"} />
         <h1 style={{ fontSize: 34, fontWeight: 900, color: C.ink, lineHeight: 1.2, letterSpacing: "-0.5px", margin: "0 0 12px" }}>{post.title}</h1>
         <div style={{ fontSize: 12, color: C.ink3, marginBottom: 8 }}>
           By {post.authorName} · Published on EvCRM · {new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
@@ -497,6 +499,7 @@ export default function BlogPostPage() {
           </div>
         )}
       </div>
+      <LiveActivityToast location={post.tags?.[3] || "Hyderabad"} />
       <Footer />
     </div>
   )
