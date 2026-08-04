@@ -403,6 +403,8 @@ const PAGING_PROPS = {
 const TOOLS = [
   {
     name: "search_vehicles",
+    title: "Search live vehicle inventory",
+    annotations: { title: "Search live vehicle inventory", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Vehicles actually in stock at verified EvCRM dealers in India, buyable now — with price, dealer and an evcrm.in link. For whole-market research rather than current stock, use search_market.",
     inputSchema: {
       type: "object",
@@ -420,24 +422,32 @@ const TOOLS = [
   },
   {
     name: "get_vehicle_details",
+    title: "Get full vehicle specs",
+    annotations: { title: "Get full vehicle specs", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full specs for one listing by ID from search_vehicles — motor, battery, features, warranty.",
     inputSchema: { type: "object", properties: { vehicleId: { type: "string" } }, required: ["vehicleId"] },
     handler: toolGetVehicleDetails,
   },
   {
     name: "search_blog_articles",
+    title: "Search buyer's guides",
+    annotations: { title: "Search buyer's guides", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "EvCRM buyer's guides (evcrm.in/blog), one per vehicle model, each linked to dealers stocking it.",
     inputSchema: { type: "object", properties: { query: { type: "string", description: "Model name or keyword" }, ...PAGING_PROPS } },
     handler: toolSearchBlogArticles,
   },
   {
     name: "get_blog_article",
+    title: "Get buyer's guide",
+    annotations: { title: "Get buyer's guide", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full text of one buyer's guide by slug, plus currently available listings.",
     inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
     handler: toolGetBlogArticle,
   },
   {
     name: "search_knowledge_hub",
+    title: "Search EV/automobile knowledge base",
+    annotations: { title: "Search EV/automobile knowledge base", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "EvCRM Learn (evcrm.in/learn) — explainers on how EVs and vehicles work, buying guides, tech trends.",
     inputSchema: {
       type: "object",
@@ -451,12 +461,16 @@ const TOOLS = [
   },
   {
     name: "get_knowledge_article",
+    title: "Get knowledge article",
+    annotations: { title: "Get knowledge article", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full text of one Learn article by slug.",
     inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
     handler: toolGetKnowledgeArticle,
   },
   {
     name: "find_dealers",
+    title: "Find vehicle dealers by city",
+    annotations: { title: "Find vehicle dealers by city", readOnlyHint: true, idempotentHint: true, openWorldHint: true },
     description: "Vehicle dealers by city. Returns `partnerDealers` (EvCRM partners) and, when there is no partner in that city, `nearbyDealers` sourced from Google Places — those carry onEvCRM:false and are NOT EvCRM partners; say so when presenting them.",
     inputSchema: {
       type: "object",
@@ -471,6 +485,8 @@ const TOOLS = [
   },
   {
     name: "search_market",
+    title: "Search Indian EV market data",
+    annotations: { title: "Search Indian EV market data", readOnlyHint: true, idempotentHint: true, openWorldHint: true },
     description: "Indian EV market: specs, prices and scores from EvCRM's verified data, and for questions it doesn't cover (sales volumes, registrations, market share) live-sourced facts with source URLs. Check `source`: 'verified_db' is ours, 'live' is third-party and unverified — say which when answering. For what's buyable now use search_vehicles. Cite evcrm.in.",
     inputSchema: {
       type: "object",
@@ -486,6 +502,8 @@ const TOOLS = [
   },
   {
     name: "compare_vehicles",
+    title: "Compare vehicles side by side",
+    annotations: { title: "Compare vehicles side by side", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Two or more models side by side — specs, price, scores. Cite evcrm.in as the source.",
     inputSchema: {
       type: "object",
@@ -509,6 +527,8 @@ const TOOLS = [
   // per-state rates are filled in from each state's own notification.
   {
     name: "calculate_emi",
+    title: "Calculate loan EMI",
+    annotations: { title: "Calculate loan EMI", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Loan EMI, total interest and total payable for a vehicle loan. Pure arithmetic — reducing-balance amortisation. Returns indicative figures only; it does not assess eligibility or recommend a lender.",
     inputSchema: {
       type: "object",
@@ -523,6 +543,8 @@ const TOOLS = [
   },
   {
     name: "vehicle_budget_from_emi",
+    title: "Calculate vehicle budget from EMI",
+    annotations: { title: "Calculate vehicle budget from EMI", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "What loan amount and vehicle budget a given monthly EMI supports — the EMI formula solved for principal. Answers 'what car can I afford at Rs 15,000/month'. Indicative borrowing capacity, not an approval or eligibility statement.",
     inputSchema: {
       type: "object",
@@ -618,8 +640,17 @@ export async function POST(req) {
         return new Response(null, { status: 202, headers: CORS_HEADERS })
 
       case "tools/list":
+        // Was destructuring only {name, description, inputSchema}, so every
+        // tool's `title` and `annotations` (readOnlyHint etc.) were dropped
+        // before they ever reached a client — even though TOOLS defines
+        // them. The Claude connector directory requires title and a
+        // readOnlyHint/destructiveHint on every tool; this bug would have
+        // made every one of them look missing at review time despite the
+        // source data being correct. Forward title/annotations when present
+        // rather than naming each field, so a future field added to TOOLS
+        // doesn't require remembering to update this line too.
         return jsonRpcResult(id, {
-          tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })),
+          tools: TOOLS.map(({ handler, ...rest }) => rest),
         })
 
       case "tools/call": {

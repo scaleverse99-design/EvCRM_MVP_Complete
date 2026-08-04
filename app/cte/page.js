@@ -49,13 +49,45 @@ export default function CTEPage() {
         <p style={{ fontSize: 12, color: C.ink3, marginTop: 10 }}>See also: <a href="/llms.txt" style={{ color: C.green }}>/llms.txt</a> and <a href="/.well-known/mcp.json" style={{ color: C.green }}>/.well-known/mcp.json</a> for automated discovery.</p>
       </Section>
 
-      <Section style={{ padding: "24px 20px 64px" }}>
+      <Section style={{ padding: "24px 20px" }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Available tools</h2>
         <Tool name="search_market" desc="Search verified specs, pricing, and transparency scores across the whole Indian EV market — not just EvCRM's own listings." />
         <Tool name="compare_vehicles" desc="Head-to-head comparison of two or more models, side by side." />
         <Tool name="search_vehicles" desc="Live inventory across verified EvCRM dealers." />
-        <Tool name="find_dealers" desc="Find verified dealer storefronts by city or category." />
-        <Tool name="search_blog_articles / search_knowledge_hub" desc="EvCRM's buyer's guides and EV/automobile knowledge base." />
+        <Tool name="get_vehicle_details" desc="Full specs for one listing by ID." />
+        <Tool name="find_dealers" desc="Find verified dealer storefronts by city or category, plus real nearby dealerships (Google Places) when no partner covers that city — clearly labelled as non-partners." />
+        <Tool name="calculate_emi" desc="Loan EMI, total interest, and total payable for a given principal, rate and tenure. Deterministic amortisation — no AI, no estimation." />
+        <Tool name="vehicle_budget_from_emi" desc="Loan amount and vehicle budget a given monthly EMI supports — the EMI formula solved for principal." />
+        <Tool name="search_blog_articles / get_blog_article" desc="EvCRM's per-model buyer's guides, and one article in full with current matching inventory." />
+        <Tool name="search_knowledge_hub / get_knowledge_article" desc="EV/automobile fundamentals, buying guides, and current industry tech trends." />
+      </Section>
+
+      <Section style={{ padding: "24px 20px" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 10 }}>Try it</h2>
+        <p style={{ fontSize: 13, color: C.ink2, marginBottom: 10 }}>Once connected, ask things like:</p>
+        <ul style={{ fontSize: 13, color: C.ink2, lineHeight: 2, paddingLeft: 18 }}>
+          <li>"Best electric scooter under ₹1.5 lakh in India"</li>
+          <li>"Compare the Ola S1 Pro and Ather 450X"</li>
+          <li>"EMI on a ₹6 lakh vehicle loan at 9.5% over 5 years"</li>
+          <li>"Find used car dealers in Vijayawada"</li>
+        </ul>
+      </Section>
+
+      <Section style={{ padding: "24px 20px" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 10 }}>Data, privacy, and auth</h2>
+        <ul style={{ fontSize: 13, color: C.ink2, lineHeight: 1.9, paddingLeft: 18 }}>
+          <li>No authentication required — the server is public and read-only.</li>
+          <li>No user data is collected by the server. Query topics (not raw personal data) are logged in aggregate to understand demand and improve coverage — see our <a href="/privacy" style={{ color: C.green }}>privacy policy</a>.</li>
+          <li>Every response states its source: <code style={{ fontFamily: "ui-monospace, monospace" }}>verified_db</code> for EvCRM's own data, <code style={{ fontFamily: "ui-monospace, monospace" }}>live</code> for third-party-sourced facts with citations.</li>
+          <li>We do not fabricate data. A question we cannot answer from verified data returns nothing rather than a guess.</li>
+        </ul>
+      </Section>
+
+      <Section style={{ padding: "24px 20px 64px" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: C.ink, marginBottom: 10 }}>Support</h2>
+        <p style={{ fontSize: 13, color: C.ink2 }}>
+          Questions or issues with the connector: <a href="mailto:support@evcrm.in" style={{ color: C.green }}>support@evcrm.in</a>
+        </p>
       </Section>
       <Footer />
     </>
