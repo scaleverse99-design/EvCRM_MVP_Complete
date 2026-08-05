@@ -12,7 +12,11 @@ const CATEGORIES = ["EV Fundamentals", "ICE Fundamentals", "Buying Guides", "Tec
 export async function GET() {
   const all = await readTable("blog_posts")
   const knowledge = all
-    .filter(p => p.status === "published" && p.type === "knowledge")
+    .filter(p => p.status === "published" || p.tags?.includes("Price Guide") || p.type === "knowledge")
+    .map(p => ({
+      ...p,
+      category: p.category || (p.tags?.[2] === "Electric" ? "EV Fundamentals" : p.tags?.[2] === "Petrol" ? "ICE Fundamentals" : "Buying Guides")
+    }))
     .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
     .map(({ body, ...rest }) => rest)
 
