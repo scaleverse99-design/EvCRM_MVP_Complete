@@ -1,14 +1,21 @@
 -- ═══════════════════════════════════════════════════════════════════
 -- Paste this whole file into the Supabase SQL editor (prod) and run it.
--- Verified against prod 2026-08-04: research_cache and outbound_clicks are
--- MISSING; dealer_outreach and query_signals already exist.
 --
--- Safe to re-run — every statement is create-if-not-exists or
--- create-or-replace, so running it twice changes nothing.
+-- Checked against prod directly (real SELECTs, not a head-count) 2026-08-04:
+--   exists already : research_cache, outbound_clicks, dealer_outreach,
+--                     query_signals
+--   MISSING        : active_visitors, ai_search_bot_hits,
+--                     search_console_queries, heartbeat_presence()
 --
--- Until this runs, the deployed code fails closed: live sourcing returns
--- nothing rather than guessing, and /go redirects correctly but records no
--- clicks. Nothing breaks; the features just don't do their job.
+-- Safe to re-run in full regardless — every statement is create-if-not-exists
+-- or create-or-replace, so running it again changes nothing for the parts
+-- already in place.
+--
+-- Until the missing pieces run: live sourcing returns nothing rather than
+-- guessing, /go redirects correctly but records no clicks, the live-visitor
+-- badge renders nothing rather than a fabricated number, and the AI-search
+-- bot logging in middleware.js silently no-ops. Nothing breaks; those
+-- features just don't do their job yet.
 -- ═══════════════════════════════════════════════════════════════════
 
 
@@ -89,3 +96,114 @@ as $$
      set times_surfaced = times_surfaced + 1
    where place_id = any(ids);
 $$;
+
+
+-- ── 4. active_visitors ────────────────────────────────────────────
+-- Backs the real live-visitor badge, replacing two fabricated versions
+-- (Math.random(), then 850 + city-name-length*45) shown on 1,344 pages.
+-- No IP, no user id, no cookie — a random per-tab id in sessionStorage.
+create table if not exists active_visitors (
+  session_id text primary key,
+  path       text,
+  city       text,
+  last_seen  timestamptz not null default now()
+);
+
+create index if not exists active_visitors_last_seen_idx on active_visitors (last_seen desc);
+alter table active_visitors enable row level security;
+
+-- Upsert + stale-sweep + count in ONE round trip — this becomes the most
+-- frequently executed statement in the system at any real traffic, so three
+-- separate queries per heartbeat was not acceptable.
+create or replace function heartbeat_presence(
+  p_session text, p_path text, p_city text, p_window int default 90
+) returns int language plpgsql as $$
+declare n int;
+begin
+  insert into active_visitors (session_id, path, city, last_seen)
+  values (p_session, p_path, p_city, now())
+  on conflict (session_id)
+  do update set last_seen = now(), path = excluded.path, city = excluded.city;
+
+  delete from active_visitors where last_seen < now() - interval '5 minutes';
+
+  select count(*) into n from active_visitors
+  where last_seen > now() - (p_window || ' seconds')::interval;
+  return n;
+end; $$;
+
+
+-- ── 5. Intent-capture layers (see lib/cte/aiCrawlers.js and
+--      scripts/fetch-search-console-queries.js) ────────────────────
+--
+-- Three of "what shows AI/search demand touched us", none of which is "what
+-- the user asked an AI" (query_signals, from real MCP tool calls, already
+-- covers that and needed no new table):
+--
+--   ai_search_bot_hits    — an AI's search feature (not training crawler)
+--                           fetched one of our pages, right now. Not the
+--                           query, just proof AI search found this page.
+--   search_console_queries — real Google queries that already surface us,
+--                           pulled by scripts/fetch-search-console-queries.js.
+--                           Whole-market, real, zero install — but only for
+--                           pages we already rank on.
+
+create table if not exists ai_search_bot_hits (
+  signature   text primary key,   -- bot_name + '|' + path
+  bot_name    text not null,
+  path        text not null,
+  hit_count   int not null default 1,
+  first_seen  timestamptz not null default now(),
+  last_seen   timestamptz not null default now()
+);
+
+create index if not exists ai_search_bot_hits_bot_idx on ai_search_bot_hits (bot_name, hit_count desc);
+alter table ai_search_bot_hits enable row level security;
+
+create or replace function bump_bot_hit(p_bot text, p_path text)
+returns void
+language plpgsql
+as $$
+begin
+  insert into ai_search_bot_hits (signature, bot_name, path, hit_count, last_seen)
+  values (p_bot || '|' || p_path, p_bot, p_path, 1, now())
+  on conflict (signature)
+  do update set hit_count = ai_search_bot_hits.hit_count + 1, last_seen = now();
+end;
+$$;
+
+create table if not exists search_console_queries (
+  query        text primary key,
+  clicks       int not null default 0,
+  impressions  int not null default 0,
+  page_count   int not null default 0,
+  window_days  int not null default 28,
+  fetched_at   timestamptz not null default now()
+);
+
+create index if not exists search_console_queries_impr_idx on search_console_queries (impressions desc);
+alter table search_console_queries enable row level security;
+
+
+-- ── 6. Dealer GSTIN Verification Follow-ups ────────────────────────
+-- Tracks dealers who need to verify GSTIN and follow-up attempts
+-- Used to send periodic verification requests (e.g., day 7, day 14, day 30)
+create table if not exists gstin_verification_followups (
+  id bigserial primary key,
+  dealer_id text not null,
+  dealer_email text not null,
+  gstin_provided text,
+  gstin_verified boolean default false,
+  followup_count int default 0,
+  first_followup_sent_at timestamptz,
+  last_followup_sent_at timestamptz,
+  verified_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint unique_dealer_verification unique(dealer_id)
+);
+
+create index if not exists gstin_followup_dealer_idx on gstin_verification_followups (dealer_id);
+create index if not exists gstin_followup_verified_idx on gstin_verification_followups (gstin_verified);
+create index if not exists gstin_followup_last_sent_idx on gstin_verification_followups (last_followup_sent_at desc);
+
+alter table gstin_verification_followups enable row level security;

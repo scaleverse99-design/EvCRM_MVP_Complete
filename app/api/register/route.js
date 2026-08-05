@@ -9,11 +9,11 @@ import { readTable, writeTable } from "../../../lib/store"
 
 // ── POST /api/register ────────────────────────────────────────────
 // Self-registration for dealers and sales reps
-// Body: { name, email, password, role, phone, dealership, city }
+// Body: { name, email, password, role, phone, dealership, city, dealerCategory, gstin, brands, address }
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { name, email, password, role, phone, dealership, city } = body
+    const { name, email, password, role, phone, dealership, city, gstin, brands, address } = body
     const dealerCategory = ["EV", "ICE"].includes(body.dealerCategory) ? body.dealerCategory : "EV"
 
     // ── Validation ────────────────────────────────────────────────
@@ -100,6 +100,8 @@ export async function POST(req) {
         dealerCategory: role === "dealer" ? dealerCategory : null,
         dealerSubdomain: role === "dealer" ? dealerSubdomain : null,
         city:          city?.trim() || null,
+        gstin:         role === "dealer" ? (gstin?.trim() || null) : null,
+        brands:        role === "dealer" ? (brands && Array.isArray(brands) ? JSON.stringify(brands) : null) : null,
         is_active:     true,
         trialStartDate: new Date().toISOString(),
         billingStatus:  "trial",
@@ -122,11 +124,15 @@ export async function POST(req) {
         dealers.push({
           id: dealershipId,
           name: nameForSlug,
-          address: "",
+          address: address?.trim() || "",
           state: "",
           district: city?.trim() || "",
           whatsapp: phone?.trim() || "",
-          gstNumber: "",
+          gstNumber: gstin?.trim() || "",
+          brands: brands && Array.isArray(brands) ? brands : [],
+          category: dealerCategory,
+          gstVerified: false,
+          gstVerificationAttempts: 0,
           createdAt: new Date().toISOString(),
         })
         await writeTable("dealers", dealers)
