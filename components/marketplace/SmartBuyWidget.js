@@ -51,25 +51,30 @@ export default function SmartBuyWidget({ brand, model, purchaseOptions }) {
             EvCRM partner stock for this model is uploading soon. In the meantime, select your purchase preference below:
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            {/* Option A: Buy Brand New */}
-            <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: "uppercase", marginBottom: 4 }}>🆕 Brand New</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{fallbackRoutes.buyNew.label}</div>
-              <div style={{ fontSize: 11, color: C.ink3, marginBottom: 12 }}>Via {fallbackRoutes.buyNew.provider}</div>
-              <a href={fallbackRoutes.buyNew.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", textAlign: "center", background: C.green, color: "#fff", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>
-                Order Brand New ↗
-              </a>
-            </div>
+            {/* Option A: Buy Brand New — omitted when the registry entry has
+                no buyNewUrl (not every model has an OEM order page). */}
+            {fallbackRoutes.buyNew && (
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: C.green, textTransform: "uppercase", marginBottom: 4 }}>🆕 Brand New</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{fallbackRoutes.buyNew.label}</div>
+                <div style={{ fontSize: 11, color: C.ink3, marginBottom: 12 }}>Via {fallbackRoutes.buyNew.provider}</div>
+                <a href={fallbackRoutes.buyNew.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", textAlign: "center", background: C.green, color: "#fff", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>
+                  Order Brand New ↗
+                </a>
+              </div>
+            )}
 
             {/* Option B: Buy Verified Pre-Owned */}
-            <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#3B82F6", textTransform: "uppercase", marginBottom: 4 }}>🚗 Pre-Owned / Used</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{fallbackRoutes.buyUsed.label}</div>
-              <div style={{ fontSize: 11, color: C.ink3, marginBottom: 12 }}>Via {fallbackRoutes.buyUsed.provider}</div>
-              <a href={fallbackRoutes.buyUsed.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", textAlign: "center", background: "#3B82F6", color: "#fff", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>
-                Find Used Listings ↗
-              </a>
-            </div>
+            {fallbackRoutes.buyUsed && (
+              <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#3B82F6", textTransform: "uppercase", marginBottom: 4 }}>🚗 Pre-Owned / Used</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{fallbackRoutes.buyUsed.label}</div>
+                <div style={{ fontSize: 11, color: C.ink3, marginBottom: 12 }}>Via {fallbackRoutes.buyUsed.provider}</div>
+                <a href={fallbackRoutes.buyUsed.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", textAlign: "center", background: "#3B82F6", color: "#fff", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>
+                  Find Used Listings ↗
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}
