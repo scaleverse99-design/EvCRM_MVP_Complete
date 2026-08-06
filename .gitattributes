@@ -1,0 +1,19 @@
+# Line endings that scripts actually REQUIRE to run.
+#
+# core.autocrlf is per-user local config — it does not travel with the repo,
+# so a fresh clone or a different machine gets no guarantee. These rules do.
+#
+# Why this file exists: deploy_on_windows.bat ended up with pure LF endings
+# (0 CRLF across 32 lines). cmd.exe mis-reads line boundaries in that state
+# and drops the leading characters of every command — FIREBASE_CLI_EXPERIMENTS
+# executed as 'BASE_CLI_EXPERIMENTS', Taking as 'king'. The deploy did nothing
+# and still exited 0, so it looked like it had succeeded.
+
+# Batch files are parsed by cmd.exe and MUST be CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts MUST be LF — a CRLF .sh fails with "bad interpreter: \r",
+# and scripts/snapshot.sh (the pre-deploy backup) is invoked through Git's
+# sh.exe on Windows, so it is exposed to exactly this.
+*.sh text eol=lf
