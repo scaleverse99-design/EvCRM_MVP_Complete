@@ -10,6 +10,17 @@ node_modules/
 .env.local.tmp
 .firebase/**/.env*
 
+# Catch-all for env files. The named entries above miss variants — a
+# .env.production.bak created while rotating a leaked key was untracked but
+# NOT ignored, i.e. one `git add -A` from being committed. Anything starting
+# .env, and any backup copy, stays out.
+.env*
+*.bak
+
+# .env.example is the documented template and carries no real values — it
+# must stay tracked, so exempt it from the .env* rule above.
+!.env.example
+
 firebase-debug.log
 *-debug.log
 
