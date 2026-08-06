@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../../../lib/auth"
+import { callOpenRouter } from "../../../../../lib/orchestrator/openrouter"
+import pdfParse from "pdf-parse"
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
 const MAX_PDF_BYTES = 12 * 1024 * 1024 // 12MB — brochures are usually a few MB; generous but bounded
 
 function getUser(req) {
@@ -11,9 +12,9 @@ function getUser(req) {
   try { return verifyToken(token) } catch { return null }
 }
 
-const EXTRACTION_PROMPT = `You are extracting EV vehicle listings from a manufacturer/dealer brochure PDF for an inventory system.
+const EXTRACTION_PROMPT = `You are extracting EV vehicle listings from a manufacturer/dealer brochure for an inventory system.
 
-Find EVERY distinct vehicle (each trim/variant counts separately) in this document and return them as a JSON array. For each vehicle, extract only what's actually stated in the document — leave a field as an empty string / 0 / empty array if it isn't mentioned, never guess or invent a number.
+Below is the text extracted from the brochure PDF. Find EVERY distinct vehicle (each trim/variant counts separately) and return them as a JSON array. For each vehicle, extract only what's actually stated in the document — leave a field as an empty string / 0 / empty array if it isn't mentioned, never guess or invent a number.
 
 Return strictly valid JSON matching this shape:
 [
@@ -37,16 +38,12 @@ Return strictly valid JSON matching this shape:
   }
 ]
 
-Return ONLY the JSON array, no other text.`
+Return ONLY the JSON array, no markdown blocks, no other text.`
 
 export async function POST(req) {
   const user = getUser(req)
   if (!user) return err("Unauthorized", 401)
   if (!["dealer", "founder", "superadmin"].includes(user.role)) return err("Forbidden", 403)
-
-  if (!GEMINI_API_KEY) {
-    return err("Brochure parsing is not configured yet — no AI key set up. Add vehicles manually for now.", 503)
-  }
 
   const body = await req.json()
   const dataUrl = body.pdfBase64 || ""
@@ -59,40 +56,39 @@ export async function POST(req) {
     return err(`PDF is too large (max ${Math.round(MAX_PDF_BYTES / 1024 / 1024)}MB)`, 400)
   }
 
-  // Order matters: this project's key has quota on 2.5-flash but zero free-tier
-  // quota on 2.0-flash (verified 2026-07-15), so 2.5 goes first.
-  const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
-  let lastError = null
-
-  for (const model of models) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: "application/pdf", data: base64 } },
-              { text: EXTRACTION_PROMPT },
-            ],
-          }],
-          generationConfig: { response_mime_type: "application/json", temperature: 0.2 },
-        }),
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error.message)
-
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text) throw new Error("Empty AI response")
-
-      const vehicles = JSON.parse(text)
-      if (!Array.isArray(vehicles)) throw new Error("AI did not return a vehicle list")
-
-      return ok({ vehicles: vehicles.slice(0, 25) }) // sanity cap — a single brochure shouldn't have more than this
-    } catch (e) {
-      lastError = e.message
+  let pdfText = ""
+  try {
+    const pdfBuffer = Buffer.from(base64, 'base64')
+    const parsed = await pdfParse(pdfBuffer)
+    pdfText = parsed.text
+    if (!pdfText || pdfText.trim() === "") {
+      throw new Error("No readable text found in PDF.")
     }
+  } catch (parseErr) {
+    return err(`Could not read text from this PDF: ${parseErr.message}. Ensure it is a text-searchable PDF, not just scanned images.`, 400)
   }
 
-  return err(`Could not read this brochure (${lastError || "unknown error"}). Try a different PDF or add vehicles manually.`, 502)
+  try {
+    const fullPrompt = `${EXTRACTION_PROMPT}\n\n--- BROCHURE TEXT ---\n${pdfText.substring(0, 50000)}\n---------------------`
+    
+    // Call OpenRouter using the openai/gpt-4o model
+    const { text, modelUsed } = await callOpenRouter(fullPrompt, { 
+      model: "openai/gpt-4o",
+      temperature: 0.2
+    })
+
+    if (!text) throw new Error("Empty AI response")
+
+    // Clean up potential markdown formatting block if the AI ignores instructions
+    let jsonStr = text.trim()
+    if (jsonStr.startsWith("\`\`\`json")) jsonStr = jsonStr.replace(/^\`\`\`json/, "").replace(/\`\`\`$/, "").trim()
+    if (jsonStr.startsWith("\`\`\`")) jsonStr = jsonStr.replace(/^\`\`\`/, "").replace(/\`\`\`$/, "").trim()
+
+    const vehicles = JSON.parse(jsonStr)
+    if (!Array.isArray(vehicles)) throw new Error("AI did not return a vehicle list")
+
+    return ok({ vehicles: vehicles.slice(0, 25) }) // sanity cap
+  } catch (e) {
+    return err(`Could not extract vehicles from brochure (${e.message}). Try a different PDF or add vehicles manually.`, 502)
+  }
 }
