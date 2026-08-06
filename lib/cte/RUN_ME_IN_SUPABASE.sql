@@ -207,3 +207,68 @@ create index if not exists gstin_followup_verified_idx on gstin_verification_fol
 create index if not exists gstin_followup_last_sent_idx on gstin_verification_followups (last_followup_sent_at desc);
 
 alter table gstin_verification_followups enable row level security;
+
+
+-- ── 7. Dealer offers + re-engagement history ───────────────────────
+-- See lib/orchestrator/offerEngine.js — when a dealer announces an offer,
+-- every matching rejected/unanswered quote (within windowDays) gets
+-- re-priced and the dealer + customer both get notified. This table is
+-- just the offer's own record for the dealer's history/reference; the
+-- actual re-engagement results live on the affected quote rows
+-- (priceHistory, reEngagedAt fields in the quotes table).
+create table if not exists dealer_offers (
+  id text primary key,
+  dealership text not null,
+  title text not null,
+  discount_amount int not null,
+  applicable_vehicle text,
+  window_days int not null default 60,
+  created_by text,
+  created_at timestamptz not null default now(),
+  matched_count int default 0,
+  updated_count int default 0,
+  emails_sent int default 0
+);
+
+create index if not exists dealer_offers_dealership_idx on dealer_offers (dealership, created_at desc);
+
+alter table dealer_offers enable row level security;
+
+
+-- ── 8. cte_facts — THE CTE LIBRARY ─────────────────────────────────
+-- See lib/cte/factLibrary.js and lib/cte/sources/*.js.
+--
+-- This is the table CTE was always supposed to have: crawlers fetch real
+-- data from official sources ahead of time, it gets normalised and
+-- deduplicated into here, and the MCP server answers from it — a
+-- deterministic lookup at zero marginal cost, no model in the path.
+--
+-- `signature` (metric|geography|period|scope, normalised) is what makes
+-- deduplication work: two sources reporting the same fact land on the
+-- same row and corroborate it rather than creating a duplicate.
+--
+-- Conflicts are RECORDED, never silently resolved. Indian vehicle data
+-- constantly conflates fiscal vs calendar year, dispatches vs
+-- registrations, and nameplate vs powertrain — when two sources disagree,
+-- surfacing both values is the correct answer; averaging them is how this
+-- data goes wrong.
+create table if not exists cte_facts (
+  signature          text primary key,
+  metric             text not null,
+  value              numeric not null,
+  unit               text,
+  period             text,
+  geography          text,
+  scope              text,
+  sources            jsonb not null default '[]'::jsonb,
+  source_count       int not null default 1,
+  has_conflict       boolean not null default false,
+  conflicting_values jsonb not null default '[]'::jsonb,
+  fetched_at         timestamptz not null default now()
+);
+
+create index if not exists cte_facts_metric_idx on cte_facts (metric, value desc);
+create index if not exists cte_facts_geography_idx on cte_facts (geography);
+create index if not exists cte_facts_conflict_idx on cte_facts (has_conflict) where has_conflict = true;
+
+alter table cte_facts enable row level security;

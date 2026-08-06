@@ -61,9 +61,15 @@ export async function POST(req) {
 
     // ── 3b. Validate role matches selected portal ─────────────────
     // Note: 'dealer' role covers both EV dealer and Used Car Dealer tiles.
-    if (selectedRole && user.role !== selectedRole && !(selectedRole === "dealer" && user.role === "dealer")) {
-      const portalName = selectedRole === "oem" ? "OEM Partner" : selectedRole === "rep" ? "Sales Rep" : selectedRole === "superadmin" ? "Founder" : "Dealer"
-      const actualPortal = user.role === "oem" ? "OEM Partner" : user.role === "rep" ? "Sales Rep" : user.role === "superadmin" ? "Founder" : "Dealer"
+    // 'founder' and 'superadmin' are the same portal under two different
+    // role strings (same equivalence already used by the /admin route guard
+    // and /api/admin/founder-overview) — the Founder tile always sends
+    // selectedRole:"superadmin", so an account stored as role:"founder"
+    // must match it too, or every founder account gets rejected here.
+    const isFounderPortalMatch = (selectedRole === "superadmin" || selectedRole === "founder")
+      && (user.role === "superadmin" || user.role === "founder")
+    if (selectedRole && user.role !== selectedRole && !(selectedRole === "dealer" && user.role === "dealer") && !isFounderPortalMatch) {
+      const actualPortal = user.role === "oem" ? "OEM Partner" : user.role === "rep" ? "Sales Rep" : (user.role === "superadmin" || user.role === "founder") ? "Founder" : "Dealer"
       try { await logLoginAttempt(emailClean, ipAddress, false) } catch {}
       return err(`Wrong portal selected. This account is a ${actualPortal} account — please select the '${actualPortal}' tab to sign in.`, 403)
     }

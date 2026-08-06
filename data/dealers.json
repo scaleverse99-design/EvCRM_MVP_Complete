@@ -127,5 +127,22 @@
     "whatsapp": "9876543211",
     "gstNumber": "",
     "createdAt": "2026-07-21T18:20:50.122Z"
+  },
+  {
+    "id": "test-ev-motors-pvt-ltd-91s8",
+    "name": "Test EV Motors PVT LTD",
+    "address": "123 Main Street, Hyderabad, Telangana 500001",
+    "state": "",
+    "district": "Hyderabad",
+    "whatsapp": "9876543210",
+    "gstNumber": "27AAPCU9603R2Z0",
+    "brands": [
+      "Tata Motors",
+      "Ather Energy"
+    ],
+    "category": "EV",
+    "gstVerified": false,
+    "gstVerificationAttempts": 0,
+    "createdAt": "2026-08-05T06:55:18.945Z"
   }
 ]

@@ -1,0 +1,66 @@
+YOUTUBE API .ENV SETUP
+=======================
+
+Add this ONE line to the bottom of your .env file
+(location: C:\Users\balaj\Downloads\EvCRM_MVP_Complete\evcrm-mvp\.env)
+
+
+-----------------------------------------------------------
+YOUTUBE_API_KEY=AIzaSy...paste-your-key-here
+-----------------------------------------------------------
+
+
+RULES:
+------
+1. No quotes needed around the key.
+2. NO SPACES around the = sign.
+3. Must be on ONE line.
+
+4. IMPORTANT — do NOT name it NEXT_PUBLIC_YOUTUBE_API_KEY
+   Anything starting with NEXT_PUBLIC_ gets bundled into the
+   browser JavaScript, where anyone viewing your site could
+   read it and burn your quota. This key is server-side only.
+
+5. Copy the key you just created (restricted to
+   "YouTube Data API v3"), NOT the "Browser key (auto created
+   by Firebase)" — that one is used client-side by Firebase.
+
+
+WHERE TO GET THE KEY
+--------------------
+Google Cloud Console -> APIs & Services -> Credentials
+-> find the key you created -> click the copy icon
+
+If you closed the page before copying: you can always view an
+existing key again from that same Credentials list (unlike the
+Meta token, Google lets you re-view API keys).
+
+
+AFTER YOU SAVE
+--------------
+Just tell me it's added. I'll verify it works by making a real
+API call and showing you actual results before building
+anything on top of it.
+
+
+WHAT THIS KEY WILL BE USED FOR
+------------------------------
+- Reading view counts on Indian car review videos
+  (what people actually watch = proven demand)
+
+- Reading comments on those videos
+  (literal buying questions in people's own words,
+   e.g. "on road price Hyderabad?", "waiting period kitna hai?")
+
+Free tier: 10,000 quota units/day.
+  - a search costs 100 units
+  - reading a page of comments costs 1 unit
+So thousands of comments per day stays comfortably free.
+
+
+NOT NEEDED FOR AUTOCOMPLETE
+---------------------------
+YouTube search autocomplete (what people type into the YouTube
+search box) needs NO key at all - it uses the same public
+endpoint your Google autocomplete already uses. Already verified
+working. The key is only for view counts and comments.

@@ -1,0 +1,135 @@
+[
+  {
+    "id": "wagon-r-vxi-2015-hyd",
+    "brand": "Maruti Suzuki",
+    "modelName": "Wagon R VXI AMT",
+    "type": "Petrol Car",
+    "regYear": 2015,
+    "kmDriven": 73000,
+    "color": "Blue",
+    "bodyType": "Hatchback",
+    "location": "Hyderabad, Telangana",
+    "exShowroomPrice": 215000,
+    "onRoadPrice": 250000,
+    "inspectionGrade": "A",
+    "dealerName": "Used Car Demo Owner",
+    "images": [
+      "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1525609004556-c46c7d6cf0a3?auto=format&fit=crop&q=80&w=800"
+    ],
+    "redirectUrl": "https://www.cars24.com/buy-used-maruti-wagon-r-1.0-2015-cars-hyderabad-100293847/",
+    "specs": {
+      "engine": "998 cc, 3 Cylinders",
+      "power": "67 bhp @ 6200 rpm",
+      "torque": "90 Nm @ 3500 rpm",
+      "mileage": "20.5 kmpl",
+      "transmission": "Automatic (AMT)"
+    }
+  },
+  {
+    "id": "tata-nexon-ev-2022-blr",
+    "brand": "Tata",
+    "modelName": "Nexon EV Max XZ+ Lux",
+    "type": "Electric Vehicle (EV)",
+    "regYear": 2022,
+    "kmDriven": 28000,
+    "color": "Intense Teal",
+    "bodyType": "SUV",
+    "location": "Bangalore, Karnataka",
+    "exShowroomPrice": 1350000,
+    "onRoadPrice": 1420000,
+    "inspectionGrade": "A+",
+    "dealerName": "GreenDrive Premium Cars",
+    "images": [
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800",
+      "https://images.unsplash.com/photo-1525609004556-c46c7d6cf0a3?auto=format&fit=crop&q=80&w=800"
+    ],
+    "redirectUrl": "https://www.spinny.com/buy-used-cars/bangalore/tata/nexon-ev-max/xz-plus-lux-2022/",
+    "specs": {
+      "battery": "40.5 kWh LFP Pack",
+      "claimedRange": "437 km",
+      "realRange": "312 km",
+      "power": "141 bhp",
+      "torque": "250 Nm"
+    }
+  },
+  {
+    "id": "mg-comet-ev-2023-del",
+    "brand": "MG",
+    "modelName": "Comet EV Play",
+    "type": "Electric Vehicle (EV)",
+    "regYear": 2023,
+    "kmDriven": 8500,
+    "color": "Apple Green",
+    "bodyType": "Hatchback",
+    "location": "Delhi NCR",
+    "exShowroomPrice": 720000,
+    "onRoadPrice": 755000,
+    "inspectionGrade": "A",
+    "dealerName": "Electra Hub Delhi",
+    "images": [
+      "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800"
+    ],
+    "redirectUrl": "https://www.carwale.com/used/mg-comet-ev-cars-in-delhi-ncr/",
+    "specs": {
+      "battery": "17.3 kWh LFP Pack",
+      "claimedRange": "230 km",
+      "realRange": "165 km",
+      "power": "41 bhp",
+      "torque": "110 Nm"
+    }
+  },
+  {
+    "id": "hyundai-ioniq5-2023-mumbai",
+    "brand": "Hyundai",
+    "modelName": "IONIQ 5 RWD",
+    "type": "Electric Vehicle (EV)",
+    "regYear": 2023,
+    "kmDriven": 12000,
+    "color": "Gravity Gold",
+    "bodyType": "SUV",
+    "location": "Mumbai, Maharashtra",
+    "exShowroomPrice": 4595000,
+    "onRoadPrice": 4750000,
+    "inspectionGrade": "A++",
+    "dealerName": "Apex Luxury Motors",
+    "images": [
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800"
+    ],
+    "redirectUrl": "https://www.cars24.com/buy-used-hyundai-ioniq-5-mumbai/",
+    "specs": {
+      "battery": "72.6 kWh NMC Pack",
+      "claimedRange": "631 km",
+      "realRange": "475 km",
+      "power": "215 bhp",
+      "torque": "350 Nm"
+    }
+  },
+  {
+    "id": "mahindra-xuv400-2023-chennai",
+    "brand": "Mahindra",
+    "modelName": "XUV400 EC",
+    "type": "Electric Vehicle (EV)",
+    "regYear": 2023,
+    "kmDriven": 19500,
+    "color": "Infinity Blue",
+    "bodyType": "SUV",
+    "location": "Chennai, Tamil Nadu",
+    "exShowroomPrice": 1599000,
+    "onRoadPrice": 1680000,
+    "inspectionGrade": "A",
+    "dealerName": "Nippon Mahindra Showroom",
+    "images": [
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&q=80&w=800"
+    ],
+    "redirectUrl": "https://www.spinny.com/buy-used-cars/chennai/mahindra/xuv400/",
+    "specs": {
+      "battery": "34.5 kWh LFP Pack",
+      "claimedRange": "375 km",
+      "realRange": "260 km",
+      "power": "148 bhp",
+      "torque": "310 Nm"
+    }
+  }
+]

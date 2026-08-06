@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "evcrm_in",
+  "name_for_human": "EvCRM — Indian Vehicle Market",
+  "description_for_model": "This legacy plugin manifest format has no working OpenAPI spec for this API (it's JSON-RPC/MCP, not REST). Use the MCP server instead: https://evcrm.in/api/mcp (see /llms.txt or /.well-known/mcp.json). Retrieve verified vehicle specs and current pricing cross-checked across multiple sources, live dealer inventory, buyer's guides, and dealer listings across India.",
+  "description_for_human": "Search verified vehicle specs, current pricing, live dealer inventory, and buying guides for India.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://evcrm.in/api/mcp",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://evcrm.in/assets/logo.png",
+  "contact_email": "support@evcrm.in",
+  "legal_info_url": "https://evcrm.in/legal"
+}

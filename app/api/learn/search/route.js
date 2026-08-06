@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { readTable, writeTable } from "../../../../lib/store"
 import { pingIndexNow } from "../../../../lib/indexnow"
 import { slugify, generateKnowledgeAnswer, KNOWLEDGE_CATEGORIES } from "../../../../lib/blog"
+import { recordSiteSearchSignal } from "../../../../lib/orchestrator/queryTrigger"
 
 // Brand list used to tag a search query with a mentioned vehicle brand —
 // this is what makes the query log useful as a dealer-facing trend signal
@@ -118,6 +119,18 @@ export async function POST(req) {
     await writeTable("search_queries", logs)
   } catch (e) {
     console.error("[search log] failed:", e.message)
+  }
+
+  // Also feed the AGGREGATED signal table. The raw log above keeps one row
+  // per search (good for a time-ordered dealer trend feed); this collapses
+  // re-worded variants of the same question into one row with a hit count,
+  // which is what scripts/content-priority-report.js reads and what makes
+  // "47 people asked this" visible at all. Separately awaited so a failure
+  // in either logger cannot take out the other.
+  try {
+    await recordSiteSearchSignal(query, resultSlug || null)
+  } catch (e) {
+    console.error("[search signal] failed:", e.message)
   }
 
   if (error) return Response.json({ error }, { status: 502 })

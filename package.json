@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Ev.CRM — India's First EV Dealer Sales OS",
   "private": true,
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

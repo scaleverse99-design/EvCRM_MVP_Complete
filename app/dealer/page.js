@@ -12,6 +12,7 @@ import ImportModal from "../../components/ui/ImportModal"
 import TrialBanner from "../../components/TrialBanner"
 import { lookupEVSpecs } from "../../lib/evCatalog"
 import DomainsStorefrontCard from "../../components/dealer/DomainsStorefrontCard"
+import OffersSection from "../../components/dealer/OffersSection"
 
 /* ── WhatsApp templates ─── */
 const WA_REPLY_MAP = {
@@ -91,6 +92,7 @@ const TABS = [
   { id:"service",    icon:"🔧", label:"Service"     },
   { id:"buildprice", icon:"₹",  label:"BuildPrice"  },
   { id:"quotepro",   icon:"📋", label:"QuotePro"    },
+  { id:"offers",     icon:"🏷️", label:"Offers"      },
   { id:"content",    icon:"📝", label:"Content"     },
   { id:"settings",   icon:"⚙️", label:"Settings"    },
 ]
@@ -4705,6 +4707,8 @@ function DealerDashboard() {
       {activeTab === "buildprice" && <BuildPriceSection user={user} prefill={buildPricePrefill} quotes={quotes} onBuildQuote={(data) => { setQuotePrefill(data); setActiveTab("quotepro") }} />}
 
       {activeTab === "quotepro"  && <QuoteSection dealership={dealership} dealer={user} prefill={quotePrefill} />}
+
+      {activeTab === "offers"    && <OffersSection dealership={dealership} />}
 
       {activeTab === "content"   && <BlogSection dealership={dealership} inventory={inventory} dealerSubdomain={user?.dealerSubdomain} />}
 

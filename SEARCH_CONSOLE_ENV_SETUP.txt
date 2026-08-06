@@ -1,0 +1,67 @@
+SEARCH CONSOLE .ENV SETUP NOTES
+================================
+
+Add these two lines to your .env file (in the evcrm-mvp project root).
+
+Get the values from the JSON key file you downloaded from the
+service account's "Keys" tab in Google Cloud Console.
+
+
+-----------------------------------------------------------
+LINE 1 — client email (no quotes needed)
+-----------------------------------------------------------
+SEARCH_CONSOLE_CLIENT_EMAIL=evcrm-search-console-reader@ev-crm-realtime.iam.gserviceaccount.com
+
+
+-----------------------------------------------------------
+LINE 2 — private key (MUST be double-quoted, MUST stay on ONE line)
+-----------------------------------------------------------
+SEARCH_CONSOLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----\n"
+
+
+RULES:
+------
+1. CLIENT_EMAIL = the "client_email" field from the downloaded JSON file.
+2. PRIVATE_KEY  = the "private_key" field from the same JSON file —
+   copy it EXACTLY as JSON shows it, including the \n characters and
+   the surrounding quotes.
+3. Do NOT turn the \n into real line breaks. Keep it as one single
+   line in the .env file, literal backslash-n and all.
+4. The private key MUST be wrapped in double quotes because it starts
+   with "-----BEGIN..." which would otherwise confuse the parser.
+
+
+WHERE THE VALUES COME FROM (the downloaded JSON file looks like this):
+------------------------------------------------------------------------
+{
+  "type": "service_account",
+  "project_id": "ev-crm-realtime",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----\n",
+  "client_email": "evcrm-search-console-reader@ev-crm-realtime.iam.gserviceaccount.com",
+  ...
+}
+
+
+VERIFY IT WORKED:
+------------------
+Run this in the project folder:
+
+    node scripts/fetch-search-console-queries.js
+
+If it prints real search queries, you're done. If it errors, paste
+the exact error back and it'll get debugged from there — a bad key
+format and a "service account not added to Search Console yet" error
+look different, so the message will point at the right fix.
+
+
+REMINDER — one more step needed before this works:
+----------------------------------------------------
+Add the service account as a user inside Search Console itself
+(this is separate from Google Cloud):
+
+  1. Go to search.google.com/search-console
+  2. Select the evcrm.in property
+  3. Settings -> Users and permissions -> Add user
+  4. Paste: evcrm-search-console-reader@ev-crm-realtime.iam.gserviceaccount.com
+  5. Permission level: Restricted (read-only is enough)

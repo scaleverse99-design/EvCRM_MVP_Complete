@@ -4,6 +4,30 @@
  */
 import { NextResponse } from "next/server"
 import { readTable, writeTable } from "../../../../lib/store"
+import { expireOfferIfNeeded } from "../../../../lib/orchestrator/offerEngine.js"
+
+// Writes straight to the same "feed" table the dealer dashboard already
+// polls every 30s (app/api/dealer/feed/route.js) — no email/SMS/WhatsApp
+// API needed, this is what puts a quote event in front of the dealer.
+async function pushFeedEvent(quote, { type, label, msg, sub, icon, color }) {
+  if (!quote?.dealership) return
+  const feed = await readTable("feed")
+  feed.unshift({
+    id: `feed_${Date.now()}`,
+    dealership: quote.dealership,
+    type,
+    label,
+    msg,
+    sub,
+    icon,
+    color,
+    actionLabel: "View Quote",
+    leadId: quote.leadId || null,
+    quoteId: quote.id,
+    created_at: new Date().toISOString(),
+  })
+  await writeTable("feed", feed)
+}
 
 export async function GET(req, { params }) {
   const { id } = params
@@ -13,11 +37,22 @@ export async function GET(req, { params }) {
 
   const q = quotes[idx]
 
+  // Lazy offer expiry — checked on every read since there's no always-on
+  // background worker. If this quote's active offer has passed its
+  // validDays window, revert to the original price right here before
+  // anyone (customer or dealer) sees a stale discounted price. Runs even
+  // on preview loads, since a dealer previewing should see the real
+  // current price too, not an expired one.
+  if (expireOfferIfNeeded(q)) {
+    await writeTable("quotes", quotes)
+  }
+
   // Track opens if not a preview URL
   const { searchParams } = new URL(req.url)
   const isPreview = searchParams.get("preview") === "true"
 
   if (!isPreview) {
+    const isFirstOpen = !q.openedCount
     q.openedCount = (q.openedCount || 0) + 1
     q.lastOpenedAt = new Date().toISOString()
 
@@ -34,6 +69,19 @@ export async function GET(req, { params }) {
     })
 
     await writeTable("quotes", quotes)
+
+    // Only fire once per quote — every 30s dashboard poll would otherwise
+    // re-surface this on every reload since openedCount keeps climbing.
+    if (isFirstOpen) {
+      await pushFeedEvent(q, {
+        type: "QUOTE_OPENED",
+        label: "QUOTE OPENED",
+        msg: `${q.customerName || "Customer"} opened their quote for ${q.vehicleName || "the vehicle"}`,
+        sub: device,
+        icon: "👀",
+        color: "#2563EB",
+      })
+    }
   }
 
   // Strip internal dealer fields before returning to customer
@@ -78,6 +126,18 @@ export async function POST(req, { params }) {
   }
 
   await writeTable("quotes", quotes)
+
+  if (event === "add_comment" && (body.author || "customer") === "customer") {
+    await pushFeedEvent(q, {
+      type: "QUOTE_QUESTION",
+      label: "CUSTOMER ASKED A QUESTION",
+      msg: `${q.customerName || "Customer"} asked about "${body.lineId || "the quote"}"`,
+      sub: (body.text || "").slice(0, 80),
+      icon: "❓",
+      color: "#F59E0B",
+    })
+  }
+
   return NextResponse.json({ success: true, quote: q })
 }
 
@@ -118,5 +178,38 @@ export async function PATCH(req, { params }) {
   }
 
   await writeTable("quotes", quotes)
+
+  const q = quotes[idx]
+  if (action === "agree") {
+    await pushFeedEvent(q, {
+      type: "QUOTE_ACCEPTED",
+      label: "QUOTE ACCEPTED",
+      msg: `${q.customerName || "Customer"} accepted the quote for ${q.vehicleName || "the vehicle"} — close this deal!`,
+      sub: "Awaiting KYC docs",
+      icon: "✅",
+      color: "#059669",
+    })
+  } else if (action === "not_agreed") {
+    const reasonLabels = { price:"Price too high", finance:"Financing/EMI terms", delivery:"Delivery delay", variant:"Variant/color unavailable", competitor:"Competitor offer", other:"Other" }
+    const reasons = (q.rejectionReasons || []).map(r => reasonLabels[r] || r).join(", ") || "No reason given"
+    await pushFeedEvent(q, {
+      type: "QUOTE_REJECTED",
+      label: "QUOTE HAS CONCERNS",
+      msg: `${q.customerName || "Customer"} raised concerns on ${q.vehicleName || "the quote"}: ${reasons}`,
+      sub: q.customerFeedback || "",
+      icon: "⚠️",
+      color: "#EF4444",
+    })
+  } else if (action === "upload_kyc") {
+    await pushFeedEvent(q, {
+      type: "KYC_UPLOADED",
+      label: "KYC DOCUMENTS UPLOADED",
+      msg: `${q.customerName || "Customer"} uploaded KYC documents — ready for delivery paperwork`,
+      sub: `${Object.keys(q.kycDocs || {}).length} document(s)`,
+      icon: "📄",
+      color: "#059669",
+    })
+  }
+
   return NextResponse.json({ success: true, quote: quotes[idx] })
 }

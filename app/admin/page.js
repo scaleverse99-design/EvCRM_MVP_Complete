@@ -1,9 +1,11 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "../../lib/AuthContext"
 import { authFetch } from "../../lib/token-storage"
 import { C } from "../../lib/constants"
+import OmniRadarView from "./OmniRadarView"
 
 function PageHeader({ title, sub }) {
   return (
@@ -37,6 +39,63 @@ function NavItem({ label, icon, active, onClick }) {
   )
 }
 
+// Same visual language as NavItem, but for pages that live at their own
+// route (/admin/orchestrator, /admin/agents, /admin/enterprise) rather than
+// an in-page tab — these existed with zero links pointing at them before.
+function NavLink({ label, icon, href }) {
+  return (
+    <Link href={href} style={{
+      width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 20px",
+      borderRadius: 12, background: "none", border: "none",
+      color: C.ink2, cursor: "pointer", transition: "all 0.2s", textAlign: "left", fontFamily: "inherit",
+      textDecoration: "none", boxSizing: "border-box",
+    }}>
+      <span style={{ fontSize: 18 }}>{icon}</span>
+      <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+      <span style={{ marginLeft: "auto", fontSize: 11, color: C.ink3 }}>↗</span>
+    </Link>
+  )
+}
+
+function SectionLabel({ children }) {
+  return <div style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: 1, padding: "16px 20px 6px" }}>{children}</div>
+}
+
+function SectionHeading2({ children }) {
+  return <h3 style={{ fontSize: 14, fontWeight: 900, color: C.ink, margin: "0 0 14px", letterSpacing: "-0.2px" }}>{children}</h3>
+}
+
+function MiniStat({ label, val, color }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 18px" }}>
+      <div style={{ fontSize: 10, fontWeight: 800, color: C.ink3, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: color || C.ink, marginTop: 6 }}>{val}</div>
+    </div>
+  )
+}
+
+function QuickLinkCard({ href, icon, title, desc }) {
+  return (
+    <Link href={href} style={{ display: "block", background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, textDecoration: "none", transition: "border-color 0.15s" }}>
+      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 4 }}>{title} <span style={{ color: C.ink3, fontWeight: 600 }}>↗</span></div>
+      <div style={{ fontSize: 11, color: C.ink3 }}>{desc}</div>
+    </Link>
+  )
+}
+
+function HealthRow({ label, ok, note }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+      <span style={{ fontSize: 12, color: C.ink2 }}>{label}</span>
+      <span style={{ fontSize: 11, fontWeight: 800, color: ok ? C.green : C.ink3, display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: ok ? C.green : C.border, display: "inline-block" }} />
+        {note || (ok ? "Configured" : "Not set up")}
+      </span>
+    </div>
+  )
+}
+
 const ROLE_COLORS = { founder: C.purple || "#8B5CF6", superadmin: C.purple || "#8B5CF6", dealer: C.accent, rep: C.orange, oem: C.blue }
 
 export default function AdminPage() {
@@ -46,6 +105,7 @@ export default function AdminPage() {
   const [view, setView] = useState("dashboard")
   const [localUser, setLocalUser] = useState(null)
   const [stats, setStats] = useState(null)
+  const [overview, setOverview] = useState(null)
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState(null)
@@ -56,7 +116,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (authLoading) return
-    if (!user) { router.replace("/login"); return }
+    if (!user) { router.replace("/login?founder=evcrm2026"); return }
     if (user.role !== "superadmin" && user.role !== "founder") { router.replace("/dealer"); return }
     setLocalUser(user)
   }, [user, authLoading, router])
@@ -64,14 +124,17 @@ export default function AdminPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [sRes, uRes] = await Promise.all([
+      const [sRes, uRes, oRes] = await Promise.all([
         authFetch("/api/admin/stats"),
         authFetch("/api/admin/users/all"),
+        authFetch("/api/admin/founder-overview"),
       ])
       const sData = await sRes.json()
       const uData = await uRes.json()
+      const oData = await oRes.json()
       if (sData.success) setStats(sData)
       if (uData.success) setUsers(uData.users || [])
+      if (oData.success) setOverview(oData)
     } finally {
       setLoading(false)
     }
@@ -152,9 +215,22 @@ export default function AdminPage() {
           <span style={{ fontSize: 20, fontWeight: 900, color: C.ink }}>EV.OS <span style={{ color: C.accent, fontSize: 10 }}>FOUNDER</span></span>
         </div>
 
-        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <NavItem label="Global Hub" icon="🛰️" active={view === "dashboard"} onClick={() => setView("dashboard")} />
+        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
+          <NavItem label="Overview" icon="🛰️" active={view === "dashboard"} onClick={() => setView("dashboard")} />
           <NavItem label="User Ops" icon="👥" active={view === "users"} onClick={() => setView("users")} />
+
+          <SectionLabel>Growth</SectionLabel>
+          <NavLink label="Content Pipeline" icon="📰" href="/admin/orchestrator" />
+          <NavLink label="Dealer Analytics" icon="📈" href="/dealer/analytics" />
+          <NavLink label="OEM Console" icon="🏭" href="/oem" />
+
+          <SectionLabel>Intelligence</SectionLabel>
+          <NavItem label="Omni-Radar" icon="🌐" active={view === "omniradar"} onClick={() => setView("omniradar")} />
+          <NavLink label="AutoAhrefs" icon="🔥" href="/admin/auto-ahrefs" />
+
+          <SectionLabel>Platform</SectionLabel>
+          <NavLink label="Enterprise API" icon="🔌" href="/admin/enterprise" />
+          <NavLink label="Agent Sync" icon="🤖" href="/admin/agents" />
         </nav>
 
         <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20 }}>
@@ -172,13 +248,89 @@ export default function AdminPage() {
       {/* ── Main Content ── */}
       <div style={{ flex: 1, marginLeft: 260, padding: "40px 60px" }}>
 
+        {view === "omniradar" && <OmniRadarView />}
+
         {view === "dashboard" && (
           <>
-            <PageHeader title="Global Platform Hub" sub="Real-time performance metrics across every dealership on EvCRM." />
+            <PageHeader title="Founder Overview" sub="Everything built this session, in one place — business, onboarding, sales funnel, content, and system health." />
+
+            {/* ── Business ── */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 32 }}>
-              <StatCard label="Total Revenue (MRR)" val={stats?.mrr ? `₹${stats.mrr.toLocaleString("en-IN")}` : "₹0"} sub="Based on active subscriptions" color={C.accent} />
-              <StatCard label="Active Dealers" val={stats?.stats?.totalDealers || 0} sub={`${stats?.stats?.activeDealer || 0} live now`} color={C.blue} />
-              <StatCard label="Platform Users" val={stats?.stats?.totalUsers || 0} sub="Founders, dealers, reps & OEMs" color={C.ink} />
+              <StatCard label="Total Revenue (MRR)" val={stats?.mrr ? `₹${stats.mrr.toLocaleString("en-IN")}` : "₹0"} sub={`${overview?.business?.payingDealers || 0} paying dealers`} color={C.accent} />
+              <StatCard label="Total Dealers" val={overview?.business?.totalDealers ?? stats?.stats?.totalDealers ?? 0} sub={`${overview?.business?.activeDealers ?? 0} active · ${overview?.business?.trialDealers ?? 0} on trial`} color={C.blue} />
+              <StatCard label="Platform Users" val={overview?.business?.totalUsers ?? stats?.stats?.totalUsers ?? 0} sub="Founders, dealers, reps & OEMs" color={C.ink} />
+            </div>
+
+            {/* ── Dealer onboarding / campaign ── */}
+            <SectionHeading2>Dealer Onboarding</SectionHeading2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+              <MiniStat label="Signed up (7d)" val={overview?.onboarding?.signedUpLast7d ?? "—"} />
+              <MiniStat label="Signed up (30d)" val={overview?.onboarding?.signedUpLast30d ?? "—"} />
+              <MiniStat label="GSTIN provided" val={overview?.onboarding?.withGstin ?? "—"} color={C.green} />
+              <MiniStat label="GSTIN missing" val={overview?.onboarding?.withoutGstin ?? "—"} color={C.orange} />
+            </div>
+
+            {/* ── Quote / sales funnel ── */}
+            <SectionHeading2>Quote Funnel — Dynamic Quote Engagement</SectionHeading2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+              <MiniStat label="Quotes sent" val={overview?.funnel?.totalQuotesSent ?? "—"} />
+              <MiniStat label="Opened by customer" val={overview?.funnel?.opened ?? "—"} color={C.blue} />
+              <MiniStat label="Accepted" val={overview?.funnel?.accepted ?? "—"} color={C.green} />
+              <MiniStat label="Has concerns" val={overview?.funnel?.hasConcerns ?? "—"} color={C.red} />
+            </div>
+            {overview?.funnel?.recentEvents?.length > 0 && (
+              <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "8px 20px", marginBottom: 32 }}>
+                {overview.funnel.recentEvents.map((e, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < overview.funnel.recentEvents.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                    <span style={{ fontSize: 12, color: C.ink2 }}>{e.msg}</span>
+                    <span style={{ fontSize: 10, color: C.ink3 }}>{e.dealership} · {new Date(e.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Content pipeline ── */}
+            <SectionHeading2>Content Pipeline (News Orchestrator)</SectionHeading2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+              <MiniStat label="Discovered" val={overview?.content?.topicCounts?.DISCOVERED ?? "—"} />
+              <MiniStat label="Researched" val={overview?.content?.topicCounts?.RESEARCHED ?? "—"} />
+              <MiniStat label="Published" val={overview?.content?.totalArticlesPublished ?? "—"} color={C.green} />
+              <MiniStat label="Failed" val={overview?.content?.topicCounts?.FAILED ?? "—"} color={overview?.content?.topicCounts?.FAILED > 0 ? C.red : C.ink3} />
+            </div>
+
+            {/* ── Pipeline (leads/bookings) ── */}
+            <SectionHeading2>Lead & Booking Pipeline</SectionHeading2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+              <MiniStat label="Total leads" val={overview?.pipeline?.totalLeads ?? "—"} />
+              <MiniStat label="Bookings" val={overview?.pipeline?.totalBookings ?? "—"} />
+              <MiniStat label="Service requests" val={overview?.pipeline?.totalServiceRequests ?? "—"} />
+              <MiniStat label="Inventory listed" val={overview?.pipeline?.totalInventory ?? "—"} />
+            </div>
+
+            {/* ── System health ── */}
+            <SectionHeading2>System Health — What's Actually Wired Up</SectionHeading2>
+            <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "4px 20px", marginBottom: 24 }}>
+              <HealthRow label="Supabase (production data)" ok={overview?.health?.supabaseConfigured} />
+              <HealthRow label="Email (welcome messages)" ok={overview?.health?.emailConfigured} />
+              <HealthRow label="WhatsApp broadcast" ok={false} note="Manual by design — see campaign docs" />
+              <HealthRow label="Content writer (Gemini)" ok={overview?.health?.geminiConfigured} />
+              <HealthRow label="Content writer (Claude, paid)" ok={overview?.health?.claudeConfigured} />
+              <HealthRow label="Orchestrator cron" ok={overview?.health?.orchestratorCronEnabled} note={overview?.health?.orchestratorCronEnabled ? "Enabled" : "Needs repo secrets"} />
+            </div>
+
+            {/* ── Quick links to the pages that were previously unreachable ── */}
+            <SectionHeading2>Jump To</SectionHeading2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              <div onClick={() => setView("omniradar")} style={{ cursor: "pointer" }}>
+                <QuickLinkCard href="#" icon="🌐" title="Omni-Radar" desc="Master Triangulation Intelligence Loop" />
+              </div>
+              <QuickLinkCard href="/admin/auto-ahrefs" icon="🔥" title="AutoAhrefs India" desc="Competitor Gap Matrix & Intelligence" />
+              <QuickLinkCard href="/admin/orchestrator" icon="📰" title="Content Pipeline" desc="News orchestrator queue, manual triggers" />
+              <QuickLinkCard href="/dealer/analytics" icon="📈" title="Dealer Analytics" desc="Per-dealer performance dashboard" />
+              <QuickLinkCard href="/oem" icon="🏭" title="OEM Console" desc="Dealer network, bulk onboarding, stock requests" />
+              <QuickLinkCard href="/admin/enterprise" icon="🔌" title="Enterprise API" desc="MCP/API clients, tiers, revenue" />
+              <QuickLinkCard href="/admin/agents" icon="🤖" title="Agent Sync" desc="Claude ↔ Antigravity task board" />
+              <QuickLinkCard href="/cte" icon="🔗" title="MCP Server Docs" desc="Public connector documentation" />
             </div>
           </>
         )}

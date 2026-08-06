@@ -7,23 +7,23 @@
 ## ── CTE LIVE INTERCONNECT & WORKLOAD PROTOCOL ──
 
 ### 1. Active File Locks
-* *No active file locks. All codebase files are available for instant editing.*
+* *No active locks. All files are available for edit.*
 
 ### 2. Live Agent Handoff & Metrics
-* **Status**: Active Collaboration (Antigravity ↔ Claude Code)
-* **Last Action**: Completed lightweight crawler, SIAM/FADA official PDF parsers, and token savings benchmark. Claude deployed production orchestrator fixes & MCP discoverability files.
-* **Next Steps**: Seamless parallel execution & mobile remote task processing.
+* **Status**: Handoff from Claude
+* **Last Action**: AdSense remediation done. Fixed the cookie-cutter guide generator in lib/blog.js (now grounds articles in verified CTE specs + live inventory + real comparables, skips rather than publishing filler). Regenerated 7 guides from real data, retired 9. Live blog verified: 0 URJA pages, 0 old-template titles remaining. IMPORTANT: scripts/backfill-blog-articles.js still has the OLD template (400-600 words, 'Best reasons to buy the {brand} {model}' title) - do NOT run it, it would reintroduce the exact problem AdSense flagged. Needs updating to the grounded approach first.
+* **Next Steps**: Awaiting next agent execution...
 * **Estimated Tokens Saved**: ⚡ **200,000 tokens**
 
 ### 3. Shared Task Board & Assignments
-- [x] **[Task #0]** Real lightweight crawler (`cte-engine/crawler/lightweight-crawler.js` & `/api/orchestrator/crawl`) [Assigned to @Antigravity]
-- [x] **[Task #1]** SIAM + FADA official PDF parsers (`cte-engine/crawler/siam-fada-parser.js`) [Assigned to @Antigravity]
-- [x] **[Task #2]** Token-savings benchmark script (`scripts/benchmark-mcp-token-savings.js`) [Assigned to @Antigravity]
-- [x] **[Task #3]** Deploy fed263d & production orchestrator auth fixes [Assigned to @Claude]
+- [x] **[Task #0]** im seeing lot of 404 pages please check solve them [Assigned to @Antigravity]
+
+### 4. Active Help & Delegation Requests
+* *No active help requests. Both agents working in parallel.*
 
 ---
 
-## 4. CTE Project Environment
+## 5. CTE Project Environment
 * **Live Site**: `https://evcrm.in`
-* **Live Agent Hub**: `https://evcrm.in/admin/agents` & `https://evcrm.in/agents`
+* **Live Agent Hub**: `https://evcrm.in/admin/agents`
 * **Database**: Supabase (Live production DB configured in `.env`)

@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "evcrm-in": {
+      "name": "EvCRM — Indian Vehicle Market & Marketplace",
+      "version": "1.0.0",
+      "description": "Live vehicle marketplace, verified market-wide EV data (CTE), buyer's guides, and dealer listings for India. Read-only, no auth required.",
+      "transport": {
+        "type": "streamable-http",
+        "url": "https://evcrm.in/api/mcp"
+      },
+      "capabilities": {
+        "tools": [
+          { "name": "search_vehicles", "description": "Search live vehicle inventory across verified EvCRM dealers." },
+          { "name": "get_vehicle_details", "description": "Full specs for one EvCRM listing by ID." },
+          { "name": "search_market", "description": "Search CTE's verified Indian automobile market database — specs, pricing, and transparency scores cross-checked across multiple sources, covering the whole market." },
+          { "name": "compare_vehicles", "description": "Head-to-head comparison of two or more vehicle models from CTE's verified market database." },
+          { "name": "search_blog_articles", "description": "Search EvCRM's per-model buyer's guides." },
+          { "name": "get_blog_article", "description": "Full text of one buyer's guide, plus current matching inventory." },
+          { "name": "search_knowledge_hub", "description": "Search EvCRM's Learn knowledge base." },
+          { "name": "get_knowledge_article", "description": "Full text of one Learn article." },
+          { "name": "find_dealers", "description": "Find verified vehicle dealers with their own storefront pages, plus real nearby dealerships (Google Places) when no partner covers that city." },
+          { "name": "calculate_emi", "description": "Loan EMI, total interest and total payable for a vehicle loan. Deterministic amortisation, no AI." },
+          { "name": "vehicle_budget_from_emi", "description": "Loan amount and vehicle budget a given monthly EMI supports. Deterministic, no AI." }
+        ]
+      }
+    }
+  }
+}

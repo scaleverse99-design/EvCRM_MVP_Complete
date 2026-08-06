@@ -1,6 +1,31 @@
 import { NextResponse } from "next/server"
+import { detectSearchBot } from "./lib/cte/aiCrawlers"
 
-export function middleware(request) {
+// Best-effort, fire-and-forget. Never let logging affect the response a
+// real visitor or a real crawler gets — a failed log write must be
+// invisible to everyone but us. event.waitUntil lets this finish after the
+// response is already sent, without holding the request open for it.
+function logSearchBotHit(request, event, botName) {
+  try {
+    const url = new URL("/api/telemetry/bot-hit", request.url)
+    const promise = fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Shared secret, same pattern as the admin orchestrator proxy —
+        // this endpoint is reachable by anyone, but only middleware (which
+        // knows the server-only secret) should be able to write to it.
+        "X-Internal-Secret": process.env.INTERNAL_API_SECRET || "",
+      },
+      body: JSON.stringify({ bot: botName, path: request.nextUrl.pathname }),
+    }).catch(() => {}) // never let a network hiccup here surface anywhere
+    event?.waitUntil?.(promise)
+  } catch {
+    // logging must never be able to break a real request
+  }
+}
+
+export function middleware(request, event) {
   const host = request.headers.get("host") || ""
   const pathname = request.nextUrl.pathname
 
@@ -13,6 +38,14 @@ export function middleware(request) {
   ) {
     return NextResponse.next()
   }
+
+  // Layer 3 of the intent-capture discussion: we can't see what a user
+  // asked an AI, or what query the AI sent to its own search index — but
+  // when that AI's search feature decides to fetch one of OUR pages, that
+  // request carries an identifiable name. This is the only point in the
+  // whole pipeline where that's true, so it has to be caught here.
+  const bot = detectSearchBot(request.headers.get("user-agent"))
+  if (bot) logSearchBotHit(request, event, bot)
 
   // Extract domain without port
   const domain = host.split(":")[0].toLowerCase()

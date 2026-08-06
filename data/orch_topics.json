@@ -1,0 +1,161 @@
+[
+  {
+    "id": "topic_1784739534686_xbkbz",
+    "topic": "India crosses 52,718 public EV charging stations, boosted by govt funds",
+    "category": "ev",
+    "sourceUrl": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGyqglJRIlvB4_m6xLOJsonxbkMWRmJb90_6NSXYvWFdrs_rnQJua-1pNc91tON8_1O6QthDqqxptsVfp8x4CzD3buvevunMpx5DBcVmBxfzgqHAYlDarmChVJjx3lUX7deGyLiBmcAgYlIWUAbyG32WN2oBytijLgAyAy9X4TSCPXYv7Xke0AD5B9fKmfSoSUjvZEnifeMvsY4bBiUnimakL5pCnqA3lrh25QXwpRj2nabt0uWwummFY1NigtW6bwJuupquCr3T_M3OMpffPW5nJPicQ==",
+    "keyFacts": [
+      "India now has 52,718 public EV charging stations, including over 16,500 fast chargers.",
+      "The Ministry of Heavy Industries allocated ₹912.50 crore under FAME-II and ₹2,000 crore under PM E-DRIVE for charging stations.",
+      "The Ministry of Power issued 'Guidelines for Installation and Operation of Electric Vehicle Charging Infrastructure 2024'."
+    ],
+    "publisher": "ET Auto",
+    "summary": "India has significantly expanded its public EV charging network to 52,718 stations, including over 16,500 fast chargers, with substantial government funding under FAME-II and PM E-DRIVE schemes and new operational guidelines.",
+    "slugSeed": "india-crosses-52-718-public-ev-charging-stations-boosted-by-",
+    "state": "FAILED",
+    "discoveredAt": "2026-07-22T16:58:54.686Z",
+    "discoveredByModel": "gemini-2.5-flash",
+    "brief": {
+      "executiveSummary": "India has significantly expanded its public EV charging network to 52,718 stations, including over 16,500 fast chargers, with substantial government funding under FAME-II and PM E-DRIVE schemes and new operational guidelines.",
+      "keyFacts": [
+        "India now has 52,718 public EV charging stations, including 16,561 fast chargers.",
+        "The Ministry of Heavy Industries has allocated ₹912.50 crore under FAME-II and ₹2,000 crore under the PM E-DRIVE scheme for charging stations.",
+        "The Ministry of Power issued 'Guidelines for Installation and Operation of Electric Vehicle Charging Infrastructure 2024' to standardize the charging network.",
+        "Setting up EV charging stations has been made an unlicensed activity to encourage private investment.",
+        "The FAME-II scheme, active from April 1, 2019, to March 31, 2024, had a budget of ₹11,500 crore and supported approximately 16.72 lakh electric vehicles.",
+        "The PM E-DRIVE scheme, notified on September 29, 2024, has an outlay of ₹10,900 crore and aims to support around 28.30 lakh electric vehicles, including a ₹2,000 crore allocation for public charging stations.",
+        "The Ministry of Power's 2024 guidelines aim for one charging station every 1 km in urban areas and every 20 km along highways by 2030."
+      ],
+      "marketImpact": "The expansion of public EV charging stations is a significant development for India's electric mobility sector. It aims to alleviate range anxiety, a major barrier to EV adoption, and encourage more consumers to switch to electric vehicles. This growth is supported by government funding and policy initiatives, fostering a more robust and accessible EV ecosystem for both personal and commercial use.",
+      "buyerImplications": "Indian buyers can expect increased convenience and reduced range anxiety with the growing number of public EV charging stations, especially fast chargers. This expansion makes EV ownership more practical and accessible, encouraging a transition to sustainable transportation.",
+      "commonQuestions": [
+        {
+          "question": "What are the government schemes supporting EV charging infrastructure in India?",
+          "answer": "The primary schemes are FAME-II (Faster Adoption and Manufacturing of Electric Vehicles) and PM E-DRIVE (Prime Minister Electric Drive Revolution in Innovative Vehicle Enhancement)."
+        },
+        {
+          "question": "What are the new guidelines for EV charging infrastructure?",
+          "answer": "The Ministry of Power has issued 'Guidelines for Installation and Operation of Electric Vehicle Charging Infrastructure 2024,' which set standards for a connected and interoperable charging network, including battery swapping and charging stations."
+        },
+        {
+          "question": "How is the government encouraging private investment in EV charging?",
+          "answer": "Setting up EV charging stations has been made an unlicensed activity, allowing private entrepreneurs to establish charging infrastructure more easily."
+        }
+      ],
+      "keywords": [
+        "EV charging stations",
+        "India",
+        "FAME-II",
+        "PM E-DRIVE",
+        "electric mobility",
+        "government funding",
+        "charging infrastructure"
+      ],
+      "citations": [
+        {
+          "url": "https://economictimes.indiatimes.com/industry/auto/auto-news/india-crosses-52000-public-ev-charging-stations-ramps-up-infra-push/articleshow/121703008.cms",
+          "title": "India crosses 52000 public EV charging stations, ramps up infra push - ET Auto",
+          "publisher": "ET Auto"
+        },
+        {
+          "url": "https://www.renewablewatch.in/2024/09/23/mop-releases-guidelines-for-installation-and-operation-of-electric-vehicle-charging-infrastructure-2024/",
+          "title": "MoP releases guidelines for Installation and Operation of Electric Vehicle Charging Infrastructure-2024 - Renewable Watch",
+          "publisher": "Renewable Watch"
+        },
+        {
+          "url": "https://asiapack.co/ministry-of-power-updates-guidelines-for-installing-ev-charging-infra-2024/",
+          "title": "Ministry of Power Updates Guidelines for Installing EV Charging Infra 2024 - Asia Pacific",
+          "publisher": "Asia Pacific"
+        },
+        {
+          "url": "https://devdiscourse.com/india-accelerates-ev-revolution-over-52000-charging-stations-nationwide-117023.html",
+          "title": "India Accelerates EV Revolution: Over 52,000 Charging Stations Nationwide - Devdiscourse",
+          "publisher": "Devdiscourse"
+        },
+        {
+          "url": "https://pib.gov.in/PressReleasePage.aspx?PRID=2040038",
+          "title": "CHARGING STATIONS FOR ELECTRIC VEHICLES (EVs) - PIB",
+          "publisher": "Press Information Bureau (PIB)"
+        },
+        {
+          "url": "https://www.sarkaritel.com/india-has-52718-public-ev-charging-stations-govt-tells-parliament/",
+          "title": "India Has 52,718 Public EV Charging Stations, Govt Tells Parliament - Sarkaritel.com",
+          "publisher": "Sarkaritel.com"
+        },
+        {
+          "url": "https://trak.in/india-now-has-more-than-52000-public-electric-vehicle-charging-stations/",
+          "title": "India Now Has More Than 52,000 Public Electric Vehicle Charging Stations - Trak.in",
+          "publisher": "Trak.in"
+        },
+        {
+          "url": "https://www.businesstoday.in/sectors/auto/story/centre-approves-rs-689-crore-for-ev-charging-network-under-pm-e-drive-but-no-funds-spent-yet-437938-2026-07-22",
+          "title": "₹689 crore approved for EV charging network under PM E DRIVE, but no funds spent yet - Business Today",
+          "publisher": "Business Today"
+        },
+        {
+          "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2040038",
+          "title": "installation of ev charging stations - PIB",
+          "publisher": "Press Information Bureau (PIB)"
+        },
+        {
+          "url": "https://www.socialnews.xyz/india-has-52718-public-ev-charging-stations-over-16500-equipped-with-fast-chargers-govt/",
+          "title": "India has 52718 public EV charging stations, over 16500 equipped with fast chargers: Govt",
+          "publisher": "Social News XYZ"
+        },
+        {
+          "url": "https://kashmirlife.net/centre-allocates-rs-2912-50-crore-to-expand-ev-charging-network-across-india-375536",
+          "title": "Centre Allocates Rs 2,912.50 Crore to Expand EV Charging Network Across India",
+          "publisher": "Kashmir Life"
+        },
+        {
+          "url": "https://www.livemint.com/industry/energy/india-crosses-52718-public-ev-charging-stations-boosted-by-govt-funds-11721564829930.html",
+          "title": "India crosses 52,718 public EV charging stations, boosted by govt funds",
+          "publisher": "Livemint"
+        }
+      ]
+    },
+    "researchedAt": "2026-07-22T17:00:38.042Z",
+    "researchedByModel": "gemini-2.5-flash-lite",
+    "error": "All Gemini models failed. Last error: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "failedAt": "2026-07-22T17:01:30.352Z"
+  },
+  {
+    "id": "topic_1784739534686_88gzt",
+    "topic": "Delhi's EV Policy 2.0 mandates electric-only registration for 3W and 2W by 2027/2028",
+    "category": "government policy changes",
+    "sourceUrl": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHPSNKabfm0QErDIBQ21Ygp5vpp-NXaqHVeuyFrQIVHlNw_wucA-3nDe4jr5kkh7Xt7bbBXJ1MD8MWq0nOKxPmrmRoIyJj3TySEjmpG1g1R0JGb29U7xorZfe0LH8Laa_BhEiyjQ397UQWAEhu2PMSJCmJi99zlwLr1EROk1VHXSWysNCSw7R8i6sgd2GzTUy3DVp5DkaYIwrV7c5ekdKg8aXzPB9BssWFTpw_aFg==",
+    "keyFacts": [
+      "From January 1, 2027, only electric three-wheelers (L5 category) will be permitted for new registration in Delhi.",
+      "From April 1, 2028, this restriction extends to two-wheelers.",
+      "Electric cars priced at or below ₹30 lakh (ex-showroom) receive 100% exemption on road tax and registration fees."
+    ],
+    "publisher": "ET Auto",
+    "summary": "Delhi's new EV Policy 2.0 mandates that only electric three-wheelers and two-wheelers will be registered from January 1, 2027, and April 1, 2028, respectively, while also offering 100% road tax and registration fee exemptions for electric cars under ₹30 lakh.",
+    "slugSeed": "delhi-s-ev-policy-2-0-mandates-electric-only-registration-fo",
+    "state": "FAILED",
+    "discoveredAt": "2026-07-22T16:58:54.686Z",
+    "discoveredByModel": "gemini-2.5-flash",
+    "error": "All Gemini models failed. Last error: Empty Gemini response",
+    "failedAt": "2026-07-22T17:00:38.042Z"
+  },
+  {
+    "id": "topic_1784739534686_9tu8q",
+    "topic": "Maruti Suzuki to hike prices from August 2026; Brezza facelift launching July 24",
+    "category": "cars",
+    "sourceUrl": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFYm1RCFmddJB3DkuQRRoaKkdFkd21vBqDbnzQvF6iy4BRtuw9xqZ8garkgx9iR0mHgSA42NOGEPxITr2NDJ-nAg6ukInasKR0R2zuq0Q792a5-qadhmGKp0A==",
+    "keyFacts": [
+      "Maruti Suzuki will increase prices across its passenger vehicle range from August 2026.",
+      "The price increase could be up to ₹30,000, varying by model.",
+      "The Maruti Suzuki Brezza facelift is set to launch on July 24, 2026.",
+      "The Brezza facelift will feature updated styling, a feature-rich cabin, and potentially a new 1.0-litre Boosterjet turbo-petrol engine."
+    ],
+    "publisher": "India Today",
+    "summary": "Maruti Suzuki will implement a price hike across its passenger vehicle lineup starting August 2026, while also preparing for the launch of the facelifted Brezza SUV on July 24, 2026, which will feature updated styling and new engine options.",
+    "slugSeed": "maruti-suzuki-to-hike-prices-from-august-2026-brezza-facelif",
+    "state": "FAILED",
+    "discoveredAt": "2026-07-22T16:58:54.686Z",
+    "discoveredByModel": "gemini-2.5-flash",
+    "error": "All Gemini models failed. Last error: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "failedAt": "2026-07-22T17:00:38.042Z"
+  }
+]

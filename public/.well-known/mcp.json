@@ -20,7 +20,8 @@
           { "name": "get_knowledge_article", "description": "Full text of one Learn article." },
           { "name": "find_dealers", "description": "Find verified vehicle dealers with their own storefront pages, plus real nearby dealerships (Google Places) when no partner covers that city." },
           { "name": "calculate_emi", "description": "Loan EMI, total interest and total payable for a vehicle loan. Deterministic amortisation, no AI." },
-          { "name": "vehicle_budget_from_emi", "description": "Loan amount and vehicle budget a given monthly EMI supports. Deterministic, no AI." }
+          { "name": "vehicle_budget_from_emi", "description": "Loan amount and vehicle budget a given monthly EMI supports. Deterministic, no AI." },
+          { "name": "web_search_intelligence", "description": "Universal Search Intelligence for the Indian Automotive Industry. Queries real-time prices, specs, trends, and market intelligence for EVs and traditional vehicles across the internet." }
         ]
       }
     }
