@@ -1,10 +1,9 @@
 export const dynamic = "force-dynamic"
 
 import { verifyToken, ok, err } from "../../../../../lib/auth"
-import { callOpenRouter } from "../../../../../lib/orchestrator/openrouter"
-import pdfParse from "pdf-parse"
 
-const MAX_PDF_BYTES = 12 * 1024 * 1024 // 12MB — brochures are usually a few MB; generous but bounded
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
+const MAX_PDF_BYTES = 12 * 1024 * 1024 // 12MB
 
 function getUser(req) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "").trim()
@@ -12,9 +11,9 @@ function getUser(req) {
   try { return verifyToken(token) } catch { return null }
 }
 
-const EXTRACTION_PROMPT = `You are extracting EV vehicle listings from a manufacturer/dealer brochure for an inventory system.
+const EXTRACTION_PROMPT = `You are extracting EV vehicle listings from a manufacturer/dealer brochure PDF for an inventory system.
 
-Below is the text extracted from the brochure PDF. Find EVERY distinct vehicle (each trim/variant counts separately) and return them as a JSON array. For each vehicle, extract only what's actually stated in the document — leave a field as an empty string / 0 / empty array if it isn't mentioned, never guess or invent a number.
+Find EVERY distinct vehicle (each trim/variant counts separately) in this document and return them as a JSON array. For each vehicle, extract only what's actually stated in the document — leave a field as an empty string / 0 / empty array if it isn't mentioned, never guess or invent a number.
 
 Return strictly valid JSON matching this shape:
 [
@@ -45,6 +44,10 @@ export async function POST(req) {
   if (!user) return err("Unauthorized", 401)
   if (!["dealer", "founder", "superadmin"].includes(user.role)) return err("Forbidden", 403)
 
+  if (!OPENROUTER_API_KEY) {
+    return err("Brochure parsing is not configured yet — no OpenRouter API key set up.", 503)
+  }
+
   const body = await req.json()
   const dataUrl = body.pdfBase64 || ""
   const match = dataUrl.match(/^data:application\/pdf;base64,(.+)$/)
@@ -56,30 +59,48 @@ export async function POST(req) {
     return err(`PDF is too large (max ${Math.round(MAX_PDF_BYTES / 1024 / 1024)}MB)`, 400)
   }
 
-  let pdfText = ""
   try {
-    const pdfBuffer = Buffer.from(base64, 'base64')
-    const parsed = await pdfParse(pdfBuffer)
-    pdfText = parsed.text
-    if (!pdfText || pdfText.trim() === "") {
-      throw new Error("No readable text found in PDF.")
-    }
-  } catch (parseErr) {
-    return err(`Could not read text from this PDF: ${parseErr.message}. Ensure it is a text-searchable PDF, not just scanned images.`, 400)
-  }
-
-  try {
-    const fullPrompt = `${EXTRACTION_PROMPT}\n\n--- BROCHURE TEXT ---\n${pdfText.substring(0, 50000)}\n---------------------`
-    
-    // Call OpenRouter using the openai/gpt-4o model
-    const { text, modelUsed } = await callOpenRouter(fullPrompt, { 
-      model: "openai/gpt-4o",
-      temperature: 0.2
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://evcrm.in",
+        "X-Title": "EvCRM Brochure Extraction"
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3.5-sonnet",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: EXTRACTION_PROMPT
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${base64}`
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.2
+      })
     })
 
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`OpenRouter API error (${res.status}): ${errText}`)
+    }
+
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
     if (!text) throw new Error("Empty AI response")
 
-    // Clean up potential markdown formatting block if the AI ignores instructions
+    // Clean up potential markdown formatting block
     let jsonStr = text.trim()
     if (jsonStr.startsWith("\`\`\`json")) jsonStr = jsonStr.replace(/^\`\`\`json/, "").replace(/\`\`\`$/, "").trim()
     if (jsonStr.startsWith("\`\`\`")) jsonStr = jsonStr.replace(/^\`\`\`/, "").replace(/\`\`\`$/, "").trim()
@@ -87,8 +108,9 @@ export async function POST(req) {
     const vehicles = JSON.parse(jsonStr)
     if (!Array.isArray(vehicles)) throw new Error("AI did not return a vehicle list")
 
-    return ok({ vehicles: vehicles.slice(0, 25) }) // sanity cap
+    return ok({ vehicles: vehicles.slice(0, 25) })
   } catch (e) {
+    console.error("[Brochure Parse Error]", e)
     return err(`Could not extract vehicles from brochure (${e.message}). Try a different PDF or add vehicles manually.`, 502)
   }
 }

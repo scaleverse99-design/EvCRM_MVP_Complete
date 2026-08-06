@@ -6,6 +6,8 @@ import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal, describeSignature } from "../../../lib/orchestrator/queryTrigger"
 import { sourceLiveAnswer } from "../../../lib/cte/sourceLive"
+import { queryFacts } from "../../../lib/cte/factLibrary.js"
+import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
@@ -341,16 +343,71 @@ async function toolSearchMarket(args = {}) {
   //
   // Returns null rather than anything invented when it cannot ground an
   // answer — an empty result stays empty instead of becoming a guess.
+  // Escalation order is deliberate: DETERMINISTIC FIRST, MODEL LAST. This
+  // is what LIVE_SOURCING_DESIGN.md specified ("deterministic first, model
+  // only as backstop") and what had never been wired — every miss went
+  // straight to Gemini, which is both a per-call cost and the thing that
+  // makes CTE just a slow proxy for the search the calling AI can already
+  // do itself. CTE's value is the pre-built, cleaned library; the model is
+  // the fallback of last resort, not the engine.
+  //
+  //   1. cte_facts   — pre-crawled library. Instant, free, deterministic.
+  //   2. liveCrawl   — data.gov.in catalogue, fetched now. Free, no LLM.
+  //   3. sourceLive  — Gemini. Costs quota, capped at 8/day.
   if (page.length === 0 && offset === 0) {
     const topic = describeSignature("search_market", args)
-    const live = await sourceLiveAnswer(topic)
-    if (live?.facts?.length) {
-      result.source = "live"
-      result.liveFacts = live.facts
-      result.liveSources = live.sources
-      result.sourcedAt = live.sourcedAt
-      if (live.limitation) result.limitation = live.limitation
-      result.note = "Not from EvCRM's verified database — sourced live from the cited third-party sources and not independently verified."
+
+    // 1. Pre-built library.
+    try {
+      const libFacts = await queryFacts({ geography: args.query || undefined, limit: 10 })
+      if (libFacts.length) {
+        result.source = "cte_library"
+        result.facts = libFacts.map(f => ({
+          label: f.metric, value: f.value, unit: f.unit, period: f.period,
+          geography: f.geography, scope: f.scope,
+          sourceUrl: f.sources?.[0]?.url || null,
+          corroboratingSources: f.source_count,
+          ...(f.has_conflict ? { conflictingValues: f.conflicting_values } : {}),
+        }))
+        result.note = "From EvCRM's verified fact library, cross-checked across sources."
+      }
+    } catch (e) {
+      console.warn("[mcp] cte_facts lookup failed:", e.message)
+    }
+
+    // 2. Deterministic real-time crawl of official sources.
+    if (!result.facts?.length) {
+      try {
+        const crawled = await liveCrawlAnswer(topic)
+        if (crawled?.facts?.length) {
+          result.source = "live_official"
+          result.facts = crawled.facts.slice(0, 10).map(f => ({
+            label: f.metric, value: f.value, unit: f.unit,
+            period: f.period, geography: f.geography, sourceUrl: f.sourceUrl,
+          }))
+          result.sourceDatasets = crawled.parsed?.map(p => ({ title: p.title, url: p.url }))
+          result.note = "Sourced live from official government open data (data.gov.in), parsed deterministically."
+        } else if (crawled?.unparsed?.length) {
+          // Even when no number could be safely extracted, naming the real
+          // official datasets beats returning nothing.
+          result.relatedOfficialDatasets = crawled.unparsed.slice(0, 3).map(u => ({ title: u.title, url: u.url }))
+        }
+      } catch (e) {
+        console.warn("[mcp] liveCrawl failed:", e.message)
+      }
+    }
+
+    // 3. Model backstop, only if both deterministic paths came up empty.
+    if (!result.facts?.length) {
+      const live = await sourceLiveAnswer(topic)
+      if (live?.facts?.length) {
+        result.source = "live"
+        result.liveFacts = live.facts
+        result.liveSources = live.sources
+        result.sourcedAt = live.sourcedAt
+        if (live.limitation) result.limitation = live.limitation
+        result.note = "Not from EvCRM's verified database — sourced live from the cited third-party sources and not independently verified."
+      }
     }
   }
 
