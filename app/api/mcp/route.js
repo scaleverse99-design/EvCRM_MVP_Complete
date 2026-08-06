@@ -9,6 +9,7 @@ import { sourceLiveAnswer, readLiveCache, writeLiveCache } from "../../../lib/ct
 import { queryFacts } from "../../../lib/cte/factLibrary.js"
 import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
+import { createBookingIntent } from "../../../lib/mcp/bookingIntent.js"
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -109,6 +110,47 @@ async function toolSearchVehicles(args = {}) {
     offset,
     vehicles: results,
     marketplaceUrl: "https://evcrm.in/showroom",
+  }
+}
+
+/**
+ * The only WRITE-shaped tool on this server — and it deliberately writes
+ * nothing. See lib/mcp/bookingIntent.js for the full reasoning.
+ *
+ * It returns a signed confirmation link that a HUMAN must open and submit.
+ * That keeps the endpoint safely public (an API key would kill adoption and
+ * defeat the AEO work) and means a model misreading "I like the Nexon" as
+ * intent to book costs an unopened URL, not a real appointment a dealer
+ * drives out to.
+ */
+async function toolBookTestDrive(args = {}) {
+  if (!args.vehicleId) return { error: "vehicleId is required — get one from search_vehicles" }
+
+  const inventory = await readTableCached("inventory")
+  const v = inventory.find(x => x.id === args.vehicleId && isPubliclyVisible(x))
+  if (!v) return { error: "Vehicle not found or no longer available" }
+
+  let intent
+  try {
+    intent = createBookingIntent({ vehicleId: v.id, preferredDate: args.preferredDate || null })
+  } catch (e) {
+    return { error: `Could not create booking link: ${e.message}` }
+  }
+
+  return {
+    status: "confirmation_required",
+    vehicle: vehicleSummary(v),
+    dealerName: v.dealerName,
+    city: v.district,
+    preferredDate: args.preferredDate || undefined,
+    confirmationUrl: intent.url,
+    expiresAt: intent.expiresAt,
+    // Spelled out because the assistant is the one talking to the user, and
+    // it must not imply a booking already exists.
+    instructions:
+      "NOTHING IS BOOKED YET. Give the user confirmationUrl and tell them to open it " +
+      "to enter their name and phone and confirm. The booking is only created after they submit. " +
+      `The link expires at ${intent.expiresAt}.`,
   }
 }
 
@@ -583,6 +625,27 @@ const TOOLS = [
     description: "Full text of one buyer's guide by slug, plus currently available listings.",
     inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
     handler: toolGetBlogArticle,
+  },
+  {
+    name: "book_test_drive",
+    title: "Start a test-drive booking",
+    // readOnlyHint stays TRUE because this tool genuinely writes nothing —
+    // it returns a link a human must open. Claiming otherwise would make
+    // clients gate it behind write-confirmation prompts it doesn't need.
+    annotations: { title: "Start a test-drive booking", readOnlyHint: true, idempotentHint: false, openWorldHint: false },
+    description:
+      "Begins a test-drive booking for a vehicle from search_vehicles. Does NOT book anything: it returns a " +
+      "confirmationUrl the user must open to enter their details and confirm. Always give the user the link and " +
+      "make clear nothing is booked until they submit it. Never state that a booking exists after calling this.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        vehicleId: { type: "string", description: "id from search_vehicles" },
+        preferredDate: { type: "string", description: "Optional ISO date (YYYY-MM-DD) the user prefers" },
+      },
+      required: ["vehicleId"],
+    },
+    handler: toolBookTestDrive,
   },
   {
     name: "search_knowledge_hub",
