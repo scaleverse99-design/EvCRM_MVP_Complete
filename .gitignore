@@ -12,6 +12,15 @@ node_modules/
 
 firebase-debug.log
 *-debug.log
+
+# ALL logs, not just *-debug.log. deploy2.log and deploy.log did not match
+# the pattern above, so they were tracked — and deploy2.log ended up holding
+# 32 copies of a live GCP API key plus a second one. GitHub push protection
+# caught it (2026-08-07); both keys had to be rotated.
+#
+# Build and deploy output routinely echoes environment variables. Treat every
+# log as potentially secret-bearing and never commit one.
+*.log
 .aider*
 
 # scratch space for local experiments / browser automation profiles —
