@@ -343,6 +343,63 @@ alter table article_vehicles enable row level security;
 
 ## 8. Known Issues & Open Bugs (⚠️ START HERE)
 
+### 🟢 2026-08-06 — Silent article truncation in the Gemini writer (FIXED, not yet deployed)
+
+`lib/orchestrator/gemini.js` never inspected `finishReason`. A generation cut off
+at the token cap returns **HTTP 200 with plausible-looking text**, so a half-written
+article would publish silently — same failure class as the invented `current_price: 2026`
+that `lib/cte/liveCrawl.js` was hardened against: worse than an error, because nothing
+looks wrong. Now throws `generation incomplete (finishReason: …)` and that string is
+registered in `RETRYABLE_PATTERNS`, so the topic re-rolls (bounded by write.js
+`MAX_RETRIES = 5`) instead of being permanently marked FAILED.
+
+- **Production was NOT emitting truncated articles** — `gemini.js` never sets
+  `maxOutputTokens`, so it gets the 8192 default. This was a latent trap, not an
+  active outage. The bug surfaced in `scripts/test-content-from-signals.js`, which
+  set 2000 and produced a **63-word** "900-word" article.
+- **Why 2000 wasn't enough, measured 2026-08-06**: `gemini-2.5-flash` spent
+  **1,272 tokens on internal thinking** before emitting any prose. Budget a
+  generous `maxOutputTokens` or don't set it at all — a number that looks
+  comfortable can still truncate.
+- **Free-tier quota is 20 requests/day PER MODEL** (re-confirmed 2026-08-06 by
+  exhausting it). Failover `gemini-2.5-flash` → `gemini-2.5-flash-lite` effectively
+  doubles the daily budget; both were unavailable at once during this session
+  (429 then 503), so article generation could not be completed — resets next day.
+
+### 🔴 2026-08-06 — OpenRouter account has ZERO credits; writer chain was silently degraded (partly FIXED)
+
+The `OPENROUTER_API_KEY` in `.env`/`.env.production` belongs to an account that
+**"never purchased credits"** (confirmed live: every paid-model call returns
+**HTTP 402**). This matters because `lib/orchestrator/write.js` tries OpenRouter
+**FIRST**, before Gemini.
+
+- **`lib/orchestrator/openrouter.js` was pointing at `openrouter/auto`** — the sole
+  entry in a const literally named `FREE_MODELS`, under a docstring claiming
+  "100% free models". **`auto` is a PAID router.** So every writer call 402'd,
+  silently fell through to Gemini (20/day), and then to the non-AI template
+  writer. The "AI writer" has most likely been running as the rule-based
+  template synthesizer.
+- **FIXED**: `FREE_MODELS` now lists genuinely-free `:free`-suffixed models as a
+  CHAIN (free models rate-limit individually — `gemma-4` returned 429 while
+  `nemotron-3-super` served fine at the same instant). Also fixed in the same
+  file: `max_tokens` was hardcoded 2000 and non-overridable (a measured
+  1,002-word article used **2,361 completion tokens, 664 of them reasoning
+  tokens** — it would have truncated), and `finish_reason` was never checked
+  (same silent-truncation class as the gemini.js bug above). Added a
+  `systemPrompt` option — the default demands JSON because write.js runs
+  `extractJson()`, which silently breaks any prose caller.
+- **Verified working**: `nvidia/nemotron-3-super-120b-a12b:free` produced a
+  1,927-word article at `cost: 0` on the zero-credit key.
+- **⚠️ STILL BROKEN — needs a decision, not a code fix**:
+  `app/api/dealer/inventory/parse-brochure/route.js` calls
+  **`anthropic/claude-3.5-sonnet`** (paid) — see commit `2b8a8c2`. With no
+  credits this returns 402, so **dealer brochure PDF upload is non-functional
+  in production**. It was chosen deliberately for multimodal PDF reading, and
+  the free models may not accept PDF input, so swapping the model would likely
+  degrade the feature. Options: buy OpenRouter credits, or revert that route to
+  the Gemini multimodal path it used before `a24884c`.
+- `lib/ai-pulse.js` already uses `google/gemma-4-31b-it:free` — correct, no change needed.
+
 ### 🔵 2026-08-04 — PAUSED pending Google Cloud startup credits (decision expected ~2026-08-09)
 
 Founder has applied for Google for Startups Cloud credits. Infrastructure
