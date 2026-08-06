@@ -5,7 +5,7 @@ import { readTableCached } from "../../../lib/store"
 import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../../../lib/cte/places"
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal, describeSignature } from "../../../lib/orchestrator/queryTrigger"
-import { sourceLiveAnswer } from "../../../lib/cte/sourceLive"
+import { sourceLiveAnswer, readLiveCache, writeLiveCache } from "../../../lib/cte/sourceLive"
 import { queryFacts } from "../../../lib/cte/factLibrary.js"
 import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
@@ -165,11 +165,29 @@ async function toolGetBlogArticle(args = {}) {
   const inventory = await readTableCached("inventory")
   const vehicles = inventory.filter(v => linkedIds.includes(v.id) && isPubliclyVisible(v)).slice(0, MAX_RESULTS).map(vehicleSummary)
 
+  // Returns the article PRE-DIGESTED, not just its prose. An assistant
+  // answering "what should I know about X" would otherwise have to re-derive
+  // the summary, the comparison figures and the provenance from the body —
+  // paying tokens to reconstruct structure the writer already produced and
+  // we already store. Handing over keyTakeaways/comparisonTable/citations
+  // directly is the whole point of serving AI through MCP rather than
+  // letting it parse the HTML page.
   return {
     url: `https://evcrm.in/blog/${post.slug}`,
     title: post.title,
     excerpt: post.excerpt,
     body: post.body,
+    // Structured summary — usable verbatim, no extraction needed.
+    keyTakeaways: post.keyTakeaways?.length ? post.keyTakeaways : undefined,
+    comparisonTable: post.comparisonTable?.rows?.length ? post.comparisonTable : undefined,
+    // Provenance. An assistant deciding whether to cite us needs to know how
+    // old this is and where the underlying claims came from.
+    publishedAt: post.publishedAt || post.createdAt,
+    updatedAt: post.updatedAt || undefined,
+    author: post.authorName || "EvCRM",
+    sourceUrl: post.sourceUrl || undefined,
+    citations: post.citations?.length ? post.citations : undefined,
+    topics: post.tags?.length ? post.tags : undefined,
     availableListings: vehicles,
   }
 }
@@ -375,6 +393,27 @@ async function toolSearchMarket(args = {}) {
       console.warn("[mcp] cte_facts lookup failed:", e.message)
     }
 
+    // 1b. Answer cache — a previous live fetch for this same question.
+    // Without this, tier 2 re-hit data.gov.in on EVERY request (measured
+    // 2026-08-07: two identical calls, 6.9s then 3.9s, research_cache still
+    // 0 rows). And since tier 2 usually succeeds, tier 3 — the only tier
+    // that used to write the cache — rarely ran, so nothing was ever cached.
+    if (!result.facts?.length) {
+      try {
+        const cached = await readLiveCache(topic)
+        if (cached?.facts?.length) {
+          result.source = cached.source || "live_official"
+          result.facts = cached.facts.slice(0, 10)
+          result.sourceDatasets = cached.sources || undefined
+          result.cached = true
+          result.sourcedAt = cached.sourced_at
+          result.note = "Previously sourced from official open data and cached — same answer, no re-fetch."
+        }
+      } catch (e) {
+        console.warn("[mcp] live cache read failed:", e.message)
+      }
+    }
+
     // 2. Deterministic real-time crawl of official sources.
     if (!result.facts?.length) {
       try {
@@ -387,6 +426,14 @@ async function toolSearchMarket(args = {}) {
           }))
           result.sourceDatasets = crawled.parsed?.map(p => ({ title: p.title, url: p.url }))
           result.note = "Sourced live from official government open data (data.gov.in), parsed deterministically."
+
+          // Remember it so the next person asking is served instantly and
+          // free. Fire-and-forget: a cache write must never fail the answer.
+          writeLiveCache(topic, {
+            facts: result.facts,
+            sources: result.sourceDatasets,
+            source: "live_official",
+          }).catch(() => {})
         } else if (crawled?.unparsed?.length) {
           // Even when no number could be safely extracted, naming the real
           // official datasets beats returning nothing.
@@ -397,8 +444,31 @@ async function toolSearchMarket(args = {}) {
       }
     }
 
-    // 3. Model backstop, only if both deterministic paths came up empty.
-    if (!result.facts?.length) {
+    // 3. Model backstop — OFF BY DEFAULT as of 2026-08-07.
+    //
+    // Answering an AI's question by asking another AI to search Google is a
+    // slower, costlier proxy for what the calling client already does
+    // natively — Claude, ChatGPT and Perplexity all have web search. For any
+    // question this tier can answer, the caller could have answered it
+    // itself, so it adds latency, Gemini quota, and a second hallucination
+    // surface for no unique value. It also contradicts the rule stated in
+    // lib/cte/factLibrary.js: "if a model does the extraction at query time,
+    // CTE is just a slower, costlier proxy for the search the calling AI can
+    // already do itself."
+    //
+    // CTE's actual moat is data the caller CANNOT get: dealer inventory, the
+    // cross-checked fact library, and Indian vehicle data cleaned IN ADVANCE.
+    // None of that needs a model at request time. When tiers 1 and 2 miss,
+    // returning the real official datasets (relatedOfficialDatasets above)
+    // plus an honest "we don't have this" beats an ungrounded answer.
+    //
+    // An LLM still belongs in this system — at CRAWL time, building the
+    // library offline. Just not in the request path.
+    //
+    // Set CTE_ENABLE_MODEL_BACKSTOP=true to re-enable (code is tested and
+    // intact, incl. the research_cache write and the 8/day cap).
+    const modelBackstopEnabled = process.env.CTE_ENABLE_MODEL_BACKSTOP === "true"
+    if (!result.facts?.length && modelBackstopEnabled) {
       const live = await sourceLiveAnswer(topic)
       if (live?.facts?.length) {
         result.source = "live"
@@ -408,6 +478,19 @@ async function toolSearchMarket(args = {}) {
         if (live.limitation) result.limitation = live.limitation
         result.note = "Not from EvCRM's verified database — sourced live from the cited third-party sources and not independently verified."
       }
+    }
+
+    // An honest miss. With the model backstop off, a question we cannot
+    // answer must SAY so — an empty result with no explanation reads like a
+    // broken tool, and the calling AI has no way to tell "nothing exists"
+    // from "this server is failing". Telling it to use its own search is the
+    // correct answer here: for anything outside our verified data, the
+    // client can already do that better than we can proxy it.
+    if (!result.facts?.length && !result.liveFacts?.length && !result.vehicles?.length) {
+      result.note = result.relatedOfficialDatasets?.length
+        ? "EvCRM has no verified data for this question. The official datasets listed above are the real sources — read them directly, or use your own web search."
+        : "EvCRM has no verified data for this question. Use your own web search; do not infer an answer from this empty result."
+      result.coverage = "out_of_scope"
     }
   }
 

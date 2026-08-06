@@ -30,6 +30,21 @@ create table if not exists research_cache (
 -- TTL sweeps and the daily-spend cap both filter on sourced_at.
 create index if not exists research_cache_sourced_at_idx on research_cache (sourced_at desc);
 
+-- Which tier produced this answer. Added 2026-08-07, and it is load-bearing,
+-- not metadata: underDailyCap() in sourceLive.js counts rows written in the
+-- last 24h as a proxy for Gemini calls (free tier = 20/day). liveCrawl.js now
+-- caches into this same table, but it costs nothing and calls no model — so
+-- without this column a burst of free data.gov.in answers would silently
+-- exhaust the Gemini budget and stop tier 3 from ever running.
+--
+-- Default 'gemini' is the conservative direction: pre-existing rows predate
+-- liveCrawl caching and were all Gemini-sourced, so counting them is correct.
+alter table research_cache add column if not exists source text default 'gemini';
+
+-- The cap query filters on this, so it must not be a sequential scan.
+create index if not exists idx_research_cache_source_sourced_at
+  on research_cache (source, sourced_at desc);
+
 -- Service-role only. Answers here are unverified third-party-sourced content;
 -- the public anon key has no business reading the whole set.
 alter table research_cache enable row level security;
