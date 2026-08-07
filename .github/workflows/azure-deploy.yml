@@ -42,16 +42,15 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          imageToDeploy: ${{ env.IMAGE_NAME }}
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppName: ${{ env.CONTAINER_APP_NAME }}
-          containerAppEnvironment: evcrm-env
-          targetPort: 8080
-          ingress: external
-          registryUrl: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-          registryUsername: ${{ secrets.REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.REGISTRY_PASSWORD }}
-          environmentVariables: >
-            NODE_ENV=production
+        run: |
+          az containerapp up \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --environment evcrm-env \
+            --image ${{ env.IMAGE_NAME }} \
+            --target-port 8080 \
+            --ingress external \
+            --registry-server ${{ secrets.REGISTRY_LOGIN_SERVER }} \
+            --registry-username ${{ secrets.REGISTRY_USERNAME }} \
+            --registry-password ${{ secrets.REGISTRY_PASSWORD }} \
+            --env-vars NODE_ENV=production
