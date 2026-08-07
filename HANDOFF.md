@@ -343,6 +343,50 @@ alter table article_vehicles enable row level security;
 
 ## 8. Known Issues & Open Bugs (⚠️ START HERE)
 
+### 🟡 2026-08-07 (end of session) — PICK UP HERE
+
+**Repo state:** `origin/main` is current through `428be96`. One commit,
+**`68e96d8` (homepage/showroom SSR), is committed locally but NOT PUSHED and
+NOT DEPLOYED.** Push it first.
+
+**Deployed to production today** (all verified live):
+SSR for `/blog/[slug]`, `/learn/[slug]`, `/price/[slug]`; unique titles on 50
+pages incl. all 43 `/compare`; inventory schema migration (marketplace 0 → 10
+vehicles); CTE answer cache; `book_test_drive` MCP tool + rate limiting;
+rewritten `llms.txt`; accessibility fixes (viewport zoom, `<main>`, select
+labels, heading order). All three leaked credentials rotated.
+
+**Committed but NOT deployed:** `68e96d8` — homepage + `/showroom` now
+server-render the vehicle grid. Verified locally as Googlebot: **10 `<img>`
+tags (was 0)**, 2,541 bytes of text (was 927), filters still work
+(10 total / 3 petrol / 5 electric / 2 Tata).
+
+**Immediate next step:** push `68e96d8`, deploy, then re-run PageSpeed. This
+change targets Performance, CLS, the desktop-below-mobile inversion and the
+accessibility tree together — expect Agentic Browsing to move from 0/3 to
+2–3/3 (llms.txt already fixed and deployed).
+
+⚠️ **Deploy reminder:** clear `.next` AND `.firebase/ev-crm-realtime` before
+deploying or a stale cache silently reuses old bundles (§3). The Cloudflare
+purge is automatic.
+
+**Do NOT re-litigate these — they were decided today with evidence:**
+- Don't delete pages to "start fresh". A full sitemap audit
+  (`scripts/audit-pages.js`) found **zero broken pages**; the site was
+  untitled, not broken. Deleting would discard 3 months of Google trust and
+  *create* the 404s the audit proved you don't have.
+- Don't add auth to the MCP for the booking tool. The confirmation-link
+  design (`lib/mcp/bookingIntent.js`) is what keeps it safely public.
+- Don't put an LLM back in the CTE request path
+  (`CTE_ENABLE_MODEL_BACKSTOP` stays false).
+
+**Useful scripts added today:**
+`scripts/audit-pages.js` (sitemap crawl → broken/empty/duplicate-title
+report), `scripts/mcp-token-benchmark.js` (measures MCP vs HTML token cost —
+15,479 → 236 tokens, 65x), `scripts/migrate-inventory-schema.js`,
+`scripts/content-priority-report.js` (six merged demand-signal layers).
+
+
 ### 🔴 2026-08-07 — SECURITY: three leaked credentials, all now rotated
 
 GitHub push protection blocked a push and surfaced three secrets, **none of
