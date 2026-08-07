@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback, Suspense } from "react"
+import { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { C, fmt } from "../../lib/constants"
@@ -907,10 +907,26 @@ function VehicleIdSync({ vehicles, onMatch }) {
 }
 
 /* ── Main page ─────────────────────────────────────────────────────── */
-export default function ShowroomClient() {
-  const [vehicles, setVehicles] = useState([])
-  const [filters, setFilters] = useState({ brands: [], districts: [] })
-  const [loading, setLoading] = useState(true)
+/**
+ * `initialVehicles`/`initialFilters` come from the SERVER component that
+ * renders this (app/showroom/page.js and app/page.js). Seeding state from
+ * props is what puts the vehicle grid — and its <img> tags — into the served
+ * HTML.
+ *
+ * Before this, state started empty and the list was fetched in useEffect, so
+ * crawlers and the first paint got nothing. PageSpeed measured CLS 0.282
+ * mobile / 0.327 desktop and Performance 44/36, with desktop scoring BELOW
+ * mobile because it renders a wider grid and therefore does more post-JS
+ * work. Defaults are kept so any caller rendering this without props still
+ * behaves exactly as before.
+ */
+export default function ShowroomClient({ initialVehicles = null, initialFilters = null }) {
+  const [vehicles, setVehicles] = useState(initialVehicles || [])
+  const [filters, setFilters] = useState(initialFilters || { brands: [], districts: [] })
+  // Only "loading" when there is nothing to show yet. With server data the
+  // grid is already painted, so a spinner here would be a lie that also
+  // causes a layout shift when it swaps out.
+  const [loading, setLoading] = useState(!initialVehicles)
   const [type, setType] = useState("All")
   const [brand, setBrand] = useState("All Brands")
   const [fuelType, setFuelType] = useState("All Fuel Types")
@@ -930,7 +946,15 @@ export default function ShowroomClient() {
     } finally { setLoading(false) }
   }, [type, brand, fuelType])
 
-  useEffect(() => { load() }, [load])
+  // Skip the fetch on mount when the server already supplied the unfiltered
+  // list — otherwise every visitor immediately re-requests data they were
+  // just served, and the grid re-renders for no reason. Subsequent filter
+  // changes still refetch normally.
+  const skipFirstLoad = useRef(Boolean(initialVehicles))
+  useEffect(() => {
+    if (skipFirstLoad.current) { skipFirstLoad.current = false; return }
+    load()
+  }, [load])
 
   const brands = ["All Brands", ...(filters.brands || [])]
 

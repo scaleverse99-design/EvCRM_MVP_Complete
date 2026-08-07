@@ -1,6 +1,9 @@
 import { readTable } from "../../lib/store"
 import { fmt } from "../../lib/constants"
+import { getMarketplaceVehicles } from "../../lib/marketplaceVehicles"
 import ShowroomClient from "./ShowroomClient"
+
+export const dynamic = "force-dynamic"
 
 // Server component wrapper around the fully-client-side marketplace UI
 // (ShowroomClient.js). Its only job is to run before any browser JS: build
@@ -61,7 +64,14 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function ShowroomPage({ searchParams }) {
   const vehicleId = searchParams?.vehicleId
-  const v = await getVehicleForMeta(vehicleId)
+  // Load the grid here rather than letting the client fetch it, so the
+  // vehicle cards and their <img> tags are in the served HTML. Degrades to
+  // the old client-fetch behaviour if this throws — an empty grid that
+  // fills in is better than a 500.
+  const [v, initial] = await Promise.all([
+    getVehicleForMeta(vehicleId),
+    getMarketplaceVehicles().catch(() => null),
+  ])
 
   const jsonLd = v
     ? {
@@ -92,7 +102,7 @@ export default async function ShowroomPage({ searchParams }) {
   return (
     <>
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
-      <ShowroomClient />
+      <ShowroomClient initialVehicles={initial?.vehicles || null} initialFilters={initial?.filters || null} />
     </>
   )
 }
