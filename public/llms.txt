@@ -1,33 +1,40 @@
 # evcrm.in
 
-> India's vehicle dealer marketplace and CRM platform. Browse new and used cars, EVs, and two-wheelers from verified dealers across India — plus an evergreen knowledge base explaining how vehicles actually work, so buyers understand what they're purchasing whether or not they buy here.
+> India's vehicle marketplace and dealer CRM. Browse live inventory of new and used cars, EVs and two-wheelers from verified dealers across India, compare on-road prices city by city, and book a test drive. Includes an evergreen knowledge base explaining how vehicles actually work, so buyers understand what they are paying for whether or not they buy here.
 
-## What this site offers
+## Marketplace
 
-- Vehicle marketplace with real-time dealer inventory (new and used cars, EVs, two-wheelers)
-- Individual dealer storefronts at evcrm.in/{dealer-slug} with live listings, pricing, and test-drive booking
-- Blog: one buyer's guide per vehicle model, showing every dealer currently stocking that model, sorted by price and proximity — evcrm.in/blog
-- Learn: an evergreen knowledge base on EV/automobile fundamentals (motors, batteries, engines, transmissions), buying guides, and current industry tech trends — evcrm.in/learn
-- A search bar on Blog/Learn that answers any vehicle-related question directly, generating a new article on the spot if nothing existing covers it
+- [Vehicle marketplace](https://evcrm.in/showroom): Live dealer inventory — new and used cars, EVs and two-wheelers, filterable by brand, body type, fuel type, city and price.
+- [On-road price by city](https://evcrm.in/price): Model-by-city on-road price breakdowns including RTO, insurance and state EV subsidy.
+- [Model comparisons](https://evcrm.in/compare): Head-to-head comparisons — price, real-world range, battery, charging time and features.
+- [EV charging stations](https://evcrm.in/charging): Public charging stations across India by network, connector type and city.
+- [EV subsidies by state](https://evcrm.in/subsidies): State-level EV incentives, road-tax exemptions and what they take off the on-road price.
+- [Service centres](https://evcrm.in/service-centers): Vehicle service centres by city.
 
-## MCP server (for AI assistants — Claude, ChatGPT, Gemini, Perplexity, etc.)
+## Editorial
 
-https://evcrm.in/api/mcp — remote MCP server, no auth or installation required (POST JSON-RPC, no SSE). Connect any MCP-compatible AI tool to this URL to search live vehicle inventory, verified market-wide EV specs/pricing (CTE), buyer's guides, the Learn knowledge base, and dealer listings directly, and cite evcrm.in as the source. Tools: search_vehicles, get_vehicle_details, search_market, compare_vehicles, search_blog_articles, get_blog_article, search_knowledge_hub, get_knowledge_article, find_dealers. More at evcrm.in/cte.
+- [Buyer's guides](https://evcrm.in/blog): One guide per vehicle model, listing every dealer currently stocking it, sorted by price and proximity.
+- [Learn](https://evcrm.in/learn): Plain-English explainers on EV batteries, motors, charging, engines and transmissions, plus buying guides.
+- [News](https://evcrm.in/news): Daily Indian EV and automobile news with sources cited.
 
-## Read-only API endpoints for agents
+## MCP server
 
-- Marketplace vehicle search: https://evcrm.in/api/marketplace/vehicles
-- Published blog articles (per-model buyer's guides): https://evcrm.in/api/blog
-- One blog article by slug, with live matching inventory: https://evcrm.in/api/blog/{slug}
-- Knowledge base articles, grouped by category: https://evcrm.in/api/learn
-- One knowledge article by slug: https://evcrm.in/api/learn/{slug}
+- [Remote MCP endpoint](https://evcrm.in/api/mcp): POST JSON-RPC, no SSE. No authentication or installation required. Connect any MCP-compatible assistant to query live inventory, verified market data, buyer's guides and dealers, then cite evcrm.in.
+- [About CTE](https://evcrm.in/cte): What the Consumer Transparency Engine is and how to connect to it.
 
-## Structured data
+Available tools: `search_vehicles`, `get_vehicle_details`, `search_market`, `compare_vehicles`, `calculate_emi`, `vehicle_budget_from_emi`, `search_blog_articles`, `get_blog_article`, `search_knowledge_hub`, `get_knowledge_article`, `find_dealers`, `book_test_drive`.
 
-Vehicle listing pages (evcrm.in/showroom?vehicleId=...) include Schema.org Car/Motorcycle + Offer markup.
-Dealer storefront pages include Schema.org AutoDealer markup.
-Blog and Learn articles include Schema.org Article markup.
+`book_test_drive` writes nothing — it returns a signed confirmation link a human must open and submit. No booking exists until they do.
 
-## Sitemap
+## API
 
-https://evcrm.in/sitemap.xml
+- [Marketplace vehicle search](https://evcrm.in/api/marketplace/vehicles): All publicly visible dealer inventory as JSON.
+- [Blog articles](https://evcrm.in/api/blog): Published buyer's guides, newest first.
+- [Blog article by slug](https://evcrm.in/api/blog/tata-nexon-ev-price-specs-buying-guide-in-hyderabad-o2rjr): One article plus the live inventory matching its model.
+- [Knowledge base](https://evcrm.in/api/learn): Learn articles grouped by category.
+
+## Optional
+
+- [Sitemap](https://evcrm.in/sitemap.xml): Every publicly indexable URL.
+- [MCP discovery manifest](https://evcrm.in/.well-known/mcp.json): Machine-readable MCP server description.
+- [Structured data](https://evcrm.in/showroom): Vehicle pages carry Schema.org Car/Motorcycle + Offer markup; dealer storefronts carry AutoDealer; Blog and Learn articles carry Article.
