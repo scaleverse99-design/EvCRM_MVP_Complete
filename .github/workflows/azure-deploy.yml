@@ -47,4 +47,5 @@ jobs:
             --environment evcrm-env \
             --image "${{ env.IMAGE_NAME }}" \
             --target-port 8080 \
-            --ingress external
+            --ingress external \
+            --no-prompt
