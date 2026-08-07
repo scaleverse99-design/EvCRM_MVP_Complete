@@ -4,6 +4,8 @@
       "name": "EvCRM — Indian Vehicle Market & Marketplace",
       "version": "1.0.0",
       "description": "Live vehicle marketplace, verified market-wide EV data (CTE), buyer's guides, and dealer listings for India. Read-only, no auth required.",
+      "homepage": "https://evcrm.in",
+      "icon": "https://evcrm.in/icon.png",
       "transport": {
         "type": "streamable-http",
         "url": "https://evcrm.in/api/mcp"

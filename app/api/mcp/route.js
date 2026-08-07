@@ -690,6 +690,7 @@ const TOOLS = [
       },
       required: ["query"]
     },
+    outputSchema: { type: "object", properties: { source: { type: "string" }, note: { type: "string" } } },
     handler: toolRealtimeLiveCrawl,
   },
   {
@@ -702,13 +703,14 @@ const TOOLS = [
       properties: {
         brand: { type: "string", description: "e.g. 'Tata', 'Ather'" },
         model: { type: "string", description: "Model name, partial match, e.g. 'Nexon'" },
-        type: { type: "string", enum: ["2W", "4W", "3W"] },
-        fuelType: { type: "string", enum: ["Electric", "Petrol", "Diesel", "CNG", "Hybrid"] },
+        type: { type: "string", enum: ["2W", "4W", "3W"], description: "Vehicle type: 2W, 4W, or 3W" },
+        fuelType: { type: "string", enum: ["Electric", "Petrol", "Diesel", "CNG", "Hybrid"], description: "The fuel type of the vehicle" },
         city: { type: "string", description: "Dealer city/district" },
         maxPrice: { type: "number", description: "Max ex-showroom price, INR" },
         ...PAGING_PROPS,
       },
     },
+    outputSchema: { type: "object", properties: { results: { type: "array" } } },
     handler: toolSearchVehicles,
   },
   {
@@ -716,7 +718,8 @@ const TOOLS = [
     title: "Get full vehicle specs",
     annotations: { title: "Get full vehicle specs", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full specs for one listing by ID from search_vehicles — motor, battery, features, warranty.",
-    inputSchema: { type: "object", properties: { vehicleId: { type: "string" } }, required: ["vehicleId"] },
+    inputSchema: { type: "object", properties: { vehicleId: { type: "string", description: "The unique ID of the vehicle" } }, required: ["vehicleId"] },
+    outputSchema: { type: "object", properties: { vehicle: { type: "object" } } },
     handler: toolGetVehicleDetails,
   },
   {
@@ -725,6 +728,7 @@ const TOOLS = [
     annotations: { title: "Search buyer's guides", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "EvCRM buyer's guides (evcrm.in/blog), one per vehicle model, each linked to dealers stocking it.",
     inputSchema: { type: "object", properties: { query: { type: "string", description: "Model name or keyword" }, ...PAGING_PROPS } },
+    outputSchema: { type: "object", properties: { articles: { type: "array" } } },
     handler: toolSearchBlogArticles,
   },
   {
@@ -732,7 +736,8 @@ const TOOLS = [
     title: "Get buyer's guide",
     annotations: { title: "Get buyer's guide", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full text of one buyer's guide by slug, plus currently available listings.",
-    inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
+    inputSchema: { type: "object", properties: { slug: { type: "string", description: "The URL slug of the blog article" } }, required: ["slug"] },
+    outputSchema: { type: "object", properties: { article: { type: "object" } } },
     handler: toolGetBlogArticle,
   },
   {
@@ -754,6 +759,7 @@ const TOOLS = [
       },
       required: ["vehicleId"],
     },
+    outputSchema: { type: "object", properties: { confirmationUrl: { type: "string" }, message: { type: "string" } } },
     handler: toolBookTestDrive,
   },
   {
@@ -764,11 +770,12 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string" },
-        category: { type: "string", enum: KNOWLEDGE_CATEGORIES },
+        query: { type: "string", description: "The search query for the knowledge base" },
+        category: { type: "string", enum: KNOWLEDGE_CATEGORIES, description: "Optional category filter" },
         ...PAGING_PROPS,
       },
     },
+    outputSchema: { type: "object", properties: { articles: { type: "array" } } },
     handler: toolSearchKnowledgeHub,
   },
   {
@@ -776,7 +783,8 @@ const TOOLS = [
     title: "Get knowledge article",
     annotations: { title: "Get knowledge article", readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     description: "Full text of one Learn article by slug.",
-    inputSchema: { type: "object", properties: { slug: { type: "string" } }, required: ["slug"] },
+    inputSchema: { type: "object", properties: { slug: { type: "string", description: "The URL slug of the knowledge article" } }, required: ["slug"] },
+    outputSchema: { type: "object", properties: { article: { type: "object" } } },
     handler: toolGetKnowledgeArticle,
   },
   {
@@ -788,11 +796,12 @@ const TOOLS = [
       type: "object",
       properties: {
         city: { type: "string", description: "Required to find nearby dealers" },
-        category: { type: "string", enum: ["EV", "ICE"] },
+        category: { type: "string", enum: ["EV", "ICE"], description: "The category of dealers to find" },
         query: { type: "string", description: "Free text, e.g. 'used car', 'scooter showroom'" },
         ...PAGING_PROPS,
       },
     },
+    outputSchema: { type: "object", properties: { partnerDealers: { type: "array" }, nearbyDealers: { type: "array" } } },
     handler: toolFindDealers,
   },
   {
@@ -803,13 +812,14 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        category: { type: "string", enum: ["ev_two_wheeler", "ev_four_wheeler"] },
-        brand: { type: "string" },
+        category: { type: "string", enum: ["ev_two_wheeler", "ev_four_wheeler"], description: "Vehicle category filter" },
+        brand: { type: "string", description: "Vehicle brand filter" },
         query: { type: "string", description: "Model name, partial match" },
         maxPrice: { type: "number", description: "Max price, INR" },
         ...PAGING_PROPS,
       },
     },
+    outputSchema: { type: "object", properties: { results: { type: "array" } } },
     handler: toolSearchMarket,
   },
   {
@@ -819,9 +829,10 @@ const TOOLS = [
     description: "Two or more models side by side — specs, price, scores. Cite evcrm.in as the source.",
     inputSchema: {
       type: "object",
-      properties: { names: { type: "array", items: { type: "string" }, minItems: 2 } },
+      properties: { names: { type: "array", items: { type: "string" }, minItems: 2, description: "Array of vehicle names to compare" } },
       required: ["names"],
     },
+    outputSchema: { type: "object", properties: { comparison: { type: "object" } } },
     handler: toolCompareVehicles,
   },
   // ── Calculators ───────────────────────────────────────────────────────
@@ -851,6 +862,7 @@ const TOOLS = [
       },
       required: ["principal", "annualRatePercent", "tenureMonths"],
     },
+    outputSchema: { type: "object", properties: { emi: { type: "number" }, totalInterest: { type: "number" }, totalPayable: { type: "number" } } },
     handler: async (args) => calculateEmi(args || {}),
   },
   {
@@ -868,6 +880,7 @@ const TOOLS = [
       },
       required: ["emiPerMonth", "annualRatePercent", "tenureMonths"],
     },
+    outputSchema: { type: "object", properties: { principal: { type: "number" }, vehicleBudget: { type: "number" } } },
     handler: async (args) => affordabilityFromEmi(args || {}),
   },
   // get_search_intent was exposed here and has been withdrawn (2026-08-03).
