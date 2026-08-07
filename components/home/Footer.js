@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation"
 
 export default function Footer() {
   const router = useRouter()
-  const columnTitleStyle = { fontSize: 13, fontWeight: 900, color: C.ink, marginBottom: 20, textTransform: "uppercase", letterSpacing: 1 }
+  // These are <h2> for document structure, not for size — fontSize is pinned
+  // here so the level change is purely semantic. They were <h5>, which made
+  // the homepage outline read h1 → h5 → h5 → h5, skipping three levels;
+  // Lighthouse fails that as "Heading elements are not in a
+  // sequentially-descending order", and an agent parsing the outline sees a
+  // broken hierarchy. marginTop is reset explicitly because h2's browser
+  // default is larger than h5's and would otherwise shift the footer.
+  const columnTitleStyle = { fontSize: 13, fontWeight: 900, color: C.ink, marginTop: 0, marginBottom: 20, textTransform: "uppercase", letterSpacing: 1 }
   const linkStyle = { fontSize: 13, color: C.ink3, textDecoration: "none", marginBottom: 12, display: "block" }
 
   return (
@@ -49,7 +56,7 @@ export default function Footer() {
 
           {/* About */}
           <div>
-            <h5 style={columnTitleStyle}>About evcrm.in</h5>
+            <h2 style={columnTitleStyle}>About evcrm.in</h2>
             <Link href="/blog" style={linkStyle}>EV Research Blog</Link>
             <Link href="/learn" style={linkStyle}>Learn: EV & Auto Guides</Link>
             <Link href="/marketplace" style={linkStyle}>Vehicle Marketplace</Link>
@@ -59,7 +66,7 @@ export default function Footer() {
 
           {/* For Dealers */}
           <div>
-            <h5 style={columnTitleStyle}>For Dealerships</h5>
+            <h2 style={columnTitleStyle}>For Dealerships</h2>
             <Link href="/register" style={linkStyle}>Join the Network</Link>
             <Link href="/login" style={linkStyle}>Dealer Login</Link>
             <Link href="/pricing" style={linkStyle}>Pricing Plans</Link>
@@ -68,7 +75,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h5 style={columnTitleStyle}>Reach Out</h5>
+            <h2 style={columnTitleStyle}>Reach Out</h2>
             <div style={linkStyle}>📍 Hitech City, Hyderabad</div>
             <div style={linkStyle}>✉️ hello@evcrm.in</div>
             <div style={linkStyle}>📞 +91 91542 35560</div>

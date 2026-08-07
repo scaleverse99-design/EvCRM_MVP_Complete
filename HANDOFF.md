@@ -343,6 +343,226 @@ alter table article_vehicles enable row level security;
 
 ## 8. Known Issues & Open Bugs (⚠️ START HERE)
 
+### 🔴 2026-08-07 — SECURITY: three leaked credentials, all now rotated
+
+GitHub push protection blocked a push and surfaced three secrets, **none of
+them introduced this session** — all pre-existing:
+
+| Credential | Where | Reached GitHub? | Status |
+|---|---|---|---|
+| GCP `AIzaSyCUDX…iHIY` | `deploy_debug_utf8.log` | **yes** — already in pushed history | revoked |
+| GCP `AIzaSyDIxB…1zoo` (`PLACES_API_KEY`) | `deploy2.log` ×32 | no — stripped before push | revoked |
+| Supabase `sb_secret_zQGe…` (full DB access, bypasses RLS) | `scripts/clean-blog-posts.js:7` | no — stripped before push | revoked |
+
+**Root cause**: `.gitignore` covered `firebase-debug.log` and `*-debug.log`,
+but `deploy.log`/`deploy2.log` matched neither, so they were tracked. Build
+output echoes env vars. Now `*.log`, `.env*` and `*.bak` are all ignored
+(with `!.env.example`).
+
+**Lessons worth keeping:**
+- **"Create a new key" is not rotation.** A new Places key was issued and
+  `.env` updated while the leaked one stayed fully valid. Use *Regenerate*,
+  or explicitly delete the old one.
+- **Deleting a key before redeploying breaks production.** `PLACES_API_KEY`
+  was not in `.env.production`, so prod ran on whatever `.env` held at build
+  time. Deleting the old key killed `find_dealers` until a redeploy.
+  Correct order: new key → both env files → deploy → verify → revoke old.
+- **A cache masked the outage.** `lib/cte/places.js` caches per-city for 14
+  days in `dealer_outreach`. The first check "passed" because that city was
+  cached minutes earlier. Always verify against an *uncached* input.
+- **`filter-branch` does not rewrite tags.** Seven `deploy-*` tags still
+  pointed at the pre-rewrite commits holding all three secrets — one
+  `git push --tags` would have leaked everything the rewrite removed. Deleted.
+- **`.env.production` drifts.** It was missing 9 vars that reached prod only
+  via Next's build-time fallback to `.env`, including `PLACES_API_KEY` and
+  `DATA_GOV_IN_API_KEY`. Same fragility that broke daily publishing for 4
+  days (see below). Now explicit. **A pre-deploy check comparing the two
+  files would catch this automatically — not yet built.**
+
+**Still open:** the key in `deploy_debug_utf8.log` remains in pushed history.
+Now revoked, so it is inert; excising it needs a force-push that would break
+Antigravity's clone. Deliberately left alone.
+
+### 🟢 2026-08-07 — Client-side rendering made the whole site invisible to crawlers (FIXED + DEPLOYED)
+
+Measured live as `OAI-SearchBot` before the fix: `evcrm.in/blog/aston-martin-…`
+returned **10,918 bytes of HTML containing 73 bytes of visible text**
+("Loading…") — a 0.7% signal ratio. The word "Aston" appeared nowhere, there
+was no `ld+json`, and the `<title>` was the generic site-wide one.
+
+Cause: article pages were client components fetching in `useEffect`, so the
+body only existed after JS ran. Most AI crawlers do not run JS. And a client
+component **cannot export `generateMetadata`**, so ~150 articles shared one
+title. That is why `ai_search_bot_hits` sat at 0 and Search Console showed
+only navigational queries.
+
+**Fixed**: `/blog/[slug]`, `/learn/[slug]`, `/price/[slug]` split into server
+page (data + `generateMetadata` + JSON-LD) + client view. After: real title,
+real description, `ld+json`, **73 B → 2,837 B** of crawlable text.
+
+A site audit (`scripts/audit-pages.js`, new) then found **48 more pages
+sharing that one generic title** — all 43 `/compare/*` plus `/blog`,
+`/learn`, `/news`, `/subsidies`, `/service-centers`, `/login`, `/register`.
+All fixed the same way. **The audit also found ZERO broken pages** — the site
+was never broken, it was untitled.
+
+⚠️ **`"use client"` does NOT opt out of SSR.** It marks the hydration
+boundary. Content is missing only when the component fetches its own data.
+Passing data as props from a server parent is the whole fix.
+
+**Crash fixes forced by SSR** (these were silent before, because a failed
+client fetch just rendered "Article not found"):
+- `lib/affiliateRouter.js` read `.includes()` off an optional `buyNewUrl` —
+  threw for any model without one (confirmed live for the Tata Zest guide).
+- `lib/masterCatalog.js` imported `EXPANDED_AUTO_REGISTRY`, which
+  `fullIndianAutoRegistry.js` does not export and nothing referenced. Under
+  ESM a missing named import is a hard module error, so `getCityPricePairs()`
+  threw before running — taking **/price (1,344 URLs) and /compare down**.
+
+### 🟢 2026-08-07 — PageSpeed "Agentic Browsing" is now a scored category
+
+Google ships an **Agentic Browsing** score in PageSpeed Insights:
+*"checks ensure high-quality, browsable websites for AI agents and validate
+the correctness of WebMCP integrations."* evcrm.in scores **0/3** on mobile
+and desktop.
+
+| Check | Mobile | Desktop | Status |
+|---|---|---|---|
+| Cumulative Layout Shift | 0.282 | 0.327 | ❌ open |
+| Accessibility tree not well-formed | ✗ | ✗ | partly fixed |
+| `llms.txt` does not follow recommendations | ✗ | ✗ | ✅ fixed |
+
+`llms.txt` was prose bullets with bare URLs; the spec expects markdown link
+lists (`- [name](url): description`). Rewritten — 18/18 items now linked.
+Its tool list was also stale (9 listed, 12 served) and omitted `/price`,
+`/compare`, `/charging` — 1,400+ of the sitemap's URLs.
+
+Accessibility fixes applied: `maximumScale` 1 → 5 (was blocking pinch-zoom),
+added a `<main>` landmark, `aria-label` on the three marketplace filter
+selects, and footer headings `h5` → `h2` (the outline read h1 → h5 → h5 → h5).
+
+**Full scores**: Performance 44 mobile / **36 desktop**, Accessibility 80/77,
+Best Practices 96, **SEO 100/100**.
+
+⚠️ **Desktop scoring BELOW mobile is backwards** and is the tell: the
+homepage renders its vehicle grid client-side (**0 `<img>` tags in the served
+HTML**), and desktop loads a wider grid, so it does more post-JS work. One
+root cause explains four symptoms — low Performance, the desktop anomaly,
+failing CLS, and the malformed accessibility tree. **Server-rendering the
+homepage grid is the single highest-value remaining fix.**
+
+Also: **750ms TTFB with `cf-cache-status: DYNAMIC`** — Cloudflare bypasses
+HTML caching (deliberate, see §3), so every visitor waits for Cloud Run,
+while the origin sends `s-maxage=31536000`. Those contradict. Biggest single
+lever on Performance, but the bypass exists because stale HTML broke a
+deploy — change it deliberately, not casually.
+
+### 🟢 2026-08-07 — Inventory was invisible: `status:"AVAILABLE"` vs `"IN_STOCK"` (FIXED)
+
+`search_vehicles` returned `totalMatches: 0` **with no filters** while the
+table held 10 real vehicles. A seed script had written its own field names —
+`status:"AVAILABLE"`, `modelName`, `exShowroomPrice`, `kmDriven`, `location`
+— and every visibility check tests `status === "IN_STOCK"`. `"AVAILABLE"` is
+not even in the documented enum.
+
+Migrated via `scripts/migrate-inventory-schema.js` (dry-run by default).
+Marketplace and MCP both went **0 → 10 vehicles**.
+
+Two traps: `isDemo` must stay **false** (`app/api/marketplace/vehicles/route.js:25`
+filters `!v.isDemo`, so tagging them as demo re-hides them), and the 5 used
+cars need an **APPROVED** `inspectionReport` or the used-vehicle gate hides
+them anyway.
+
+### 🟢 2026-08-07 — CTE answer cache was never populated (FIXED, needs SQL run)
+
+`research_cache` sat at **0 rows** despite live sourcing working. Tier 2
+(`liveCrawl`, data.gov.in, free) had **no cache interaction at all**; tier 3
+(Gemini) was the only writer, and tier 2 usually succeeds so tier 3 rarely
+ran. Every user re-hit data.gov.in — measured 6.9s then 3.9s for identical
+queries.
+
+Fixed: tier 2 now reads the cache first and writes on success. Verified live:
+8,405ms cold → 2,115ms cached (4x).
+
+⚠️ Rows carry a `source` tag and it is **load-bearing**: `underDailyCap()`
+counts 24h rows as a proxy for Gemini calls, so untagged free rows would
+silently exhaust the Gemini budget. **Requires** this one-time migration
+(already run on prod 2026-08-07, in `lib/cte/research_cache.sql`):
+
+```sql
+alter table research_cache add column if not exists source text default 'gemini';
+create index if not exists idx_research_cache_source_sourced_at on research_cache (source, sourced_at desc);
+```
+
+**The Gemini model backstop is now OFF by default** (`CTE_ENABLE_MODEL_BACKSTOP`).
+Answering an AI's question by asking another AI to search Google is a slower,
+costlier proxy for what the calling client already does natively — and it
+contradicted the rule stated in `lib/cte/factLibrary.js`. CTE's moat is data
+the caller *cannot* get. An LLM still belongs here at **crawl time**, not in
+the request path. A miss now returns `coverage:"out_of_scope"` and says so.
+
+### 🟢 2026-08-07 — `book_test_drive`: a public MCP write tool that writes nothing
+
+The MCP server is public and unauthenticated on purpose (an API key would
+kill adoption). A booking tool there would let anyone write into a dealer's
+CRM. **Resolution: the AI never creates a booking.** It returns a signed,
+30-minute JWT link; a human must open it and submit. Worst case for an
+abuser is generating URLs nobody opens.
+
+Also handles a non-abuse problem: a model can read *"I like the Nexon"* as
+intent to book. A misread now costs an unopened link, not a real appointment.
+
+- Idempotent without a new table: the intent `jti` is stored on the booking,
+  so a replayed link returns the original.
+- `verifyBookingIntent` checks `kind` explicitly — `JWT_SECRET` also signs
+  login sessions, so without it a valid auth token would be accepted as a
+  booking intent.
+- Bookings/leads carry `source:"mcp_assistant"` so the channel is measurable.
+- Rate-limited 5/min per IP. ⚠️ **This is a spend guardrail, not security**,
+  and the store is an in-memory `Map` — with `maxScale 20` the ceiling is
+  per-instance and resets on cold start. Also note the caller is the AI
+  vendor's server, so **one IP may represent many users** — 5/min is likely
+  too tight if adoption grows.
+- `/book/confirm` had to be added to `PUBLIC_PATH_PREFIXES` (visitors arrive
+  with no account; `"/booking"` does not match `"/book/confirm"`), and
+  `"book"` added to `reservedSlugs`.
+
+### 🔴 2026-08-07 — Open items, ranked by evidence
+
+1. **`/charging` — your actual demand.** Of 431 tracked Search Console
+   queries, **423 are charging-related** (*"ev charging"*, *"ev charging
+   stations hyderabad"*, *"find ev chargers"*) — and **every one has 0.0%
+   CTR** across 1,197 impressions. The page is already well-built (real
+   title, description, JSON-LD, server wrapper) but serves only **1,262 bytes
+   of text** because stations render client-side. Server-render the station
+   list; consider `/charging/[city]` pages mirroring the `/price/[city]`
+   pattern. **This is the largest measured, unexploited demand pocket.**
+2. **Homepage vehicle grid → SSR.** Fixes Performance, the desktop anomaly,
+   CLS and the accessibility tree together.
+3. **`/learn` links to ~150 URLs that 404.** The index route accepts anything
+   published; the detail loader requires `type === "knowledge"` and only **2
+   of 154** articles qualify. Either point the links at `/blog/<slug>` where
+   they work, or widen the detail filter.
+4. **Two genuinely duplicate articles** share one title —
+   `/blog/tata-nexon-ev-price-specs-buying-guide-in-hyderabad-{b3zxa,xkeov}`.
+   Delete one.
+5. **`compare_vehicles` returns `{"compared":0}`** for real names — the market
+   table stores "Tata Nexon", not "Tata Nexon EV". Needs fuzzy matching.
+6. **`search_market`'s `buyUrl` points at wikidata.org** — useless for commerce.
+7. **Brochure PDF upload is non-functional** — `parse-brochure` calls paid
+   `anthropic/claude-3.5-sonnet` on a zero-credit OpenRouter account.
+8. **`/service-centers` uses `dynamic(…, {ssr:false})`** — crawlers get a
+   title and nothing else, deliberately. Revisit given it targets
+   *"ev service centre near me"*.
+9. **GSC harvesting is not scheduled.** `scripts/fetch-search-console-queries.js`
+   and `app/api/cron/gsc-harvester/route.js` both work (431 rows), but no
+   workflow calls them — last pull was manual. Also, the table stores
+   `clicks`/`impressions` but **not position**, which is exactly what
+   distinguishes "ranks badly" from "ranks fine, bad snippet".
+10. **Node version mismatch** — building on Node 24, `package.json` pins 20,
+    `firebase-frameworks` supports ≤22. Warning only, but it means local
+    builds don't match Cloud Run.
+
 ### 🟢 2026-08-06 — Silent article truncation in the Gemini writer (FIXED, not yet deployed)
 
 `lib/orchestrator/gemini.js` never inspected `finishReason`. A generation cut off

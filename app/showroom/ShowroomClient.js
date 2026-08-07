@@ -950,14 +950,21 @@ export default function ShowroomClient() {
 
       <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 56, zIndex: 80 }}>
         <div className="showroom-filter-bar">
-          <span style={{ fontSize: 12, fontWeight: 900, color: C.ink2, whiteSpace: "nowrap" }}>FILTERS:</span>
-          <select value={type} onChange={e => setType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 110 }}>
+          {/* The visible "FILTERS:" text labels the group, not the individual
+              controls, so each select needs its own accessible name. Without
+              one a screen reader announces three unnamed comboboxes, and
+              Lighthouse fails "Select elements do not have associated label
+              elements" under both Accessibility and Agentic Browsing — an AI
+              agent reading the page has the same problem a screen reader does.
+              aria-label rather than <label> keeps the visual layout identical. */}
+          <span id="showroom-filters-label" style={{ fontSize: 12, fontWeight: 900, color: C.ink2, whiteSpace: "nowrap" }}>FILTERS:</span>
+          <select aria-label="Filter by vehicle type" value={type} onChange={e => setType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 110 }}>
             {["All", "2W", "4W", "3W"].map(t => <option key={t} value={t}>{t === "All" ? "All Types" : t}</option>)}
           </select>
-          <select value={brand} onChange={e => setBrand(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 120 }}>
+          <select aria-label="Filter by brand" value={brand} onChange={e => setBrand(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 120 }}>
             {brands.map(b => <option key={b}>{b}</option>)}
           </select>
-          <select value={fuelType} onChange={e => setFuelType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 130 }}>
+          <select aria-label="Filter by fuel type" value={fuelType} onChange={e => setFuelType(e.target.value)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontWeight: 700, fontFamily: "inherit", minWidth: 130 }}>
             {["All Fuel Types", "Electric", "Petrol", "Diesel", "CNG", "Hybrid"].map(f => <option key={f}>{f}</option>)}
           </select>
           <div style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.ink3, whiteSpace: "nowrap" }}>{vehicles.length} Models Found</div>

@@ -45,10 +45,17 @@ export const metadata = {
   },
 }
 
+// maximumScale was 1, which blocks pinch-zoom. Lighthouse fails it under
+// both Accessibility and Agentic Browsing ("[user-scalable=no] is used …
+// or [maximum-scale] is less than 5"), and more importantly it stops anyone
+// with low vision from zooming in on a price or a spec — on a marketplace
+// aimed at Indian consumers on phones, that is a real exclusion, not a
+// score. 5 is the threshold Lighthouse checks for.
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({ children }) {
@@ -90,7 +97,17 @@ export default function RootLayout({ children }) {
             `}
           </Script>
         )}
-        <Providers>{children}</Providers>
+        {/* <main> gives every page a main landmark. Lighthouse flags its
+            absence under both Accessibility and Agentic Browsing — the
+            latter matters here because an AI agent parsing the page uses
+            landmarks to tell content from navigation and footer. Without
+            one, the whole document is undifferentiated.
+
+            Unstyled on purpose: it wraps what the pages already render, so
+            it adds a semantic node without touching any existing layout. */}
+        <main>
+          <Providers>{children}</Providers>
+        </main>
       </body>
     </html>
   )
