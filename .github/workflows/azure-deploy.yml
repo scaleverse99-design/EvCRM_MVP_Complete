@@ -41,20 +41,13 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to Azure Container Apps
-        env:
-          REG_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-          REG_USER: ${{ secrets.REGISTRY_USERNAME }}
-          REG_PASS: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Deploy to Azure Container Apps (CLI)
         run: |
+          az extension add --name containerapp || true
           az containerapp up \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name "${{ env.CONTAINER_APP_NAME }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
             --environment evcrm-env \
-            --image ${{ env.IMAGE_NAME }} \
+            --image "${{ env.IMAGE_NAME }}" \
             --target-port 8080 \
-            --ingress external \
-            --registry-server "$REG_SERVER" \
-            --registry-username "$REG_USER" \
-            --registry-password "$REG_PASS" \
-            --env-vars NODE_ENV=production
+            --ingress external
