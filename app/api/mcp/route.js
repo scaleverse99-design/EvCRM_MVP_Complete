@@ -10,6 +10,13 @@ import { queryFacts } from "../../../lib/cte/factLibrary.js"
 import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
 import { createBookingIntent } from "../../../lib/mcp/bookingIntent.js"
+import { checkRateLimit, getClientIP } from "../../../lib/security"
+
+// Only the booking tool is throttled — see the comment at the tools/call
+// site. Read tools stay open on purpose.
+const RATE_LIMITED_TOOLS = new Set(["book_test_drive"])
+const BOOKING_RATE_LIMIT = Number(process.env.MCP_BOOKING_RATE_LIMIT || 5)
+const BOOKING_RATE_WINDOW = Number(process.env.MCP_BOOKING_RATE_WINDOW || 60)
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -859,6 +866,33 @@ export async function POST(req) {
       case "tools/call": {
         const tool = TOOLS.find(t => t.name === params?.name)
         if (!tool) return jsonRpcError(id, -32602, `Unknown tool: ${params?.name}`)
+
+        // Rate limit ONLY the booking tool. The read tools are deliberately
+        // open — throttling them would work against being cited by AI
+        // assistants, which is the point of this server. book_test_drive is
+        // different: each call signs a token and reads inventory, so a loop
+        // costs Cloud Run invocations and Supabase egress against a budget
+        // with very little headroom (HANDOFF section 8).
+        //
+        // This is a SPEND GUARDRAIL, not a security control — nothing is
+        // written until a human confirms (lib/mcp/bookingIntent.js). And it
+        // is a speed bump rather than a guarantee: the store is an in-memory
+        // Map, so with maxScale 20 the effective ceiling is per-instance and
+        // resets on cold start. A hard limit would need shared state.
+        if (RATE_LIMITED_TOOLS.has(tool.name)) {
+          const ip = getClientIP(req.headers)
+          const rl = checkRateLimit(`mcp_${tool.name}_${ip}`, BOOKING_RATE_LIMIT, BOOKING_RATE_WINDOW)
+          if (!rl.allowed) {
+            return jsonRpcResult(id, {
+              content: [{ type: "text", text: JSON.stringify({
+                error: "Too many booking attempts. Please wait a minute and try again.",
+                retryAfterSeconds: rl.retryAfter,
+              }) }],
+              isError: true,
+            })
+          }
+        }
+
         try {
           const result = await tool.handler(params?.arguments || {})
           return jsonRpcResult(id, {
