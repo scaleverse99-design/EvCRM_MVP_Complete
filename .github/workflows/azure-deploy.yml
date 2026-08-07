@@ -43,8 +43,8 @@ jobs:
           STATUS=$(az containerapp show -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
           echo "Container App Status: $STATUS"
           if [ "$STATUS" = "Failed" ]; then
-            echo "Container app is in Failed state. Attempting repair..."
-            az containerapp delete -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --yes
+            echo "Container app is in Failed state. Deleting for fresh start..."
+            az containerapp delete -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --yes || true
           fi
 
       - name: Deploy to Azure Container Apps
@@ -56,7 +56,4 @@ jobs:
             --environment evcrm-env \
             --image "${{ env.IMAGE_NAME }}" \
             --target-port 8080 \
-            --ingress external \
-            --registry-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-            --registry-password "${{ secrets.REGISTRY_PASSWORD }}"
+            --ingress external
