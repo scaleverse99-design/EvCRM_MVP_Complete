@@ -1,0 +1,10 @@
+# Smithery Configuration (https://smithery.ai)
+# This file tells the Smithery directory how to run your MCP server.
+startCommand:
+  type: stdio
+  config:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/inspector"
+      - "https://evcrm.in/api/mcp"

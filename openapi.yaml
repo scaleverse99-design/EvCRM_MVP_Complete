@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: EvCRM Market Data API
+  version: 1.0.0
+  description: Access the EvCRM verified Indian EV market database, inventory, and calculators.
+servers:
+  - url: https://evcrm.in
+paths:
+  /api/mcp?tool=realtime_live_crawl:
+    post:
+      operationId: realtimeLiveCrawl
+      summary: Real-time query-triggered live crawl
+      description: Force a live crawl from the internet to get the absolute freshest data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc: { type: string, default: "2.0" }
+                id: { type: integer, default: 1 }
+                method: { type: string, default: "tools/call" }
+                params:
+                  type: object
+                  properties:
+                    name: { type: string, default: "realtime_live_crawl" }
+                    arguments:
+                      type: object
+                      properties:
+                        query: { type: string, description: "The specific question or car model price to crawl live" }
+                      required: [query]
+      responses:
+        '200':
+          description: OK
+
+  /api/mcp?tool=search_market:
+    post:
+      operationId: searchMarket
+      summary: Search Indian EV market data
+      description: Specs, prices, and scores from EvCRM verified database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc: { type: string, default: "2.0" }
+                id: { type: integer, default: 1 }
+                method: { type: string, default: "tools/call" }
+                params:
+                  type: object
+                  properties:
+                    name: { type: string, default: "search_market" }
+                    arguments:
+                      type: object
+                      properties:
+                        category: { type: string, enum: [ev_two_wheeler, ev_four_wheeler] }
+                        brand: { type: string }
+                        query: { type: string, description: "Model name, partial match" }
+                        maxPrice: { type: number }
+      responses:
+        '200':
+          description: OK
+
+  /api/mcp?tool=search_vehicles:
+    post:
+      operationId: searchVehicles
+      summary: Search live vehicle inventory
+      description: Vehicles actually in stock at verified EvCRM dealers in India.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc: { type: string, default: "2.0" }
+                id: { type: integer, default: 1 }
+                method: { type: string, default: "tools/call" }
+                params:
+                  type: object
+                  properties:
+                    name: { type: string, default: "search_vehicles" }
+                    arguments:
+                      type: object
+                      properties:
+                        brand: { type: string }
+                        model: { type: string }
+                        type: { type: string, enum: [2W, 4W, 3W] }
+                        fuelType: { type: string, enum: [Electric, Petrol, Diesel, CNG, Hybrid] }
+                        city: { type: string }
+      responses:
+        '200':
+          description: OK
+
+  /api/mcp?tool=calculate_emi:
+    post:
+      operationId: calculateEmi
+      summary: Calculate loan EMI
+      description: Loan EMI, total interest and total payable for a vehicle loan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc: { type: string, default: "2.0" }
+                id: { type: integer, default: 1 }
+                method: { type: string, default: "tools/call" }
+                params:
+                  type: object
+                  properties:
+                    name: { type: string, default: "calculate_emi" }
+                    arguments:
+                      type: object
+                      properties:
+                        principal: { type: number }
+                        annualRatePercent: { type: number }
+                        tenureMonths: { type: number }
+                      required: [principal, annualRatePercent, tenureMonths]
+      responses:
+        '200':
+          description: OK
