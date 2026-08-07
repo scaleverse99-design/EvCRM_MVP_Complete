@@ -1,29 +1,38 @@
-# Agent Interconnect & Coordination Board (Antigravity ↔ Claude Code)
+# Pointer — read HANDOFF.md (uppercase) instead
 
-> [!IMPORTANT]
-> **LIVE INTERCONNECT DAEMON ACTIVE**: Task sharing, workload balancing & file locking.
-> Please run `node .agents/sync.js status` to view live agent sync state.
+This file is a SNAPSHOT ONLY. The single source of truth is **`HANDOFF.md`**
+in the repo root. Never write full content here — per the standing protocol
+in HANDOFF.md §4 it gets overwritten and ignored.
 
-## ── CTE LIVE INTERCONNECT & WORKLOAD PROTOCOL ──
+Last refreshed: **2026-08-07** (Claude Code session)
 
-### 1. Active File Locks
-* *No active locks. All files are available for edit.*
+## Start here
 
-### 2. Live Agent Handoff & Metrics
-* **Status**: Handoff from Claude
-* **Last Action**: AdSense remediation done. Fixed the cookie-cutter guide generator in lib/blog.js (now grounds articles in verified CTE specs + live inventory + real comparables, skips rather than publishing filler). Regenerated 7 guides from real data, retired 9. Live blog verified: 0 URJA pages, 0 old-template titles remaining. IMPORTANT: scripts/backfill-blog-articles.js still has the OLD template (400-600 words, 'Best reasons to buy the {brand} {model}' title) - do NOT run it, it would reintroduce the exact problem AdSense flagged. Needs updating to the grounded approach first.
-* **Next Steps**: Awaiting next agent execution...
-* **Estimated Tokens Saved**: ⚡ **200,000 tokens**
+`HANDOFF.md` §8 → the **"PICK UP HERE"** block at the top.
 
-### 3. Shared Task Board & Assignments
-- [x] **[Task #0]** im seeing lot of 404 pages please check solve them [Assigned to @Antigravity]
+## One-line state
 
-### 4. Active Help & Delegation Requests
-* *No active help requests. Both agents working in parallel.*
+`origin/main` @ `e0fda15`, everything pushed. **`68e96d8` (homepage +
+/showroom SSR) is pushed but NOT DEPLOYED** — deploying it is the next step.
 
----
+## What shipped to production today
 
-## 5. CTE Project Environment
-* **Live Site**: `https://evcrm.in`
-* **Live Agent Hub**: `https://evcrm.in/admin/agents`
-* **Database**: Supabase (Live production DB configured in `.env`)
+- SSR + real titles for `/blog/[slug]`, `/learn/[slug]`, `/price/[slug]`
+  (article pages were serving crawlers 73 bytes of "Loading…")
+- Unique titles on 50 pages, including all 43 `/compare` pages — 48 had been
+  sharing one generic title
+- Inventory schema migration: marketplace and MCP went **0 → 10 vehicles**
+  (`status:"AVAILABLE"` never matched the `"IN_STOCK"` every filter tests)
+- CTE answer cache now actually populates (was 0 rows); Gemini removed from
+  the request path
+- `book_test_drive` on the public MCP — returns a signed human-confirmed
+  link, writes nothing
+- Rewritten `llms.txt` (llmstxt.org format) + accessibility fixes
+- **All three leaked credentials rotated** (2 GCP, 1 Supabase full-DB)
+
+## Biggest open item
+
+`/charging` — **423 of 431** tracked Search Console queries are
+charging-related and **every one has 0.0% CTR**. The page serves only 1,262
+bytes because stations render client-side. Server-render it and add
+`/charging/[city]` pages. Full ranked list in `HANDOFF.md` §8.
