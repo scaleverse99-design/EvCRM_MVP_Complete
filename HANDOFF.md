@@ -19,6 +19,7 @@
 > - [ ] Real lightweight crawler (`cte-engine/crawler/` — Nutch-inspired: robots.txt-aware, per-host rate-limited, no Puppeteer, targets `crawler_targets` table) — wire into cron-job.org and/or GitHub Actions
 > - [ ] SIAM + FADA official PDF parsers (real monthly production/retail data, not fabricated — see `CTE_BUILD_PLAN.md` §8 for source URLs) → new clean table, monthly cron
 > - [ ] Token-savings benchmark script (runs a real query set against Claude with/without the MCP connected, logs actual token deltas — for the MCP directory listing pitch)
+> - [ ] **AI-First Commerce Layer (OMS)**: Repurpose the test drive tool into a universal checkout layer. Let small websites map their inventory to the OMS -> syncs to MCP. AI provides a `[ Buy Now ]` button directly in chat linking to a temporary `evcrm.in/checkout/temp-xyz` page for fast transaction & account creation. AI natively uses a polling pattern (`check_payment_status`) to track the checkout loop and announce payment success *inside the chat window*.
 >
 > When either agent finishes an item, check it off here and add one line to §7 (What's Built & Verified) — don't just mark it done in your own head, the other agent won't know otherwise.
 

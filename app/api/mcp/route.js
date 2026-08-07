@@ -12,12 +12,54 @@ import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
 import { createBookingIntent } from "../../../lib/mcp/bookingIntent.js"
 import { checkRateLimit, getClientIP } from "../../../lib/security"
+import { recordDemand, getDemandCached, getFromDb } from "../../../lib/cte/demandEngine.js"
 
 // Only the booking tool is throttled — see the comment at the tools/call
 // site. Read tools stay open on purpose.
 const RATE_LIMITED_TOOLS = new Set(["book_test_drive"])
 const BOOKING_RATE_LIMIT = Number(process.env.MCP_BOOKING_RATE_LIMIT || 5)
 const BOOKING_RATE_WINDOW = Number(process.env.MCP_BOOKING_RATE_WINDOW || 60)
+
+// ── In-process response cache ────────────────────────────────────────────
+// Serves repeated queries in <1ms directly from RAM — no Supabase read,
+// no network hop. TTL matches the 30-minute freshness window so the first
+// caller for any query waits (live crawl), every subsequent caller in the
+// next 30 minutes is instant.
+//
+// Key  = "<toolName>:<stable-json-args>"
+// Value = { result, expiresAt }
+//
+// This is module-level so it survives across requests on the same Firebase
+// function instance. A cold start (new instance) gets an empty cache and
+// fills on first use — still correct, just misses once per instance.
+const HOT_CACHE = new Map()
+const HOT_CACHE_TTL_MS = 30 * 60 * 1000   // 30 minutes
+const HOT_CACHE_MAX_ENTRIES = 2000          // safety cap — ~4MB RAM at 2KB/entry
+
+function hotCacheKey(toolName, args) {
+  // Sort keys so { brand:"MG", model:"Comet" } and { model:"Comet", brand:"MG" }
+  // produce the same cache key.
+  const stable = JSON.stringify(args, Object.keys(args || {}).sort())
+  return `${toolName}:${stable}`
+}
+
+function hotCacheGet(toolName, args) {
+  const key = hotCacheKey(toolName, args)
+  const entry = HOT_CACHE.get(key)
+  if (!entry) return null
+  if (Date.now() > entry.expiresAt) { HOT_CACHE.delete(key); return null }
+  return entry.result
+}
+
+function hotCacheSet(toolName, args, result) {
+  // Evict oldest entry when cap is reached to prevent unbounded growth.
+  if (HOT_CACHE.size >= HOT_CACHE_MAX_ENTRIES) {
+    HOT_CACHE.delete(HOT_CACHE.keys().next().value)
+  }
+  const key = hotCacheKey(toolName, args)
+  HOT_CACHE.set(key, { result, expiresAt: Date.now() + HOT_CACHE_TTL_MS })
+}
+
 
 // ── Public MCP server for evcrm.in ─────────────────────────────────────
 // Lets any MCP-compatible AI tool (Claude, ChatGPT, Gemini, Perplexity,
@@ -589,13 +631,30 @@ async function toolRealtimeLiveCrawl(args = {}) {
   const query = args.query;
   if (!query) return { error: "query is required" };
 
-  // Pure deterministic multi-source crawl — NO LLM, NO AI.
-  // Fans out to CarWale, CarDekho, ZigWheels, Team-BHP and data.gov.in
-  // in parallel, clusters near-identical prices (±2%), and returns the
-  // consensus answer with source attribution and confidence level.
-  const result = await universalCrawl(query);
+  // LAYER 1: In-process RAM Map (<1ms)
+  const hot = hotCacheGet("realtime_live_crawl", args)
+  if (hot) return { ...hot, note: "Served from in-process HOT CACHE (<1ms)." }
 
-  return {
+  // LAYER 2: Permanent Supabase DB (<50ms)
+  const dbData = await getFromDb(query)
+  if (dbData) {
+    const res = { source: "demand_db", ...dbData, note: "Served from permanent DB index." }
+    hotCacheSet("realtime_live_crawl", args, res)
+    return res
+  }
+
+  // LAYER 3: Temporary RAM Demand Cache (<10ms)
+  const demandData = getDemandCached(query)
+  if (demandData) {
+    const res = { source: "demand_ram", ...demandData, note: "Served from RAM demand cache." }
+    hotCacheSet("realtime_live_crawl", args, res)
+    return res
+  }
+
+  // LAYER 4: Live Crawl (3-8 seconds)
+  const result = await universalCrawl(query);
+  
+  const finalResult = {
     source: "live_crawl",
     dataAsOf: result.crawledAt,
     consensus: result.consensus,
@@ -605,6 +664,12 @@ async function toolRealtimeLiveCrawl(args = {}) {
     note: result.note,
     errors: result.errors,
   };
+
+  // Record demand and cache it for future callers
+  await recordDemand(query, finalResult)
+  hotCacheSet("realtime_live_crawl", args, finalResult)
+
+  return finalResult
 }
 
 const PAGING_PROPS = {
