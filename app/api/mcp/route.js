@@ -6,6 +6,7 @@ import { findNearbyDealers, classifyDealerQuery, nearbyDealerSummary } from "../
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin"
 import { recordQuerySignal, describeSignature } from "../../../lib/orchestrator/queryTrigger"
 import { sourceLiveAnswer, readLiveCache, writeLiveCache } from "../../../lib/cte/sourceLive"
+import { universalCrawl } from "../../../lib/cte/universalCrawler"
 import { queryFacts } from "../../../lib/cte/factLibrary.js"
 import { liveCrawlAnswer } from "../../../lib/cte/liveCrawl.js"
 import { calculateEmi, affordabilityFromEmi } from "../../../lib/cte/calculators"
@@ -587,18 +588,22 @@ async function toolCompareVehicles(args = {}) {
 async function toolRealtimeLiveCrawl(args = {}) {
   const query = args.query;
   if (!query) return { error: "query is required" };
-  
-  const liveResult = await sourceLiveAnswer(query);
-  if (!liveResult) {
-    return { error: "Could not find a reliable live answer for this query." };
-  }
-  
+
+  // Pure deterministic multi-source crawl — NO LLM, NO AI.
+  // Fans out to CarWale, CarDekho, ZigWheels, Team-BHP and data.gov.in
+  // in parallel, clusters near-identical prices (±2%), and returns the
+  // consensus answer with source attribution and confidence level.
+  const result = await universalCrawl(query);
+
   return {
-    source: liveResult.cached ? "research_cache" : "live_crawl",
-    dataAsOf: liveResult.sourcedAt || new Date().toISOString(),
-    facts: liveResult.facts,
-    sourceDatasets: liveResult.sources,
-    note: "Sourced live from the web. Overrides any stale database figures."
+    source: "live_crawl",
+    dataAsOf: result.crawledAt,
+    consensus: result.consensus,
+    allPriceFacts: result.allPriceFacts,
+    otherFacts: result.otherFacts,
+    sourcesQueried: result.sourcesQueried,
+    note: result.note,
+    errors: result.errors,
   };
 }
 
