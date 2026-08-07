@@ -584,12 +584,44 @@ async function toolCompareVehicles(args = {}) {
 // library) — so each names the other.
 // Terse on purpose: this object is inlined into 5 tool schemas, so every
 // character here is paid 5 times on every request.
+async function toolRealtimeLiveCrawl(args = {}) {
+  const query = args.query;
+  if (!query) return { error: "query is required" };
+  
+  const liveResult = await sourceLiveAnswer(query);
+  if (!liveResult) {
+    return { error: "Could not find a reliable live answer for this query." };
+  }
+  
+  return {
+    source: liveResult.cached ? "research_cache" : "live_crawl",
+    dataAsOf: liveResult.sourcedAt || new Date().toISOString(),
+    facts: liveResult.facts,
+    sourceDatasets: liveResult.sources,
+    note: "Sourced live from the web. Overrides any stale database figures."
+  };
+}
+
 const PAGING_PROPS = {
   limit: { type: "number", description: `Rows, 1-${MAX_RESULTS} (default ${DEFAULT_RESULTS})` },
   offset: { type: "number", description: "Rows to skip" },
 }
 
 const TOOLS = [
+  {
+    name: "realtime_live_crawl",
+    title: "Real-time query-triggered live crawl",
+    annotations: { title: "Real-time query-triggered live crawl", readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+    description: "Force a live crawl from the internet to get the absolute freshest data. Use this when the data from search_market is stale (older than 30 minutes) and the user needs real-time accuracy.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The specific question or car model price to crawl live (e.g., 'MG Comet EV on road price')" }
+      },
+      required: ["query"]
+    },
+    handler: toolRealtimeLiveCrawl,
+  },
   {
     name: "search_vehicles",
     title: "Search live vehicle inventory",
