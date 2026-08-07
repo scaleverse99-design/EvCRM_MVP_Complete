@@ -50,5 +50,8 @@ jobs:
           containerAppEnvironment: evcrm-env
           targetPort: 8080
           ingress: external
+          registryUrl: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          registryUsername: ${{ secrets.REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.REGISTRY_PASSWORD }}
           environmentVariables: >
             NODE_ENV=production
