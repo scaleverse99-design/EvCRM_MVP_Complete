@@ -38,16 +38,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Check Container App Status
-        run: |
-          STATUS=$(az containerapp show -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
-          echo "Container App Status: $STATUS"
-          if [ "$STATUS" = "Failed" ]; then
-            echo "Container app is in Failed state. Deleting for fresh start..."
-            az containerapp delete -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --yes || true
-          fi
-
       - name: Deploy to Azure Container Apps
+        env:
+          REG_SERVER: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          REG_USER: ${{ secrets.REGISTRY_USERNAME }}
+          REG_PASS: ${{ secrets.REGISTRY_PASSWORD }}
         run: |
           az extension add --name containerapp || true
           az containerapp up \
@@ -56,4 +51,7 @@ jobs:
             --environment evcrm-env \
             --image "${{ env.IMAGE_NAME }}" \
             --target-port 8080 \
-            --ingress external
+            --ingress external \
+            --registry-server "$REG_SERVER" \
+            --registry-username "$REG_USER" \
+            --registry-password "$REG_PASS"
