@@ -38,6 +38,15 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Check Container App Status
+        run: |
+          STATUS=$(az containerapp show -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+          echo "Container App Status: $STATUS"
+          if [ "$STATUS" = "Failed" ]; then
+            echo "Container app is in Failed state. Attempting repair..."
+            az containerapp delete -n "${{ env.CONTAINER_APP_NAME }}" -g "${{ env.RESOURCE_GROUP }}" --yes
+          fi
+
       - name: Deploy to Azure Container Apps
         run: |
           az extension add --name containerapp || true
