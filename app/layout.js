@@ -108,6 +108,10 @@ export default function RootLayout({ children }) {
         <main>
           <Providers>{children}</Providers>
         </main>
+        {/* Hidden link for Smithery AI verification */}
+        <a href="https://smithery.ai/servers/scaleverse99/evcrm" style={{ display: "none" }} aria-hidden="true">
+          Smithery Server
+        </a>
       </body>
     </html>
   )
