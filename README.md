@@ -2,6 +2,8 @@
 
 > Production-ready MVP · Next.js 14 · Light UI · Sidebar navigation
 
+[![smithery badge](https://smithery.ai/badge/scaleverse99/evcrm)](https://smithery.ai/servers/scaleverse99/evcrm)
+
 ---
 
 ## Quick Start
